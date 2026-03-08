@@ -6,7 +6,7 @@ interface Service {
   serviceId: string;
   name: string;
   description: string;
-  price: number;
+  price: number | null;
   isActive: boolean;
 }
 
@@ -41,15 +41,24 @@ export default function Services() {
 
   const openEdit = (s: Service) => {
     setEditing(s);
-    setForm({ name: s.name, description: s.description, price: String(s.price) });
+    setForm({
+      name: s.name,
+      description: s.description,
+      price: s.price !== null ? String(s.price) : '',
+    });
     setShowModal(true);
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.price) return;
+    if (!form.name) return;
     setSaving(true);
     try {
-      const payload = { name: form.name, description: form.description, price: Number(form.price), storeId };
+      const payload = {
+        name: form.name,
+        description: form.description,
+        price: form.price ? Number(form.price) : null,
+        storeId,
+      };
       if (editing) {
         await updateService(editing.serviceId, payload);
       } else {
@@ -107,7 +116,11 @@ export default function Services() {
           </div>
           <p className="text-slate-700 font-medium">No hay servicios aún</p>
           <p className="text-slate-400 text-sm">Crea tu primer servicio para que la IA lo ofrezca a tus clientes</p>
-          <button onClick={openCreate} className="mt-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold" style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+          <button
+            onClick={openCreate}
+            className="mt-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+          >
             Crear servicio
           </button>
         </div>
@@ -120,13 +133,24 @@ export default function Services() {
                   <h3 className="font-semibold text-slate-800">{s.name}</h3>
                   <p className="text-slate-400 text-sm mt-1 line-clamp-2">{s.description || 'Sin descripción'}</p>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${s.isActive ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2 ${s.isActive ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
                   {s.isActive ? 'Activo' : 'Inactivo'}
                 </span>
               </div>
-              <div className="text-2xl font-bold text-slate-800">
-                ${Number(s.price).toLocaleString('es-CO')}
+
+              <div>
+                {s.price !== null && s.price !== undefined ? (
+                  <div className="text-2xl font-bold text-slate-800">
+                    ${Number(s.price).toLocaleString('es-CO')}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-semibold text-orange-500">Precio variable</span>
+                    <span className="px-2 py-0.5 bg-orange-50 text-orange-400 text-xs rounded-full">cotización</span>
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-2 pt-2 border-t border-slate-50">
                 <button
                   onClick={() => openEdit(s)}
@@ -147,7 +171,6 @@ export default function Services() {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -183,15 +206,23 @@ export default function Services() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Precio *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                  Precio <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
                 <input
                   type="number"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="0"
+                  placeholder="Dejar vacío si el precio varía"
                   min="0"
                 />
+                {!form.price && (
+                  <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+                    <span>💬</span>
+                    Sin precio fijo, la IA informará que varía y transferirá a un asesor para cotizar
+                  </p>
+                )}
               </div>
             </div>
 
@@ -204,7 +235,7 @@ export default function Services() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !form.name || !form.price}
+                disabled={saving || !form.name}
                 className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
               >
