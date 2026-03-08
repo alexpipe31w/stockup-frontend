@@ -19,9 +19,17 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
   return token ? children : <Navigate to="/login" />;
 }
 
+function AdminRoute({ children }: { children: React.ReactElement }) {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" />;
+  if (user?.role !== 'admin' && user?.role !== 'superadmin') return <Navigate to="/dashboard" />;
+  return children;
+}
+
 function Layout({ children }: { children: React.ReactElement }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const navItems = [
     {
@@ -61,20 +69,23 @@ function Layout({ children }: { children: React.ReactElement }) {
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     },
     {
-      to: '/users', label: 'Usuarios',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-    },
-    {
       to: '/ai-config', label: 'Configurar IA',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>
     },
   ];
 
+  const adminNavItems = [
+    {
+      to: '/users', label: 'Usuarios',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    },
+  ];
+
+  const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
+
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-slate-100 flex flex-col shadow-sm flex-shrink-0">
-        {/* Logo */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -87,17 +98,14 @@ function Layout({ children }: { children: React.ReactElement }) {
           <span className="font-bold text-slate-800">Stockup Messages</span>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {allNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
-                  isActive
-                    ? 'text-white'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                  isActive ? 'text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                 }`
               }
               style={({ isActive }) =>
@@ -110,7 +118,6 @@ function Layout({ children }: { children: React.ReactElement }) {
           ))}
         </nav>
 
-        {/* Logout */}
         <div className="px-3 py-4 border-t border-slate-100">
           <button
             onClick={() => { logout(); navigate('/login'); }}
@@ -126,7 +133,6 @@ function Layout({ children }: { children: React.ReactElement }) {
         </div>
       </aside>
 
-      {/* Contenido */}
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );
@@ -138,7 +144,6 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-
           <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
           <Route path="/whatsapp" element={<PrivateRoute><Layout><WhatsAppPage /></Layout></PrivateRoute>} />
           <Route path="/conversations" element={<PrivateRoute><Layout><Conversations /></Layout></PrivateRoute>} />
@@ -148,9 +153,8 @@ function App() {
           <Route path="/services" element={<PrivateRoute><Layout><Services /></Layout></PrivateRoute>} />
           <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
-          <Route path="/users" element={<PrivateRoute><Layout><Users /></Layout></PrivateRoute>} />
+          <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
           <Route path="/ai-config" element={<PrivateRoute><Layout><AiConfig /></Layout></PrivateRoute>} />
-
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
