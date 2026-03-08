@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import api from '../services/api';
 
 interface BlockedContact {
@@ -12,7 +11,6 @@ interface BlockedContact {
 const emptyForm = { phone: '', label: '' };
 
 export default function Blocked() {
-  
   const [contacts, setContacts] = useState<BlockedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -32,8 +30,23 @@ export default function Blocked() {
 
   useEffect(() => { load(); }, []);
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    // Auto-agregar + si el usuario empieza a escribir dígitos sin él
+    if (val && !val.startsWith('+')) val = `+${val}`;
+    setForm({ ...form, phone: val });
+  };
+
   const handleBlock = async () => {
     if (!form.phone) return;
+
+    // Validar que tenga código de país (mínimo 11 dígitos: código + número local)
+    const digits = form.phone.replace(/\D/g, '');
+    if (digits.length < 11) {
+      setError('Incluye el código de país completo. Ej: +573001234567 (Colombia)');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -92,7 +105,9 @@ export default function Blocked() {
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
         <p className="text-blue-700 text-sm">
-          <strong>Tip:</strong> También puedes silenciar el bot en cualquier conversación enviando el mensaje <code className="bg-blue-100 px-1.5 py-0.5 rounded font-mono text-xs">!stop</code> desde el número del cliente. La conversación quedará en modo humano permanentemente.
+          <strong>Tip:</strong> También puedes silenciar el bot en cualquier conversación enviando el mensaje{' '}
+          <code className="bg-blue-100 px-1.5 py-0.5 rounded font-mono text-xs">!stop</code>{' '}
+          desde el número del cliente. La conversación quedará en modo humano permanentemente.
         </p>
       </div>
 
@@ -167,6 +182,7 @@ export default function Blocked() {
         </div>
       )}
 
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -186,11 +202,13 @@ export default function Blocked() {
                 </label>
                 <input
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={handlePhoneChange}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder="+573001234567"
                 />
-                <p className="text-xs text-slate-400 mt-1.5">Incluye el código de país. Ej: +57 para Colombia</p>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Incluye el código de país. Ej: <strong>+57</strong>3001234567 para Colombia
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -211,7 +229,9 @@ export default function Blocked() {
               {error && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                   {error}
                 </div>
