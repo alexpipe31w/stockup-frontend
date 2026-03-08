@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp } from '../services/api';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function WhatsAppPage() {
   const { storeId } = useAuth();
@@ -155,9 +156,7 @@ export default function WhatsAppPage() {
 
                 {/* QR renderizado como texto en monospace */}
                 <div className="bg-white border-2 border-slate-100 rounded-xl p-4 overflow-auto max-w-full">
-                  <pre className="text-[6px] leading-[7px] font-mono text-slate-800 whitespace-pre select-none">
-                    {qr}
-                  </pre>
+                    <QRCodeCanvas value={qr} size={240} />
                 </div>
 
                 <div className="flex items-center gap-2 text-slate-400 text-xs">
