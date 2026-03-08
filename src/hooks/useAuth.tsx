@@ -11,8 +11,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-const STORE_ID = '236081f4-1d02-48a4-827f-7e71b7ea7ec5';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem('token')
@@ -24,10 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginFn = async (email: string, password: string) => {
     const res = await loginApi(email, password);
-    const { access_token, userId, email: userEmail } = res.data;
+    const { access_token, userId, email: userEmail, role, storeId } = res.data;
 
-    // Construir objeto user con rol desde el backend
-    const userObj = { userId, email: userEmail, role: res.data.role ?? 'admin' };
+    const userObj = { userId, email: userEmail, role: role ?? 'admin', storeId: storeId ?? '' };
 
     localStorage.setItem('token', access_token);
     localStorage.setItem('user', JSON.stringify(userObj));
@@ -43,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, storeId: STORE_ID, loginFn, logout }}>
+    <AuthContext.Provider value={{ token, user, storeId: user?.storeId ?? '', loginFn, logout }}>
       {children}
     </AuthContext.Provider>
   );

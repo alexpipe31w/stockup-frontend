@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { getUsers, registerUser, deleteUser } from '../services/api';
 
 interface User {
@@ -10,9 +11,10 @@ interface User {
   createdAt: string;
 }
 
-const emptyForm = { name: '', email: '', password: '', role: 'admin' };
+const emptyForm = { name: '', email: '', password: '', role: 'agent' };
 
 export default function Users() {
+  const { storeId } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -30,14 +32,20 @@ export default function Users() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = async () => {
     if (!form.name || !form.email || !form.password) return;
     setSaving(true);
     setError('');
     try {
-      await registerUser({ name: form.name, email: form.email, password: form.password, role: form.role });
+      await registerUser({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        storeId,
+      });
       setShowModal(false);
       setForm(emptyForm);
       await load();
@@ -165,7 +173,6 @@ export default function Users() {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -205,7 +212,7 @@ export default function Users() {
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="Mínimo 6 caracteres"
                 />
               </div>
               <div>
@@ -215,9 +222,8 @@ export default function Users() {
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
                 >
-                  <option value="admin">Admin</option>
                   <option value="agent">Agente</option>
-                  <option value="superadmin">Super Admin</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
               {error && (
