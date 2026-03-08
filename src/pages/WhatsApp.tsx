@@ -62,6 +62,23 @@ export default function WhatsAppPage() {
       await disconnectWhatsApp(storeId);
       setConnected(false);
       setQr(null);
+      // Esperar que el backend limpie la sesión antes de re-verificar
+      await new Promise(r => setTimeout(r, 1500));
+      await checkStatus();
+    } catch {} finally {
+      setDisconnecting(false);
+    }
+  };
+
+  const handleReconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await disconnectWhatsApp(storeId);
+      setConnected(false);
+      setQr(null);
+      await new Promise(r => setTimeout(r, 1500));
+      await connectWhatsApp(storeId);
+      await fetchQR();
     } catch {} finally {
       setDisconnecting(false);
     }
@@ -89,9 +106,7 @@ export default function WhatsAppPage() {
 
         {/* Estado */}
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
-          connected
-            ? 'bg-green-50 text-green-600'
-            : 'bg-orange-50 text-orange-500'
+          connected ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-500'
         }`}>
           <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-orange-400'} animate-pulse`}/>
           {connected ? 'Conectado' : 'Desconectado'}
@@ -109,13 +124,22 @@ export default function WhatsAppPage() {
               <p className="text-slate-400 text-sm">El bot está respondiendo mensajes automáticamente</p>
             </div>
 
-            <button
-              onClick={handleDisconnect}
-              disabled={disconnecting}
-              className="px-6 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-50"
-            >
-              {disconnecting ? 'Desconectando...' : 'Desconectar WhatsApp'}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleReconnect}
+                disabled={disconnecting}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                {disconnecting ? 'Procesando...' : '🔄 Reconectar'}
+              </button>
+              <button
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="px-5 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-50"
+              >
+                {disconnecting ? 'Desconectando...' : 'Desconectar'}
+              </button>
+            </div>
           </>
         ) : (
           <>
@@ -154,9 +178,8 @@ export default function WhatsAppPage() {
                   <p className="text-slate-400 text-sm">Abre WhatsApp → Dispositivos vinculados → Vincular dispositivo</p>
                 </div>
 
-                {/* QR renderizado como texto en monospace */}
-                <div className="bg-white border-2 border-slate-100 rounded-xl p-4 overflow-auto max-w-full">
-                    <QRCodeCanvas value={qr} size={240} />
+                <div className="bg-white border-2 border-slate-100 rounded-xl p-4 flex items-center justify-center">
+                  <QRCodeCanvas value={qr} size={240} />
                 </div>
 
                 <div className="flex items-center gap-2 text-slate-400 text-xs">
