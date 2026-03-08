@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000/api',
 });
 
 api.interceptors.request.use((config) => {
@@ -26,6 +26,16 @@ export default api;
 // Auth
 export const login = (email: string, password: string) =>
   api.post('/auth/login', { email, password });
+
+export const registerUser = (data: { name: string; email: string; password: string; role: string }) =>
+  api.post('/auth/register', data);
+
+// Users
+export const getUsers = () =>
+  api.get('/auth/users');
+
+export const deleteUser = (id: string) =>
+  api.delete(`/auth/users/${id}`);
 
 // Dashboard
 export const getDashboard = (storeId: string) =>
@@ -61,6 +71,28 @@ export const sendMessage = (data: any) =>
 export const getProducts = (storeId: string) =>
   api.get(`/products/store/${storeId}`);
 
+export const createProduct = (data: any) =>
+  api.post('/products', data);
+
+export const updateProduct = (id: string, data: any) =>
+  api.patch(`/products/${id}`, data);
+
+export const deleteProduct = (id: string) =>
+  api.delete(`/products/${id}`);
+
+// Services
+export const getServices = (storeId: string) =>
+  api.get(`/services/store/${storeId}`);
+
+export const createService = (data: any) =>
+  api.post('/services', data);
+
+export const updateService = (id: string, data: any) =>
+  api.patch(`/services/${id}`, data);
+
+export const deleteService = (id: string) =>
+  api.delete(`/services/${id}`);
+
 // Orders
 export const getOrders = (storeId: string) =>
   api.get(`/orders/store/${storeId}`);
@@ -81,3 +113,16 @@ export const createCampaign = (data: any) =>
 
 export const sendCampaign = (id: string) =>
   api.post(`/campaigns/${id}/send`);
+
+// WhatsApp
+export const connectWhatsApp = (storeId: string) =>
+  api.post(`/whatsapp/connect/${storeId}`);
+
+export const getWhatsAppQR = (storeId: string) =>
+  api.get(`/whatsapp/qr/${storeId}`);
+
+export const getWhatsAppStatus = (storeId: string) =>
+  api.get(`/whatsapp/status/${storeId}`);
+
+export const disconnectWhatsApp = (storeId: string) =>
+  api.delete(`/whatsapp/disconnect/${storeId}`);

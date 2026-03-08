@@ -10,6 +10,9 @@ import Orders from './pages/Orders';
 import Products from './pages/Products';
 import Campaigns from './pages/Campaigns';
 import Analytics from './pages/Analytics';
+import Services from './pages/Services';
+import Users from './pages/Users';
+import WhatsAppPage from './pages/WhatsApp';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
@@ -24,6 +27,10 @@ function Layout({ children }: { children: React.ReactElement }) {
     {
       to: '/dashboard', label: 'Dashboard',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    },
+    {
+      to: '/whatsapp', label: 'WhatsApp',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
     },
     {
       to: '/conversations', label: 'Conversaciones',
@@ -42,12 +49,20 @@ function Layout({ children }: { children: React.ReactElement }) {
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
     },
     {
+      to: '/services', label: 'Servicios',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+    },
+    {
       to: '/campaigns', label: 'Campañas',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
     },
     {
       to: '/analytics', label: 'Analíticas',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    },
+    {
+      to: '/users', label: 'Usuarios',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
     },
     {
       to: '/ai-config', label: 'Configurar IA',
@@ -73,7 +88,7 @@ function Layout({ children }: { children: React.ReactElement }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -125,12 +140,15 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
+          <Route path="/whatsapp" element={<PrivateRoute><Layout><WhatsAppPage /></Layout></PrivateRoute>} />
           <Route path="/conversations" element={<PrivateRoute><Layout><Conversations /></Layout></PrivateRoute>} />
           <Route path="/customers" element={<PrivateRoute><Layout><Customers /></Layout></PrivateRoute>} />
           <Route path="/orders" element={<PrivateRoute><Layout><Orders /></Layout></PrivateRoute>} />
           <Route path="/products" element={<PrivateRoute><Layout><Products /></Layout></PrivateRoute>} />
+          <Route path="/services" element={<PrivateRoute><Layout><Services /></Layout></PrivateRoute>} />
           <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
+          <Route path="/users" element={<PrivateRoute><Layout><Users /></Layout></PrivateRoute>} />
           <Route path="/ai-config" element={<PrivateRoute><Layout><AiConfig /></Layout></PrivateRoute>} />
 
           <Route path="*" element={<Navigate to="/dashboard" />} />
