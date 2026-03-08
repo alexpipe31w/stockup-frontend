@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { getUsers, registerUser, deleteUser } from '../services/api';
 
 interface User {
@@ -9,12 +8,12 @@ interface User {
   role: string;
   isActive: boolean;
   createdAt: string;
+  store?: { name: string; phone: string } | null;
 }
 
-const emptyForm = { name: '', email: '', password: '', role: 'agent' };
+const emptyForm = { name: '', email: '', password: '', role: 'admin', storeName: '', storePhone: '' };
 
 export default function Users() {
-  const { storeId } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -35,7 +34,7 @@ export default function Users() {
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = async () => {
-    if (!form.name || !form.email || !form.password) return;
+    if (!form.name || !form.email || !form.password || !form.storeName || !form.storePhone) return;
     setSaving(true);
     setError('');
     try {
@@ -44,7 +43,8 @@ export default function Users() {
         email: form.email,
         password: form.password,
         role: form.role,
-        storeId,
+        storeName: form.storeName,
+        storePhone: form.storePhone,
       });
       setShowModal(false);
       setForm(emptyForm);
@@ -78,12 +78,14 @@ export default function Users() {
     return 'bg-slate-100 text-slate-500';
   };
 
+  const isFormValid = form.name && form.email && form.password && form.storeName && form.storePhone;
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Usuarios</h1>
-          <p className="text-slate-500 mt-1">Gestiona los usuarios con acceso al panel</p>
+          <p className="text-slate-500 mt-1">Cada usuario tiene su propia tienda independiente</p>
         </div>
         <button
           onClick={() => { setForm(emptyForm); setError(''); setShowModal(true); }}
@@ -121,6 +123,7 @@ export default function Users() {
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Usuario</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tienda</th>
                   <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Rol</th>
                   <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</th>
                   <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Creado</th>
@@ -141,6 +144,16 @@ export default function Users() {
                           <div className="text-slate-400 text-xs">{u.email}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.store ? (
+                        <div>
+                          <div className="text-slate-700 text-sm font-medium">{u.store.name}</div>
+                          <div className="text-slate-400 text-xs">{u.store.phone}</div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300 text-sm">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleColor(u.role)}`}>
@@ -175,7 +188,7 @@ export default function Users() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-slate-800">Nuevo usuario</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -186,6 +199,8 @@ export default function Users() {
             </div>
 
             <div className="space-y-4">
+              {/* Sección usuario */}
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Datos del usuario</p>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre *</label>
                 <input
@@ -222,10 +237,36 @@ export default function Users() {
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
                 >
-                  <option value="agent">Agente</option>
                   <option value="admin">Admin</option>
+                  <option value="agent">Agente</option>
                 </select>
               </div>
+
+              {/* Sección tienda */}
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Tienda del usuario</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre de la tienda *</label>
+                    <input
+                      value={form.storeName}
+                      onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="Ej: Tienda de Juan"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Teléfono WhatsApp *</label>
+                    <input
+                      value={form.storePhone}
+                      onChange={(e) => setForm({ ...form, storePhone: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="+573001234567"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {error && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -245,7 +286,7 @@ export default function Users() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={saving || !form.name || !form.email || !form.password}
+                disabled={saving || !isFormValid}
                 className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
               >

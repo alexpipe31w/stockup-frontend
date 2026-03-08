@@ -27,8 +27,10 @@ export default api;
 export const login = (email: string, password: string) =>
   api.post('/auth/login', { email, password });
 
-export const registerUser = (data: { name: string; email: string; password: string; role: string; storeId?: string }) =>
-  api.post('/auth/register', data);
+export const registerUser = (data: { 
+  name: string; email: string; password: string; 
+  role: string; storeName?: string; storePhone?: string;
+}) => api.post('/auth/register', data);
 
 // Users
 export const getUsers = () =>
