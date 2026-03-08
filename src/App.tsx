@@ -13,6 +13,7 @@ import Analytics from './pages/Analytics';
 import Services from './pages/Services';
 import Users from './pages/Users';
 import WhatsAppPage from './pages/WhatsApp';
+import Blocked from './pages/Blocked';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
@@ -67,6 +68,10 @@ function Layout({ children }: { children: React.ReactElement }) {
     {
       to: '/analytics', label: 'Analíticas',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    },
+    {
+      to: '/blocked', label: 'Excluidos',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
     },
     {
       to: '/ai-config', label: 'Configurar IA',
@@ -153,6 +158,7 @@ function App() {
           <Route path="/services" element={<PrivateRoute><Layout><Services /></Layout></PrivateRoute>} />
           <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
+          <Route path="/blocked" element={<PrivateRoute><Layout><Blocked /></Layout></PrivateRoute>} />
           <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
           <Route path="/ai-config" element={<PrivateRoute><Layout><AiConfig /></Layout></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
