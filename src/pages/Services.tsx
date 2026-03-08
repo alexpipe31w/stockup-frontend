@@ -31,7 +31,7 @@ export default function Services() {
     }
   };
 
-  useEffect(() => { load(); }, [storeId]);
+  useEffect(() => { load(); }, [storeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openCreate = () => {
     setEditing(null);
