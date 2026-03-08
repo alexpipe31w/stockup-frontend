@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+
 import api from '../services/api';
 
 interface BlockedContact {
@@ -12,7 +12,7 @@ interface BlockedContact {
 const emptyForm = { phone: '', label: '' };
 
 export default function Blocked() {
-  const { } = useAuth();
+  
   const [contacts, setContacts] = useState<BlockedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
