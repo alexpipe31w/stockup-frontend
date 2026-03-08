@@ -9,7 +9,7 @@ export default function AiConfig() {
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
     groqApiKey: '',
-    model: 'llama3-8b-8192',
+    model: 'openai/gpt-oss-20b', // ✅ default al más rápido y actualizado
     systemPrompt: '',
     temperature: 0.7,
     maxTokens: 500,
@@ -20,13 +20,13 @@ export default function AiConfig() {
       .then((res) => {
         if (res.data) setForm({
           groqApiKey: res.data.groqApiKey ?? '',
-          model: res.data.model ?? 'llama3-8b-8192',
+          model: res.data.model ?? 'openai/gpt-oss-20b',
           systemPrompt: res.data.systemPrompt ?? '',
           temperature: res.data.temperature ?? 0.7,
           maxTokens: res.data.maxTokens ?? 500,
         });
       })
-      .catch(() => {}) // sin config aún, no pasa nada
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [storeId]);
 
@@ -42,11 +42,74 @@ export default function AiConfig() {
     }
   };
 
-  const models = [
-    { value: 'llama3-8b-8192', label: 'LLaMA 3 8B — Rápido y eficiente' },
-    { value: 'llama3-70b-8192', label: 'LLaMA 3 70B — Más inteligente' },
-    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B — Contexto largo' },
-    { value: 'gemma-7b-it', label: 'Gemma 7B — Google' },
+  // ── Modelos Groq actualizados — marzo 2026 ─────────────────────────────────
+  const modelGroups = [
+    {
+      label: '⚡ Producción',
+      models: [
+        {
+          value: 'openai/gpt-oss-20b',
+          name: 'GPT OSS 20B',
+          tag: 'MÁS RÁPIDO',
+          tagColor: '#059669',
+          speed: '1000 t/s',
+          desc: 'El más rápido disponible. Respuestas instantáneas en WhatsApp.',
+        },
+        {
+          value: 'openai/gpt-oss-120b',
+          name: 'GPT OSS 120B',
+          tag: 'MÁS INTELIGENTE',
+          tagColor: '#7c3aed',
+          speed: '500 t/s',
+          desc: 'Mayor razonamiento. Ideal para catálogos complejos o negociación.',
+        },
+        {
+          value: 'llama-3.3-70b-versatile',
+          name: 'Llama 3.3 70B',
+          tag: 'BALANCEADO',
+          tagColor: '#2563eb',
+          speed: '280 t/s',
+          desc: 'Modelo probado y confiable. Buen equilibrio calidad/velocidad.',
+        },
+        {
+          value: 'llama-3.1-8b-instant',
+          name: 'Llama 3.1 8B',
+          tag: 'ECONÓMICO',
+          tagColor: '#64748b',
+          speed: '560 t/s',
+          desc: 'Ultra rápido y de bajo costo. Para negocios con alto volumen.',
+        },
+      ],
+    },
+    {
+      label: '🔬 Preview (nuevos)',
+      models: [
+        {
+          value: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          name: 'Llama 4 Scout 17B',
+          tag: 'NUEVO',
+          tagColor: '#ea580c',
+          speed: '750 t/s',
+          desc: 'Llama 4 con soporte de imágenes. Muy rápido.',
+        },
+        {
+          value: 'qwen/qwen3-32b',
+          name: 'Qwen3 32B',
+          tag: 'PREVIEW',
+          tagColor: '#0891b2',
+          speed: '400 t/s',
+          desc: 'Alibaba Cloud. Excelente en idiomas y razonamiento.',
+        },
+        {
+          value: 'moonshotai/kimi-k2-instruct-0905',
+          name: 'Kimi K2',
+          tag: 'PREVIEW',
+          tagColor: '#0891b2',
+          speed: '200 t/s',
+          desc: 'Contexto gigante de 262K tokens. Conversaciones muy largas.',
+        },
+      ],
+    },
   ];
 
   if (loading) return (
@@ -80,20 +143,18 @@ export default function AiConfig() {
               <p className="text-xs text-slate-400">Obtén tu key gratis en console.groq.com</p>
             </div>
           </div>
-          <div className="relative">
-            <input
-              type="password"
-              value={form.groqApiKey}
-              onChange={(e) => setForm({ ...form, groqApiKey: e.target.value })}
-              placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition font-mono text-sm"
-            />
-          </div>
+          <input
+            type="password"
+            value={form.groqApiKey}
+            onChange={(e) => setForm({ ...form, groqApiKey: e.target.value })}
+            placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition font-mono text-sm"
+          />
         </div>
 
         {/* Modelo */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-5">
             <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9333ea" strokeWidth="2">
                 <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/>
@@ -101,27 +162,56 @@ export default function AiConfig() {
             </div>
             <div>
               <h2 className="font-semibold text-slate-800">Modelo de IA</h2>
-              <p className="text-xs text-slate-400">Elige el modelo según velocidad vs inteligencia</p>
+              <p className="text-xs text-slate-400">Elige según velocidad vs inteligencia — todos gratis en Groq</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {models.map((m) => (
-              <button
-                key={m.value}
-                type="button"
-                onClick={() => setForm({ ...form, model: m.value })}
-                className={`p-4 rounded-xl border-2 text-left transition ${
-                  form.model === m.value
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-100 hover:border-slate-200'
-                }`}
-              >
-                <p className={`font-medium text-sm ${form.model === m.value ? 'text-blue-700' : 'text-slate-700'}`}>
-                  {m.label.split('—')[0]}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">{m.label.split('—')[1]}</p>
-              </button>
+
+          <div className="space-y-4">
+            {modelGroups.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {group.models.map((m) => {
+                    const selected = form.model === m.value;
+                    return (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => setForm({ ...form, model: m.value })}
+                        className={`p-3.5 rounded-xl border-2 text-left transition ${
+                          selected
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-slate-100 hover:border-slate-200 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`font-semibold text-sm ${selected ? 'text-blue-700' : 'text-slate-700'}`}>
+                            {m.name}
+                          </span>
+                          <span
+                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white"
+                            style={{ backgroundColor: m.tagColor }}
+                          >
+                            {m.tag}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 leading-tight">{m.desc}</p>
+                        <p className={`text-xs font-medium mt-1.5 ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
+                          {m.speed}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
+          </div>
+
+          {/* Modelo seleccionado */}
+          <div className="mt-4 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+            <p className="text-xs text-slate-400">
+              Modelo seleccionado: <span className="font-mono text-slate-600 font-medium">{form.model}</span>
+            </p>
           </div>
         </div>
 
@@ -139,7 +229,6 @@ export default function AiConfig() {
             </div>
           </div>
 
-          {/* Prompt sugerido */}
           <button
             type="button"
             onClick={() => setForm({ ...form, systemPrompt: `Eres un asistente de ventas amable y profesional de esta tienda. Tu objetivo es ayudar a los clientes con información sobre productos, precios y pedidos. Siempre responde en español, de forma breve y clara. Si el cliente quiere hacer un pedido, pide su nombre, dirección y producto. Si no puedes resolver algo, ofrece conectarlos con un asesor humano.` })}
@@ -176,7 +265,6 @@ export default function AiConfig() {
           </div>
 
           <div className="space-y-5">
-            {/* Temperatura */}
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-medium text-slate-700">Temperatura</label>
@@ -195,7 +283,6 @@ export default function AiConfig() {
               </div>
             </div>
 
-            {/* Max tokens */}
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm font-medium text-slate-700">Máximo de palabras</label>

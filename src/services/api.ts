@@ -29,7 +29,7 @@ export const login = (email: string, password: string) =>
 
 // Dashboard
 export const getDashboard = (storeId: string) =>
-  api.get(`/analytics/dashboard/${storeId}`);
+  api.get(`/dashboard/${storeId}`);
 
 // Conversations
 export const getConversations = (storeId: string) =>
@@ -42,13 +42,13 @@ export const getPendingHuman = (storeId: string) =>
   api.get(`/conversations/store/${storeId}/pending-human`);
 
 export const takeoverConversation = (id: string) =>
-  api.post(`/conversations/${id}/takeover`);
+  api.patch(`/conversations/${id}/takeover`);
 
 export const releaseConversation = (id: string) =>
-  api.post(`/conversations/${id}/release`);
+  api.patch(`/conversations/${id}/release`);
 
 export const closeConversation = (id: string) =>
-  api.post(`/conversations/${id}/close`);
+  api.patch(`/conversations/${id}/close`);
 
 // Messages
 export const getMessages = (conversationId: string) =>
@@ -68,6 +68,9 @@ export const getOrders = (storeId: string) =>
 // Customers
 export const getCustomers = (storeId: string) =>
   api.get(`/customers/store/${storeId}`);
+
+export const updateCustomer = (id: string, data: { name?: string; city?: string }) =>
+  api.patch(`/customers/${id}`, data);
 
 // Campaigns
 export const getCampaigns = (storeId: string) =>

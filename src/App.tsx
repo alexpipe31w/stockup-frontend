@@ -4,6 +4,12 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AiConfig from './pages/AiConfig';
+import Conversations from './pages/Conversations';
+import Customers from './pages/Customers';
+import Orders from './pages/Orders';
+import Products from './pages/Products';
+import Campaigns from './pages/Campaigns';
+import Analytics from './pages/Analytics';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
@@ -18,6 +24,30 @@ function Layout({ children }: { children: React.ReactElement }) {
     {
       to: '/dashboard', label: 'Dashboard',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    },
+    {
+      to: '/conversations', label: 'Conversaciones',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    },
+    {
+      to: '/customers', label: 'Clientes',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    },
+    {
+      to: '/orders', label: 'Órdenes',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    },
+    {
+      to: '/products', label: 'Productos',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+    },
+    {
+      to: '/campaigns', label: 'Campañas',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    },
+    {
+      to: '/analytics', label: 'Analíticas',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     },
     {
       to: '/ai-config', label: 'Configurar IA',
@@ -93,21 +123,17 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={
-            <PrivateRoute>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </PrivateRoute>
-          } />
-          <Route path="/ai-config" element={
-            <PrivateRoute>
-              <Layout>
-                <AiConfig />
-              </Layout>
-            </PrivateRoute>
-          } />
-          <Route path="*" element={<Navigate to="/login" />} />
+
+          <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
+          <Route path="/conversations" element={<PrivateRoute><Layout><Conversations /></Layout></PrivateRoute>} />
+          <Route path="/customers" element={<PrivateRoute><Layout><Customers /></Layout></PrivateRoute>} />
+          <Route path="/orders" element={<PrivateRoute><Layout><Orders /></Layout></PrivateRoute>} />
+          <Route path="/products" element={<PrivateRoute><Layout><Products /></Layout></PrivateRoute>} />
+          <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
+          <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
+          <Route path="/ai-config" element={<PrivateRoute><Layout><AiConfig /></Layout></PrivateRoute>} />
+
+          <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
