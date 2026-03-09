@@ -27,10 +27,19 @@ function AdminRoute({ children }: { children: React.ReactElement }) {
   return children;
 }
 
+// Permite admin, superadmin y agent
+function AgentRoute({ children }: { children: React.ReactElement }) {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  if (user?.role !== 'admin' && user?.role !== 'superadmin' && user?.role !== 'agent') return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 function Layout({ children }: { children: React.ReactElement }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const canConfigAI = isAdmin || user?.role === 'agent';
 
   const navItems = [
     {
@@ -86,7 +95,12 @@ function Layout({ children }: { children: React.ReactElement }) {
     },
   ];
 
-  const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems;
+  // agent solo ve ai-config, no usuarios
+  const allNavItems = isAdmin
+    ? [...navItems, ...adminNavItems]
+    : canConfigAI
+    ? [...navItems, adminNavItems[0]]
+    : navItems;
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -160,7 +174,7 @@ function App() {
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
           <Route path="/blocked" element={<PrivateRoute><Layout><Blocked /></Layout></PrivateRoute>} />
           {/* Rutas solo admin */}
-          <Route path="/ai-config" element={<AdminRoute><Layout><AiConfig /></Layout></AdminRoute>} />
+          <Route path="/ai-config" element={<AgentRoute><Layout><AiConfig /></Layout></AgentRoute>} />
           <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
           {/* Ruta por defecto — redirige a login si no autenticado */}
           <Route path="*" element={<Navigate to="/login" replace />} />
