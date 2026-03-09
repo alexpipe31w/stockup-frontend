@@ -42,7 +42,6 @@ export default function Users() {
         name: form.name,
         email: form.email,
         password: form.password,
-        role: form.role,
         storeName: form.storeName,
         storePhone: form.storePhone,
       });

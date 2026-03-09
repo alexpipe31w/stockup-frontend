@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getProducts } from '../services/api';
-import api from '../services/api';
+import {
+  getProducts, createProduct, updateProduct, deleteProduct,
+  addVariant, updateVariant, deleteVariant
+} from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
@@ -231,15 +233,19 @@ function ProductModal({ storeId, product, onClose, onSaved }: {
     if (!form.salePrice || !form.costPrice) return setError('Los precios son requeridos');
     setSaving(true); setError('');
     try {
-      const payload = {
-        storeId, sku: form.sku.trim() || undefined, name: form.name.trim(),
-        costPrice: Number(form.costPrice), salePrice: Number(form.salePrice),
-        stock: Number(form.stock) || 0, description: form.description.trim() || undefined,
-        imageUrl: form.imageUrl.trim() || undefined, hasShipping: form.hasShipping,
-      };
-      const res = isEdit
-        ? await api.patch(`/products/${product!.productId}`, payload)
-        : await api.post('/products', payload);
+        const payload = {
+          sku: form.sku.trim() || undefined,
+          name: form.name.trim(),
+          costPrice: Number(form.costPrice),
+          salePrice: Number(form.salePrice),
+          stock: Number(form.stock) || 0,
+          description: form.description.trim() || undefined,
+          imageUrl: form.imageUrl.trim() || undefined,
+          hasShipping: form.hasShipping,
+        };
+        const res = isEdit
+          ? await updateProduct(product!.productId, payload)
+          : await createProduct(payload);
       onSaved({ ...res.data, variants });
       onClose();
     } catch { setError('Error al guardar. Verifica los datos.'); }
@@ -250,7 +256,7 @@ function ProductModal({ storeId, product, onClose, onSaved }: {
     if (!isEdit || !newVariant.name.trim() || !newVariant.salePrice || !newVariant.costPrice) return;
     setAddingVariant(true);
     try {
-      const res = await api.post(`/products/${product!.productId}/variants`, {
+      const res = await addVariant(product!.productId, {
         name: newVariant.name.trim(), sku: newVariant.sku.trim() || undefined,
         costPrice: Number(newVariant.costPrice), salePrice: Number(newVariant.salePrice),
         stock: Number(newVariant.stock) || 0,
@@ -261,7 +267,7 @@ function ProductModal({ storeId, product, onClose, onSaved }: {
   };
 
   const handleUpdateVariant = async (variantId: string, data: any) => {
-    const res = await api.patch(`/products/variants/${variantId}`, {
+    const res = await updateVariant(variantId, {
       ...data,
       costPrice: data.costPrice ? Number(data.costPrice) : undefined,
       salePrice: data.salePrice ? Number(data.salePrice) : undefined,
@@ -271,7 +277,7 @@ function ProductModal({ storeId, product, onClose, onSaved }: {
   };
 
   const handleRemoveVariant = async (variantId: string) => {
-    await api.delete(`/products/variants/${variantId}`);
+    await deleteVariant(variantId);
     setVariants(v => v.filter(x => x.variantId !== variantId));
   };
 
@@ -465,7 +471,7 @@ export default function Products() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-    await api.delete(`/products/${deleteTarget.productId}`);
+    await deleteProduct(deleteTarget.productId);
     setProducts(prev => prev.filter(p => p.productId !== deleteTarget.productId));
     setDeleteTarget(null);
     setDeleting(false);

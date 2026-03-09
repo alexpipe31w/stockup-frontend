@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api from '../services/api';
+import { getAiConfig, saveAiConfig } from '../services/api';
+// import api eliminado — ya no se usa directo
 
 export default function AiConfig() {
   const { storeId } = useAuth();
@@ -9,21 +10,21 @@ export default function AiConfig() {
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
     groqApiKey: '',
-    model: 'openai/gpt-oss-20b', // ✅ default al más rápido y actualizado
+    model: 'openai/gpt-oss-20b',
     systemPrompt: '',
     temperature: 0.7,
     maxTokens: 500,
   });
 
   useEffect(() => {
-    api.get(`/ai-config/${storeId}`)
+    getAiConfig(storeId)
       .then((res) => {
         if (res.data) setForm({
-          groqApiKey: res.data.groqApiKey ?? '',
-          model: res.data.model ?? 'openai/gpt-oss-20b',
+          groqApiKey:   res.data.groqApiKey   ?? '',
+          model:        res.data.model        ?? 'openai/gpt-oss-20b',
           systemPrompt: res.data.systemPrompt ?? '',
-          temperature: res.data.temperature ?? 0.7,
-          maxTokens: res.data.maxTokens ?? 500,
+          temperature:  res.data.temperature  ?? 0.7,
+          maxTokens:    res.data.maxTokens    ?? 500,
         });
       })
       .catch(() => {})
@@ -34,7 +35,7 @@ export default function AiConfig() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/ai-config', { storeId, ...form });
+      await saveAiConfig(form); // storeId lo toma el backend del JWT
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } finally {

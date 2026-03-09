@@ -53,12 +53,11 @@ export default function Services() {
     if (!form.name) return;
     setSaving(true);
     try {
-      const payload = {
-        name: form.name,
-        description: form.description,
-        price: form.price ? Number(form.price) : null,
-        storeId,
-      };
+        const payload = {
+          name: form.name,
+          description: form.description || undefined,
+          price: form.price ? Number(form.price) : undefined,
+        };
       if (editing) {
         await updateService(editing.serviceId, payload);
       } else {
@@ -70,17 +69,19 @@ export default function Services() {
       setSaving(false);
     }
   };
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar este servicio?')) return;
-    setDeletingId(id);
-    try {
-      await deleteService(id);
-      await load();
-    } catch {} finally {
-      setDeletingId(null);
-    }
-  };
+    const handleDelete = async () => {
+      if (!confirmDeleteId) return;
+      setDeletingId(confirmDeleteId);
+      try {
+        await deleteService(confirmDeleteId);
+        await load();
+      } catch {} finally {
+        setDeletingId(null);
+        setConfirmDeleteId(null);
+      }
+    };
 
   return (
     <div className="p-8">
@@ -159,7 +160,7 @@ export default function Services() {
                   Editar
                 </button>
                 <button
-                  onClick={() => handleDelete(s.serviceId)}
+                  onClick={() => setConfirmDeleteId(s.serviceId)}
                   disabled={deletingId === s.serviceId}
                   className="flex-1 py-2 rounded-lg border border-red-100 text-red-400 text-sm font-medium hover:bg-red-50 transition disabled:opacity-50"
                 >
@@ -240,6 +241,26 @@ export default function Services() {
                 style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
               >
                 {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+            {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-slate-800 mb-2">¿Eliminar servicio?</h3>
+            <p className="text-sm text-slate-500 mb-5">
+              Esta acción desactivará el servicio permanentemente.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                Cancelar
+              </button>
+              <button onClick={handleDelete} disabled={!!deletingId}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition disabled:opacity-50">
+                {deletingId ? 'Eliminando...' : 'Eliminar'}
               </button>
             </div>
           </div>

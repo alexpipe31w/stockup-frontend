@@ -96,7 +96,6 @@ export default function Conversations() {
     try {
       await sendMessage({
         conversationId: selected.conversationId,
-        storeId,
         content: text.trim(),
         sender: 'store',
         isAiResponse: false,

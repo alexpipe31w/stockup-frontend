@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getCampaigns, createCampaign } from '../services/api';
-import api from '../services/api';
+import { getCampaigns, createCampaign, sendCampaign } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PlusIcon = () => (
@@ -65,7 +64,7 @@ function CampaignModal({
     setSaving(true);
     setError('');
     try {
-      const res = await createCampaign({ storeId, name: name.trim(), message: message.trim() });
+      const res = await createCampaign({ name: name.trim(), message: message.trim() });
       onSaved(res.data);
       onClose();
     } catch {
@@ -151,7 +150,7 @@ export default function Campaigns() {
   const handleSend = async (campaign: Campaign) => {
     setSending(campaign.campaignId);
     try {
-      await api.post(`/campaigns/${campaign.campaignId}/send`);
+      await sendCampaign(campaign.campaignId);
       setCampaigns((prev) =>
         prev.map((c) => c.campaignId === campaign.campaignId ? { ...c, status: 'sent' } : c)
       );

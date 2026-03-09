@@ -17,13 +17,13 @@ import Blocked from './pages/Blocked';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 }
 
 function AdminRoute({ children }: { children: React.ReactElement }) {
   const { token, user } = useAuth();
-  if (!token) return <Navigate to="/login" />;
-  if (user?.role !== 'admin' && user?.role !== 'superadmin') return <Navigate to="/dashboard" />;
+  if (!token) return <Navigate to="/login" replace />;
+  if (user?.role !== 'admin' && user?.role !== 'superadmin') return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -73,13 +73,13 @@ function Layout({ children }: { children: React.ReactElement }) {
       to: '/blocked', label: 'Excluidos',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
     },
+  ];
+
+  const adminNavItems = [
     {
       to: '/ai-config', label: 'Configurar IA',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>
     },
-  ];
-
-  const adminNavItems = [
     {
       to: '/users', label: 'Usuarios',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -159,9 +159,11 @@ function App() {
           <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
           <Route path="/blocked" element={<PrivateRoute><Layout><Blocked /></Layout></PrivateRoute>} />
+          {/* Rutas solo admin */}
+          <Route path="/ai-config" element={<AdminRoute><Layout><AiConfig /></Layout></AdminRoute>} />
           <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
-          <Route path="/ai-config" element={<PrivateRoute><Layout><AiConfig /></Layout></PrivateRoute>} />
-          <Route path="*" element={<Navigate to="/dashboard" />} />
+          {/* Ruta por defecto — redirige a login si no autenticado */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
