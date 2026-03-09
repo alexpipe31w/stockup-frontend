@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders } from '../services/api';
-import api from '../services/api';
+import { getOrders, updateOrderStatus } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -229,7 +228,7 @@ export default function Orders() {
   useEffect(() => { load(); }, [load]);
 
   const handleStatusChange = async (orderId: string, status: string) => {
-    await api.patch(`/orders/${orderId}/status`, { status });
+    await updateOrderStatus(orderId, status);
     setOrders((prev) =>
       prev.map((o) => o.orderId === orderId ? { ...o, status } : o)
     );
