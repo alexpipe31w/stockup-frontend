@@ -31,7 +31,6 @@ export const login = (email: string, password: string) =>
 export const registerUser = (data: {
   name: string; email: string; password: string;
   storeName?: string; storePhone?: string;
-  // role eliminado — siempre lo asigna el backend
 }) => api.post('/auth/register', data);
 
 // ── Users ─────────────────────────────────────────────────────────────────
@@ -48,7 +47,6 @@ export const getConversations = (storeId: string) =>
 export const getConversation = (id: string) =>
   api.get(`/conversations/${id}`);
 
-// Filtrar pending_human en el frontend desde getConversations — el endpoint no existe en backend
 export const getPendingHuman = (storeId: string) =>
   api.get(`/conversations/store/${storeId}`);
 
@@ -74,61 +72,148 @@ export const sendMessage = (data: {
   type?: 'text' | 'image' | 'audio';
   sender?: 'store' | 'customer';
   isAiResponse?: boolean;
-  // storeId NO se manda — el backend lo toma del JWT
 }) => api.post('/messages', data);
 
+// ── Categories ────────────────────────────────────────────────────────────
+export const getCategories = () =>
+  api.get('/products/categories');
+
+export const createCategory = (name: string) =>
+  api.post('/products/categories', { name });
+
+export const deleteCategory = (categoryId: string) =>
+  api.delete(`/products/categories/${categoryId}`);
+
 // ── Products ──────────────────────────────────────────────────────────────
-export const getProducts = (storeId: string) =>
-  api.get(`/products/store/${storeId}`);
+export const getProducts = () =>
+  api.get('/products');
 
 export const createProduct = (data: {
-  name: string; sku?: string;
-  costPrice: number; salePrice: number;
-  stock?: number; description?: string;
-  imageUrl?: string; hasShipping?: boolean;
-  // storeId NO se manda — el backend lo toma del JWT
+  name: string;
+  sku?: string;
+  categoryId?: string;
+  salePrice: number;
+  costPrice?: number;
+  stock?: number;
+  hasVariants?: boolean;
+  description?: string;
+  imageUrl?: string;
+  hasShipping?: boolean;
+  weight?: number;
+  shippingStandard?: number;
+  shippingExpress?: number;
+  variants?: VariantPayload[];
 }) => api.post('/products', data);
 
 export const updateProduct = (id: string, data: {
-  name?: string; sku?: string;
-  costPrice?: number; salePrice?: number;
-  stock?: number; description?: string;
-  imageUrl?: string; hasShipping?: boolean;
+  name?: string;
+  sku?: string;
+  categoryId?: string;
+  salePrice?: number;
+  costPrice?: number;
+  stock?: number;
+  hasVariants?: boolean;
+  description?: string;
+  imageUrl?: string;
+  hasShipping?: boolean;
+  weight?: number;
+  shippingStandard?: number;
+  shippingExpress?: number;
+  isActive?: boolean;
+  variants?: VariantUpdatePayload[];
 }) => api.patch(`/products/${id}`, data);
 
 export const deleteProduct = (id: string) => api.delete(`/products/${id}`);
 
-// Variantes
-export const addVariant = (productId: string, data: {
-  name: string; sku?: string;
-  costPrice: number; salePrice: number; stock?: number;
-}) => api.post(`/products/${productId}/variants`, data);
+// ── Variantes de producto ─────────────────────────────────────────────────
+export interface VariantPayload {
+  name: string;
+  sku?: string;
+  salePrice?: number;
+  costPrice?: number;
+  stock?: number;
+  attributes?: Record<string, string>;
+  imageUrl?: string;
+  weight?: number;
+  sortOrder?: number;
+  isActive?: boolean;
+}
 
-export const updateVariant = (variantId: string, data: {
-  name?: string; sku?: string;
-  costPrice?: number; salePrice?: number;
-  stock?: number; isActive?: boolean;
-}) => api.patch(`/products/variants/${variantId}`, data);
+export interface VariantUpdatePayload extends VariantPayload {
+  variantId?: string;
+}
+
+export const addVariant = (productId: string, data: VariantPayload) =>
+  api.post(`/products/${productId}/variants`, data);
+
+export const updateVariant = (variantId: string, data: Partial<VariantUpdatePayload>) =>
+  api.patch(`/products/variants/${variantId}`, data);
 
 export const deleteVariant = (variantId: string) =>
   api.delete(`/products/variants/${variantId}`);
 
 // ── Services ──────────────────────────────────────────────────────────────
-export const getServices = (storeId: string) =>
-  api.get(`/services/store/${storeId}`);
+export type PriceType = 'FIXED' | 'PER_HOUR' | 'PER_DAY' | 'PER_UNIT' | 'VARIABLE';
+
+export interface ServiceVariantPayload {
+  variantId?: string;
+  name: string;
+  description?: string;
+  priceOverride?: number;
+  priceModifier?: number;
+  estimatedMinutes?: number;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export const getServices = () =>
+  api.get('/services');
 
 export const createService = (data: {
-  name: string; description?: string;
-  price?: number; duration?: number;
-  // storeId NO se manda — el backend lo toma del JWT
+  name: string;
+  description?: string;
+  category?: string;
+  imageUrl?: string;
+  priceType?: PriceType;
+  basePrice?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  costPrice?: number;
+  unitLabel?: string;
+  hasVariants?: boolean;
+  estimatedMinutes?: number;
+  customFields?: Record<string, any>;
+  variants?: ServiceVariantPayload[];
 }) => api.post('/services', data);
 
 export const updateService = (id: string, data: {
-  name?: string; description?: string;
-  price?: number; duration?: number; isActive?: boolean;
+  name?: string;
+  description?: string;
+  category?: string;
+  imageUrl?: string;
+  priceType?: PriceType;
+  basePrice?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  costPrice?: number;
+  unitLabel?: string;
+  hasVariants?: boolean;
+  estimatedMinutes?: number;
+  customFields?: Record<string, any>;
+  isActive?: boolean;
+  variants?: ServiceVariantPayload[];
 }) => api.patch(`/services/${id}`, data);
 
 export const deleteService = (id: string) => api.delete(`/services/${id}`);
+
+export const addServiceVariant = (serviceId: string, data: ServiceVariantPayload) =>
+  api.post(`/services/${serviceId}/variants`, data);
+
+export const updateServiceVariant = (variantId: string, data: Partial<ServiceVariantPayload>) =>
+  api.patch(`/services/variants/${variantId}`, data);
+
+export const deleteServiceVariant = (variantId: string) =>
+  api.delete(`/services/variants/${variantId}`);
 
 // ── Orders ────────────────────────────────────────────────────────────────
 export const getOrders = (storeId: string) =>
@@ -150,11 +235,64 @@ export const getCampaigns = (storeId: string) =>
 
 export const createCampaign = (data: {
   name: string; message: string; scheduledAt?: string;
-  // storeId NO se manda — el backend lo toma del JWT
 }) => api.post('/campaigns', data);
 
 export const sendCampaign = (id: string) =>
   api.post(`/campaigns/${id}/send`);
+
+// ── Appointments ──────────────────────────────────────────────────────────
+export const getAppointments = (params?: {
+  status?: string;
+  type?: string;
+  from?: string;
+  to?: string;
+  serviceId?: string;
+  priority?: string;
+}) => api.get('/appointments', { params });
+
+export const getAppointmentStats = () =>
+  api.get('/appointments/stats');
+
+export const getAppointment = (id: string) =>
+  api.get(`/appointments/${id}`);
+
+export const getAppointmentTimeline = (id: string) =>
+  api.get(`/appointments/${id}/timeline`);
+
+export const createAppointment = (data: {
+  customerId: string;
+  serviceId?: string;
+  serviceVariantId?: string;
+  type?: string;
+  priority?: string;
+  source?: string;
+  scheduledAt: string;
+  endsAt?: string;
+  durationMinutes?: number;
+  description?: string;
+  address?: string;
+  notes?: string;
+  internalNotes?: string;
+  agreedPrice?: number;
+}) => api.post('/appointments', data);
+
+export const updateAppointment = (id: string, data: {
+  status?: string;
+  priority?: string;
+  type?: string;
+  scheduledAt?: string;
+  endsAt?: string;
+  durationMinutes?: number;
+  description?: string;
+  address?: string;
+  notes?: string;
+  internalNotes?: string;
+  agreedPrice?: number;
+  cancelReason?: string;
+}) => api.patch(`/appointments/${id}`, data);
+
+export const deleteAppointment = (id: string) =>
+  api.delete(`/appointments/${id}`);
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────
 export const connectWhatsApp = (storeId: string) =>

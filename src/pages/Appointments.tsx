@@ -1,79 +1,158 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
+import {
+  getAppointments, getAppointmentStats,
+  updateAppointment, getAppointmentTimeline,
+} from '../services/api';
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
+type AppointmentPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+type AppointmentSource  = 'AI' | 'MANUAL' | 'WHATSAPP' | 'API';
 
 interface Customer {
   customerId: string;
-  name: string | null;
-  phone: string;
-  cedula: string | null;
-  city: string | null;
+  name:       string | null;
+  phone:      string;
+  cedula:     string | null;
+  city:       string | null;
+}
+
+interface ServiceInfo  { name: string; }
+interface VariantInfo  { name: string; }
+
+interface TimelineEntry {
+  timelineId:     string;
+  action:         string;
+  previousStatus: AppointmentStatus | null;
+  newStatus:      AppointmentStatus | null;
+  note:           string | null;
+  isPublic:       boolean;
+  performedById:  string | null;
+  createdAt:      string;
 }
 
 interface Appointment {
-  appointmentId: string;
-  type: 'cita' | 'visita_tecnica' | 'otro';
-  scheduledAt: string;
-  description: string | null;
-  address: string | null;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  notes: string | null;
-  customer: Customer;
-  createdAt: string;
+  appointmentId:    string;
+  type:             string;
+  status:           AppointmentStatus;
+  priority:         AppointmentPriority;
+  source:           AppointmentSource;
+  scheduledAt:      string;
+  endsAt:           string | null;
+  durationMinutes:  number | null;
+  description:      string | null;
+  address:          string | null;
+  notes:            string | null;
+  internalNotes:    string | null;
+  agreedPrice:      string | null;
+  confirmedAt:      string | null;
+  completedAt:      string | null;
+  cancelledAt:      string | null;
+  cancelReason:     string | null;
+  createdAt:        string;
+  customer:         Customer;
+  service:          ServiceInfo | null;
+  serviceVariant:   VariantInfo | null;
+}
+
+interface Stats {
+  total:          number;
+  pending:        number;
+  confirmed:      number;
+  todayCount:     number;
+  upcomingWeek:   number;
+  inProgress:     number;
+  completedTotal: number;
+  cancelledTotal: number;
+  noShowTotal:    number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
-  cita:          { label: 'Cita',          icon: '📅' },
-  visita_tecnica:{ label: 'Visita técnica', icon: '🔧' },
-  otro:          { label: 'Agendamiento',  icon: '📌' },
+const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; bg: string; tailwind: string }> = {
+  PENDING:     { label: 'Pendiente',    color: '#b45309', bg: '#fef3c7', tailwind: 'bg-amber-50 text-amber-700' },
+  CONFIRMED:   { label: 'Confirmada',   color: '#1d4ed8', bg: '#dbeafe', tailwind: 'bg-blue-50 text-blue-700' },
+  IN_PROGRESS: { label: 'En curso',     color: '#7c3aed', bg: '#ede9fe', tailwind: 'bg-purple-50 text-purple-700' },
+  COMPLETED:   { label: 'Completada',   color: '#15803d', bg: '#dcfce7', tailwind: 'bg-green-50 text-green-700' },
+  CANCELLED:   { label: 'Cancelada',    color: '#b91c1c', bg: '#fee2e2', tailwind: 'bg-red-50 text-red-700' },
+  NO_SHOW:     { label: 'No se presentó', color: '#6b7280', bg: '#f3f4f6', tailwind: 'bg-slate-100 text-slate-500' },
+  RESCHEDULED: { label: 'Reagendada',   color: '#0e7490', bg: '#ecfeff', tailwind: 'bg-cyan-50 text-cyan-700' },
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pending:   { label: 'Pendiente',  color: '#b45309', bg: '#fef3c7' },
-  confirmed: { label: 'Confirmada', color: '#1d4ed8', bg: '#dbeafe' },
-  completed: { label: 'Completada', color: '#15803d', bg: '#dcfce7' },
-  cancelled: { label: 'Cancelada',  color: '#b91c1c', bg: '#fee2e2' },
+const PRIORITY_CONFIG: Record<AppointmentPriority, { label: string; tailwind: string; dot: string }> = {
+  LOW:    { label: 'Baja',     tailwind: 'text-slate-400', dot: 'bg-slate-300' },
+  NORMAL: { label: 'Normal',   tailwind: 'text-slate-500', dot: 'bg-slate-400' },
+  HIGH:   { label: 'Alta',     tailwind: 'text-orange-500', dot: 'bg-orange-400' },
+  URGENT: { label: 'Urgente',  tailwind: 'text-red-600', dot: 'bg-red-500' },
 };
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
-  });
-}
+const SOURCE_LABELS: Record<AppointmentSource, string> = {
+  AI:       '🤖 IA',
+  MANUAL:   '👤 Manual',
+  WHATSAPP: '💬 WhatsApp',
+  API:      '🔌 API',
+};
 
-function formatDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    timeZone: 'America/Bogota',
-  });
-}
+// Transiciones de estado válidas
+const VALID_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
+  PENDING:     ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED:   ['IN_PROGRESS', 'CANCELLED', 'NO_SHOW', 'RESCHEDULED'],
+  IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
+  COMPLETED:   [],
+  CANCELLED:   [],
+  NO_SHOW:     [],
+  RESCHEDULED: ['CONFIRMED', 'CANCELLED'],
+};
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('es-CO', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
-  });
-}
+const fmt = (n: string | number) =>
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n));
 
-// ─── Componentes pequeños ─────────────────────────────────────────────────────
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('es-CO', {
+  weekday: 'short', day: 'numeric', month: 'short',
+  timeZone: 'America/Bogota',
+});
 
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, color: '#374151', bg: '#f3f4f6' };
+const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('es-CO', {
+  hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+});
+
+const fmtDateTime = (iso: string) => new Date(iso).toLocaleDateString('es-CO', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota',
+});
+
+const fmtMinutes = (mins: number) => {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? `${h}h${m > 0 ? ` ${m}min` : ''}` : `${m}min`;
+};
+
+const isToday = (iso: string) => {
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+};
+
+const isPast = (iso: string) => new Date(iso) < new Date();
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: AppointmentStatus }) {
+  const cfg = STATUS_CONFIG[status];
   return (
-    <span style={{
-      display: 'inline-block',
-      padding: '2px 10px',
-      borderRadius: 9999,
-      fontSize: 12,
-      fontWeight: 500,
-      color: cfg.color,
-      background: cfg.bg,
-    }}>
+    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.tailwind}`}>
       {cfg.label}
     </span>
+  );
+}
+
+function PriorityDot({ priority }: { priority: AppointmentPriority }) {
+  const cfg = PRIORITY_CONFIG[priority];
+  if (priority === 'NORMAL') return null;
+  return (
+    <span title={cfg.label} className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
   );
 }
 
@@ -81,48 +160,304 @@ function StatsCard({ icon, label, value, color }: {
   icon: string; label: string; value: number; color: string;
 }) {
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #e5e7eb',
-      borderRadius: 12,
-      padding: '16px 20px',
-      flex: 1,
-      minWidth: 130,
-    }}>
-      <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
-      <div style={{ fontSize: 28, fontWeight: 600, color }}>{value}</div>
-      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{label}</div>
+    <div className="bg-white border border-slate-100 rounded-2xl px-4 py-3 flex-1 min-w-[110px] shadow-sm">
+      <div className="text-xl mb-1">{icon}</div>
+      <div className={`text-2xl font-bold ${color}`}>{value}</div>
+      <div className="text-xs text-slate-400 mt-0.5">{label}</div>
     </div>
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// ─── Timeline Panel ───────────────────────────────────────────────────────────
+
+function TimelinePanel({ appointmentId, onClose }: { appointmentId: string; onClose: () => void }) {
+  const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAppointmentTimeline(appointmentId)
+      .then(res => setEntries(res.data))
+      .finally(() => setLoading(false));
+  }, [appointmentId]);
+
+  const ACTION_ICONS: Record<string, string> = {
+    CREATED:       '✨',
+    CONFIRMED:     '✅',
+    IN_PROGRESS:   '⚙️',
+    COMPLETED:     '🎉',
+    CANCELLED:     '❌',
+    NO_SHOW:       '👻',
+    RESCHEDULED:   '🔄',
+    NOTE_ADDED:    '📝',
+    UPDATED:       '✏️',
+    REMINDER_SENT: '🔔',
+  };
+
+  return (
+    <div className="mt-4 border-t border-slate-100 pt-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Historial</p>
+        <button onClick={onClose} className="text-xs text-slate-400 hover:text-slate-600">Cerrar</button>
+      </div>
+      {loading ? (
+        <p className="text-xs text-slate-400 text-center py-2">Cargando...</p>
+      ) : entries.length === 0 ? (
+        <p className="text-xs text-slate-400 text-center py-2">Sin historial aún</p>
+      ) : (
+        <div className="space-y-3">
+          {entries.map((e, i) => (
+            <div key={e.timelineId} className="flex gap-2.5">
+              <div className="flex flex-col items-center">
+                <span className="text-base leading-none">{ACTION_ICONS[e.action] ?? '•'}</span>
+                {i < entries.length - 1 && <div className="w-px flex-1 bg-slate-200 mt-1" />}
+              </div>
+              <div className="flex-1 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-700">
+                    {e.newStatus ? STATUS_CONFIG[e.newStatus]?.label : e.action}
+                  </span>
+                  {!e.isPublic && (
+                    <span className="text-xs bg-slate-100 text-slate-400 px-1.5 rounded">Solo admin</span>
+                  )}
+                </div>
+                {e.note && <p className="text-xs text-slate-500 mt-0.5">{e.note}</p>}
+                <p className="text-xs text-slate-400 mt-0.5">{fmtDateTime(e.createdAt)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Cancel Modal ─────────────────────────────────────────────────────────────
+
+function CancelModal({ onConfirm, onClose, loading }: {
+  onConfirm: (reason: string) => void;
+  onClose:   () => void;
+  loading:   boolean;
+}) {
+  const [reason, setReason] = useState('');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+      <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+        <h3 className="font-bold text-slate-800 mb-2">Cancelar cita</h3>
+        <p className="text-sm text-slate-500 mb-3">Indica el motivo de cancelación (requerido).</p>
+        <textarea value={reason} onChange={e => setReason(e.target.value)}
+          rows={3} placeholder="Ej: El cliente canceló, no hay disponibilidad..."
+          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-500 transition mb-4" />
+        <div className="flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+            Cancelar
+          </button>
+          <button onClick={() => onConfirm(reason)} disabled={!reason.trim() || loading}
+            className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition">
+            {loading ? 'Guardando...' : 'Confirmar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Detail Panel ─────────────────────────────────────────────────────────────
+
+function DetailPanel({ appt, onUpdate, onClose }: {
+  appt:     Appointment;
+  onUpdate: (id: string, data: any) => Promise<void>;
+  onClose:  () => void;
+}) {
+  const [updating,      setUpdating]      = useState(false);
+  const [showTimeline,  setShowTimeline]  = useState(false);
+  const [showCancel,    setShowCancel]    = useState(false);
+  const transitions = VALID_TRANSITIONS[appt.status] ?? [];
+
+  const handleStatus = async (newStatus: AppointmentStatus, cancelReason?: string) => {
+    if (newStatus === 'CANCELLED' && !cancelReason) { setShowCancel(true); return; }
+    setUpdating(true);
+    await onUpdate(appt.appointmentId, {
+      status: newStatus,
+      ...(cancelReason ? { cancelReason } : {}),
+    });
+    setUpdating(false);
+    setShowCancel(false);
+  };
+
+  const internalSection = appt.internalNotes || appt.cancelReason;
+
+  return (
+    <>
+      <div className="w-80 bg-white border border-slate-100 rounded-2xl shadow-sm flex-shrink-0 overflow-hidden">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-slate-100 flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <StatusBadge status={appt.status} />
+              <PriorityDot priority={appt.priority} />
+              {appt.priority !== 'NORMAL' && (
+                <span className={`text-xs font-medium ${PRIORITY_CONFIG[appt.priority].tailwind}`}>
+                  {PRIORITY_CONFIG[appt.priority].label}
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-slate-800 leading-tight mt-1 truncate">
+              {appt.service ? `${appt.service.name}${appt.serviceVariant ? ` — ${appt.serviceVariant.name}` : ''}` : appt.type}
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition ml-2 flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto">
+          {/* Fecha y hora */}
+          <div className="bg-slate-50 rounded-xl px-3 py-2.5">
+            <p className="text-xs text-slate-400 mb-0.5">📅 Fecha y hora</p>
+            <p className="text-sm font-semibold text-slate-800">{fmtDate(appt.scheduledAt)}</p>
+            <p className="text-sm text-slate-600">{fmtTime(appt.scheduledAt)}{appt.endsAt ? ` → ${fmtTime(appt.endsAt)}` : ''}</p>
+            {appt.durationMinutes && (
+              <p className="text-xs text-slate-400 mt-0.5">⏱ {fmtMinutes(appt.durationMinutes)}</p>
+            )}
+          </div>
+
+          {/* Cliente */}
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Cliente</p>
+            <p className="text-sm font-medium text-slate-800">{appt.customer.name ?? 'Sin nombre'}</p>
+            <p className="text-xs text-slate-500">{appt.customer.phone}</p>
+            {appt.customer.cedula && <p className="text-xs text-slate-500">CC: {appt.customer.cedula}</p>}
+            {appt.customer.city && <p className="text-xs text-slate-500">{appt.customer.city}</p>}
+          </div>
+
+          {/* Descripción */}
+          {appt.description && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">📝 Descripción</p>
+              <p className="text-sm text-slate-700">{appt.description}</p>
+            </div>
+          )}
+
+          {/* Dirección */}
+          {appt.address && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">📍 Dirección</p>
+              <p className="text-sm text-slate-700">{appt.address}</p>
+            </div>
+          )}
+
+          {/* Notas del cliente */}
+          {appt.notes && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">🗒️ Notas</p>
+              <p className="text-sm text-slate-700">{appt.notes}</p>
+            </div>
+          )}
+
+          {/* Precio acordado */}
+          {appt.agreedPrice && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">💰 Precio acordado</p>
+              <p className="text-sm font-semibold text-slate-800">{fmt(appt.agreedPrice)}</p>
+            </div>
+          )}
+
+          {/* Solo admin */}
+          {internalSection && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 space-y-2">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Solo admin</p>
+              {appt.internalNotes && <p className="text-xs text-amber-800">{appt.internalNotes}</p>}
+              {appt.cancelReason && (
+                <div>
+                  <p className="text-xs font-semibold text-red-600">Motivo de cancelación</p>
+                  <p className="text-xs text-red-700">{appt.cancelReason}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Origen */}
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>{SOURCE_LABELS[appt.source] ?? appt.source}</span>
+            <span>{fmtDate(appt.createdAt)}</span>
+          </div>
+
+          {/* Acciones de estado */}
+          {transitions.length > 0 && (
+            <div className="border-t border-slate-100 pt-3">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Cambiar estado</p>
+              <div className="flex flex-col gap-1.5">
+                {transitions.map(s => (
+                  <button key={s} onClick={() => handleStatus(s)} disabled={updating}
+                    className="w-full py-2 px-3 rounded-xl text-xs font-medium text-left disabled:opacity-50 transition"
+                    style={{
+                      background: STATUS_CONFIG[s].bg,
+                      color: STATUS_CONFIG[s].color,
+                    }}>
+                    {STATUS_CONFIG[s].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          <button onClick={() => setShowTimeline(s => !s)}
+            className="w-full text-xs text-blue-600 hover:text-blue-800 text-left py-1 flex items-center gap-1 transition">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            {showTimeline ? 'Ocultar historial' : 'Ver historial'}
+          </button>
+
+          {showTimeline && (
+            <TimelinePanel appointmentId={appt.appointmentId} onClose={() => setShowTimeline(false)} />
+          )}
+        </div>
+      </div>
+
+      {showCancel && (
+        <CancelModal
+          onConfirm={(reason) => handleStatus('CANCELLED', reason)}
+          onClose={() => setShowCancel(false)}
+          loading={updating}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [stats, setStats] = useState({ total: 0, pending: 0, todayCount: 0, upcoming: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [stats,        setStats]        = useState<Stats>({
+    total: 0, pending: 0, confirmed: 0, todayCount: 0,
+    upcomingWeek: 0, inProgress: 0, completedTotal: 0, cancelledTotal: 0, noShowTotal: 0,
+  });
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [selected, setSelected] = useState<Appointment | null>(null);
-  const [updating, setUpdating] = useState(false);
+  const [filterType,   setFilterType]   = useState('');
+  const [search,       setSearch]       = useState('');
+  const [selected,     setSelected]     = useState<Appointment | null>(null);
 
   // ── Carga ──────────────────────────────────────────────────────────────────
-
   const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const params: Record<string, string> = {};
       if (filterStatus) params.status = filterStatus;
       if (filterType)   params.type   = filterType;
 
       const [apptRes, statsRes] = await Promise.all([
-        api.get('/appointments', { params }),
-        api.get('/appointments/stats'),
+        getAppointments(params),
+        getAppointmentStats(),
       ]);
-
       setAppointments(apptRes.data);
       setStats(statsRes.data);
     } catch {
@@ -134,317 +469,227 @@ export default function Appointments() {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── Cambiar estado de cita ────────────────────────────────────────────────
-
-  const updateStatus = async (appt: Appointment, newStatus: string) => {
-    setUpdating(true);
-    try {
-      await api.patch(`/appointments/${appt.appointmentId}`, { status: newStatus });
-      setAppointments(prev =>
-        prev.map(a => a.appointmentId === appt.appointmentId
-          ? { ...a, status: newStatus as any }
-          : a
-        )
-      );
-      if (selected?.appointmentId === appt.appointmentId) {
-        setSelected(prev => prev ? { ...prev, status: newStatus as any } : null);
-      }
-    } catch {
-      alert('Error actualizando el estado. Intenta de nuevo.');
-    } finally {
-      setUpdating(false);
-    }
+  // ── Actualizar cita ────────────────────────────────────────────────────────
+  const handleUpdate = async (id: string, data: any) => {
+    await updateAppointment(id, data);
+    setAppointments(prev =>
+      prev.map(a => a.appointmentId === id ? { ...a, ...data } : a)
+    );
+    setSelected(prev => prev?.appointmentId === id ? { ...prev, ...data } : prev);
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Filtro local por búsqueda ──────────────────────────────────────────────
+  const filtered = appointments.filter(a => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (a.customer.name ?? '').toLowerCase().includes(q) ||
+      a.customer.phone.includes(q) ||
+      a.type.toLowerCase().includes(q) ||
+      (a.service?.name ?? '').toLowerCase().includes(q) ||
+      (a.description ?? '').toLowerCase().includes(q)
+    );
+  });
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1100, margin: '0 auto', fontFamily: 'inherit' }}>
-
-      {/* Encabezado */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, color: '#111827', margin: 0 }}>
-          Agendamientos
-        </h1>
-        <p style={{ fontSize: 14, color: '#6b7280', marginTop: 4 }}>
-          Citas y visitas técnicas gestionadas por la IA
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <StatsCard icon="📋" label="Total"      value={stats.total}      color="#111827" />
-        <StatsCard icon="⏳" label="Pendientes" value={stats.pending}    color="#b45309" />
-        <StatsCard icon="📅" label="Hoy"        value={stats.todayCount} color="#1d4ed8" />
-        <StatsCard icon="🔜" label="Próximas"   value={stats.upcoming}   color="#15803d" />
-      </div>
-
-      {/* Filtros */}
-      <div style={{
-        display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap',
-        background: '#fff', border: '1px solid #e5e7eb',
-        borderRadius: 10, padding: '12px 16px',
-      }}>
-        <select
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">Todos los estados</option>
-          <option value="pending">Pendientes</option>
-          <option value="confirmed">Confirmadas</option>
-          <option value="completed">Completadas</option>
-          <option value="cancelled">Canceladas</option>
-        </select>
-
-        <select
-          value={filterType}
-          onChange={e => setFilterType(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">Todos los tipos</option>
-          <option value="cita">Citas</option>
-          <option value="visita_tecnica">Visitas técnicas</option>
-          <option value="otro">Otros</option>
-        </select>
-
-        <button onClick={load} style={btnSecondaryStyle} disabled={loading}>
-          {loading ? 'Cargando...' : '🔄 Actualizar'}
-        </button>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div style={{
-          background: '#fee2e2', color: '#b91c1c',
-          borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 14,
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Tabla + Detalle */}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-
-        {/* Tabla */}
-        <div style={{
-          flex: 1, background: '#fff',
-          border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden',
-        }}>
-          {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
-              Cargando agendamientos...
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Agendamientos</h1>
+              <p className="text-sm text-slate-400 mt-0.5">Citas y servicios gestionados por la IA y el equipo</p>
             </div>
-          ) : appointments.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#6b7280' }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-              <div>No hay agendamientos aún.</div>
-              <div style={{ fontSize: 13, marginTop: 4 }}>
-                La IA los crea automáticamente cuando un cliente agenda por WhatsApp.
-              </div>
-            </div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  {['Tipo', 'Cliente', 'Fecha', 'Hora', 'Estado', ''].map(h => (
-                    <th key={h} style={thStyle}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {appointments.map(appt => {
-                  const typeInfo = TYPE_LABELS[appt.type] ?? TYPE_LABELS.otro;
-                  const isSelected = selected?.appointmentId === appt.appointmentId;
-                  return (
-                    <tr
-                      key={appt.appointmentId}
-                      onClick={() => setSelected(isSelected ? null : appt)}
-                      style={{
-                        borderBottom: '1px solid #f3f4f6',
-                        cursor: 'pointer',
-                        background: isSelected ? '#eff6ff' : 'transparent',
-                        transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => {
-                        if (!isSelected)(e.currentTarget as HTMLElement).style.background = '#f9fafb';
-                      }}
-                      onMouseLeave={e => {
-                        if (!isSelected)(e.currentTarget as HTMLElement).style.background = 'transparent';
-                      }}
-                    >
-                      <td style={tdStyle}>
-                        <span style={{ fontSize: 18 }}>{typeInfo.icon}</span>{' '}
-                        <span style={{ fontSize: 13, color: '#374151' }}>{typeInfo.label}</span>
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 500, fontSize: 14 }}>
-                          {appt.customer.name ?? 'Sin nombre'}
-                        </div>
-                        <div style={{ fontSize: 12, color: '#6b7280' }}>
-                          {appt.customer.phone}
-                        </div>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ fontSize: 13 }}>{formatDateShort(appt.scheduledAt)}</span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ fontSize: 13, fontWeight: 500 }}>
-                          {formatTime(appt.scheduledAt)}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <StatusBadge status={appt.status} />
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ color: '#6b7280', fontSize: 18 }}>›</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+            <button onClick={load} disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition">
+              <svg className={loading ? 'animate-spin' : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+              </svg>
+              Actualizar
+            </button>
+          </div>
 
-        {/* Panel de detalle */}
-        {selected && (
-          <div style={{
-            width: 320, background: '#fff',
-            border: '1px solid #e5e7eb', borderRadius: 12, padding: 20,
-            flexShrink: 0,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 20 }}>
-                  {TYPE_LABELS[selected.type]?.icon ?? '📌'}
-                </div>
-                <div style={{ fontWeight: 600, fontSize: 15, marginTop: 4 }}>
-                  {TYPE_LABELS[selected.type]?.label ?? 'Agendamiento'}
-                </div>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#6b7280' }}
-              >
-                ✕
+          {/* Stats */}
+          <div className="flex gap-3 flex-wrap mb-4">
+            <StatsCard icon="📋" label="Total"        value={stats.total}        color="text-slate-800" />
+            <StatsCard icon="⏳" label="Pendientes"   value={stats.pending}      color="text-amber-600" />
+            <StatsCard icon="✅" label="Confirmadas"  value={stats.confirmed}    color="text-blue-600" />
+            <StatsCard icon="⚙️" label="En curso"     value={stats.inProgress}   color="text-purple-600" />
+            <StatsCard icon="📅" label="Hoy"          value={stats.todayCount}   color="text-indigo-600" />
+            <StatsCard icon="🔜" label="Esta semana"  value={stats.upcomingWeek} color="text-green-600" />
+          </div>
+
+          {/* Filtros */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar cliente, tipo, servicio..."
+                className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-56" />
+            </div>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+              <option value="">Todos los estados</option>
+              {(Object.keys(STATUS_CONFIG) as AppointmentStatus[]).map(s => (
+                <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+              ))}
+            </select>
+            <select value={filterType} onChange={e => setFilterType(e.target.value)}
+              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+              <option value="">Todos los tipos</option>
+              <option value="cita">Cita</option>
+              <option value="visita_tecnica">Visita técnica</option>
+              <option value="otro">Otro</option>
+            </select>
+            {(search || filterStatus || filterType) && (
+              <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); }}
+                className="text-xs text-blue-600 hover:underline">
+                Limpiar
               </button>
-            </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-            <StatusBadge status={selected.status} />
-
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <DetailRow icon="📅" label="Fecha y hora" value={formatDate(selected.scheduledAt)} />
-              <DetailRow icon="👤" label="Cliente" value={selected.customer.name ?? 'Sin nombre'} />
-              <DetailRow icon="📱" label="Teléfono" value={selected.customer.phone} />
-              {selected.customer.cedula && (
-                <DetailRow icon="🪪" label="Cédula" value={selected.customer.cedula} />
-              )}
-              {selected.customer.city && (
-                <DetailRow icon="🏙️" label="Ciudad" value={selected.customer.city} />
-              )}
-              {selected.description && (
-                <DetailRow icon="📝" label="Descripción" value={selected.description} />
-              )}
-              {selected.address && (
-                <DetailRow icon="📍" label="Dirección" value={selected.address} />
-              )}
-              {selected.notes && (
-                <DetailRow icon="🗒️" label="Notas" value={selected.notes} />
-              )}
-              <DetailRow icon="🕐" label="Creado" value={formatDate(selected.createdAt)} />
-            </div>
-
-            {/* Acciones de estado */}
-            <div style={{ marginTop: 20, borderTop: '1px solid #f3f4f6', paddingTop: 16 }}>
-              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 500 }}>
-                CAMBIAR ESTADO
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {['pending', 'confirmed', 'completed', 'cancelled'].map(s => (
-                  s !== selected.status && (
-                    <button
-                      key={s}
-                      onClick={() => updateStatus(selected, s)}
-                      disabled={updating}
-                      style={{
-                        ...btnStatusStyle,
-                        background: STATUS_CONFIG[s]?.bg ?? '#f3f4f6',
-                        color: STATUS_CONFIG[s]?.color ?? '#374151',
-                        opacity: updating ? 0.6 : 1,
-                      }}
-                    >
-                      {STATUS_CONFIG[s]?.label ?? s}
-                    </button>
-                  )
-                ))}
-              </div>
-            </div>
+      {/* Contenido */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {error && (
+          <div className="bg-red-50 text-red-700 border border-red-200 rounded-xl px-4 py-3 text-sm mb-4">
+            {error}
           </div>
         )}
+
+        <div className="flex gap-4 items-start">
+          {/* Tabla */}
+          <div className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden min-w-0">
+            {loading ? (
+              <div className="flex items-center justify-center h-64 text-slate-400">
+                <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
+                <span className="text-4xl">📅</span>
+                <p className="text-sm">
+                  {search || filterStatus || filterType
+                    ? 'Sin resultados para este filtro'
+                    : 'No hay agendamientos aún'}
+                </p>
+                {!search && !filterStatus && !filterType && (
+                  <p className="text-xs text-center max-w-xs">
+                    La IA los crea automáticamente cuando un cliente agenda por WhatsApp.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      {['', 'Cliente', 'Servicio / Tipo', 'Fecha', 'Hora', 'Duración', 'Estado', ''].map((h, i) => (
+                        <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(appt => {
+                      const isSelected = selected?.appointmentId === appt.appointmentId;
+                      const todayAppt  = isToday(appt.scheduledAt);
+                      const pastAppt   = isPast(appt.scheduledAt) && !['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(appt.status);
+
+                      return (
+                        <tr key={appt.appointmentId}
+                          onClick={() => setSelected(isSelected ? null : appt)}
+                          className={`border-b border-slate-50 cursor-pointer transition-colors ${
+                            isSelected ? 'bg-blue-50' : pastAppt ? 'bg-red-50/30 hover:bg-red-50/50' : 'hover:bg-slate-50'
+                          }`}>
+                          {/* Prioridad dot */}
+                          <td className="pl-4 pr-2 py-3 w-4">
+                            <PriorityDot priority={appt.priority} />
+                          </td>
+
+                          {/* Cliente */}
+                          <td className="px-3 py-3">
+                            <p className="text-sm font-medium text-slate-800 whitespace-nowrap">
+                              {appt.customer.name ?? 'Sin nombre'}
+                            </p>
+                            <p className="text-xs text-slate-400">{appt.customer.phone}</p>
+                          </td>
+
+                          {/* Servicio / Tipo */}
+                          <td className="px-3 py-3 max-w-[180px]">
+                            {appt.service ? (
+                              <div>
+                                <p className="text-sm font-medium text-slate-700 truncate">{appt.service.name}</p>
+                                {appt.serviceVariant && (
+                                  <p className="text-xs text-slate-400 truncate">{appt.serviceVariant.name}</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-600">{appt.type}</p>
+                            )}
+                          </td>
+
+                          {/* Fecha */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <p className={`text-sm font-medium ${todayAppt ? 'text-blue-600' : 'text-slate-700'}`}>
+                              {todayAppt ? '🔵 Hoy' : fmtDate(appt.scheduledAt)}
+                            </p>
+                          </td>
+
+                          {/* Hora */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <p className="text-sm font-semibold text-slate-800">{fmtTime(appt.scheduledAt)}</p>
+                            {appt.endsAt && (
+                              <p className="text-xs text-slate-400">{fmtTime(appt.endsAt)}</p>
+                            )}
+                          </td>
+
+                          {/* Duración */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            {appt.durationMinutes ? (
+                              <span className="text-xs text-slate-500">{fmtMinutes(appt.durationMinutes)}</span>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </td>
+
+                          {/* Estado */}
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <StatusBadge status={appt.status} />
+                          </td>
+
+                          {/* Chevron */}
+                          <td className="px-4 py-3">
+                            <svg className="text-slate-300" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Panel detalle */}
+          {selected && (
+            <DetailPanel
+              appt={selected}
+              onUpdate={handleUpdate}
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-// ─── Sub-componente ───────────────────────────────────────────────────────────
-
-function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div>
-      <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {icon} {label}
-      </div>
-      <div style={{ fontSize: 14, color: '#111827', marginTop: 2 }}>{value}</div>
-    </div>
-  );
-}
-
-// ─── Estilos ──────────────────────────────────────────────────────────────────
-
-const selectStyle: React.CSSProperties = {
-  padding: '7px 12px',
-  borderRadius: 8,
-  border: '1px solid #d1d5db',
-  fontSize: 14,
-  color: '#374151',
-  background: '#fff',
-  cursor: 'pointer',
-  outline: 'none',
-};
-
-const btnSecondaryStyle: React.CSSProperties = {
-  padding: '7px 16px',
-  borderRadius: 8,
-  border: '1px solid #d1d5db',
-  fontSize: 14,
-  background: '#fff',
-  color: '#374151',
-  cursor: 'pointer',
-  fontWeight: 500,
-};
-
-const btnStatusStyle: React.CSSProperties = {
-  padding: '7px 12px',
-  borderRadius: 8,
-  border: 'none',
-  fontSize: 13,
-  fontWeight: 500,
-  cursor: 'pointer',
-  textAlign: 'left',
-};
-
-const thStyle: React.CSSProperties = {
-  padding: '10px 16px',
-  textAlign: 'left',
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#6b7280',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: '12px 16px',
-  verticalAlign: 'middle',
-};
