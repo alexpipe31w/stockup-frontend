@@ -14,6 +14,7 @@ const BotIcon  = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="no
 const UserIcon = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
 const CloseIcon = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
 const FilterIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>);
+const BackIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FilterKey = 'all' | 'active' | 'pending_human' | 'human' | 'closed';
@@ -55,11 +56,11 @@ export default function Conversations() {
   const [sending,       setSending]       = useState(false);
 
   // filters
-  const [filter,     setFilter]     = useState<FilterKey>('all');
-  const [search,     setSearch]     = useState('');
-  const [dateFrom,   setDateFrom]   = useState('');
-  const [dateTo,     setDateTo]     = useState('');
-  const [showFilters,setShowFilters]= useState(false);
+  const [filter,      setFilter]      = useState<FilterKey>('all');
+  const [search,      setSearch]      = useState('');
+  const [dateFrom,    setDateFrom]    = useState('');
+  const [dateTo,      setDateTo]      = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   // delete confirm
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
@@ -87,7 +88,10 @@ export default function Conversations() {
     return () => clearInterval(t);
   }, [selected?.conversationId]); // eslint-disable-line
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  // FIX: scroll solo cuando hay mensajes nuevos, sin saltar en cada re-render
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleSend = async () => {
@@ -129,7 +133,6 @@ export default function Conversations() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      // DELETE solo elimina la conversación y sus mensajes — NO toca al customer
       await api.delete(`/conversations/${deleteTarget.conversationId}`);
       setConversations(prev => prev.filter(c => c.conversationId !== deleteTarget.conversationId));
       if (selected?.conversationId === deleteTarget.conversationId) setSelected(null);
@@ -165,22 +168,45 @@ export default function Conversations() {
     return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}`}>{s.label}</span>;
   };
 
-  // counts for tabs
-  const countFor = (k: FilterKey) => k === 'all' ? conversations.length : conversations.filter(c => c.status === k).length;
+  const countFor = (k: FilterKey) =>
+    k === 'all' ? conversations.length : conversations.filter(c => c.status === k).length;
+
+  // ── Responsive: en mobile mostrar sidebar O chat, no ambos ────────────────
+  const showSidebar = !selected;   // mobile: oculta sidebar cuando hay chat abierto
+  const showChat    = !!selected;  // mobile: muestra chat solo cuando hay selección
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    /*
+     * FIX SCROLL:
+     * - El root ocupa exactamente el viewport (h-screen overflow-hidden).
+     * - Cada panel es flex-col con overflow-hidden para que el área de
+     *   mensajes (flex-1 overflow-y-auto) quede encerrada correctamente.
+     */
+    <div className="flex h-screen overflow-hidden bg-slate-50">
 
       {/* ── Sidebar izquierdo ─────────────────────────────────────────────── */}
-      <div className="w-80 bg-white border-r border-slate-100 flex flex-col flex-shrink-0">
-
+      {/*
+        Desktop: siempre visible (md:flex).
+        Mobile:  solo visible cuando NO hay conversación seleccionada.
+      */}
+      <div
+        className={`
+          ${showSidebar ? 'flex' : 'hidden'} md:flex
+          w-full md:w-80 lg:w-96
+          bg-white border-r border-slate-100
+          flex-col flex-shrink-0
+          overflow-hidden
+        `}
+      >
         {/* Header */}
-        <div className="px-4 py-4 border-b border-slate-100">
+        <div className="px-4 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-slate-800 text-lg">Conversaciones</h2>
             <button
               onClick={() => setShowFilters(f => !f)}
-              className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition ${showFilters ? 'text-white' : 'text-slate-400 hover:bg-slate-100'}`}
+              className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition ${
+                showFilters ? 'text-white' : 'text-slate-400 hover:bg-slate-100'
+              }`}
               style={showFilters ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}
             >
               <FilterIcon />
@@ -248,8 +274,8 @@ export default function Conversations() {
           </div>
         </div>
 
-        {/* Lista */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Lista — FIX: flex-1 + overflow-y-auto correctamente encerrado */}
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           {filtered.length === 0 ? (
             <p className="text-center text-slate-400 text-sm py-12">Sin conversaciones</p>
           ) : filtered.map(conv => (
@@ -275,7 +301,6 @@ export default function Conversations() {
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
                   {statusBadge(conv.status)}
-                  {/* Botón eliminar — solo en cerradas */}
                   {conv.status === 'closed' && (
                     <button
                       onClick={e => { e.stopPropagation(); setDeleteTarget(conv); }}
@@ -292,54 +317,84 @@ export default function Conversations() {
       </div>
 
       {/* ── Panel derecho ──────────────────────────────────────────────────── */}
+      {/*
+        Desktop: siempre visible cuando selected existe.
+        Mobile:  ocupa toda la pantalla cuando hay selección.
+        FIX SCROLL: overflow-hidden aquí es clave para que el área de
+        mensajes (flex-1 overflow-y-auto) sea la única que haga scroll.
+      */}
       {selected ? (
-        <div className="flex-1 flex flex-col min-w-0">
+        <div
+          className={`
+            ${showChat ? 'flex' : 'hidden'} md:flex
+            flex-1 flex-col min-w-0
+            overflow-hidden
+          `}
+        >
+          {/* Chat header — flex-shrink-0 para que no se comprima */}
+          <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-sm flex-shrink-0">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0">
+              {/* Botón volver — solo mobile */}
+              <button
+                className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                onClick={() => setSelected(null)}
+              >
+                <BackIcon />
+              </button>
 
-          {/* Chat header */}
-          <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+              >
                 {selected.customer?.name?.[0]?.toUpperCase() ?? '?'}
               </div>
-              <div>
-                <p className="font-semibold text-slate-800">{selected.customer?.name ?? selected.customer?.phone}</p>
-                <p className="text-xs text-slate-400">{selected.customer?.phone}</p>
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-800 truncate">{selected.customer?.name ?? selected.customer?.phone}</p>
+                <p className="text-xs text-slate-400 truncate">{selected.customer?.phone}</p>
               </div>
-              <div className="ml-2">{statusBadge(selected.status)}</div>
+              <div className="ml-1 flex-shrink-0">{statusBadge(selected.status)}</div>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Acciones — en mobile se comprimen con iconos */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {(selected.status === 'active' || selected.status === 'pending_human') && (
                 <button onClick={handleTakeover}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium text-white"
                   style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
-                  <UserIcon /> Tomar control
+                  <UserIcon />
+                  <span className="hidden sm:inline">Tomar control</span>
                 </button>
               )}
               {selected.status === 'human' && (
                 <button onClick={handleRelease}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition">
-                  <BotIcon /> Devolver a IA
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition">
+                  <BotIcon />
+                  <span className="hidden sm:inline">Devolver a IA</span>
                 </button>
               )}
               {selected.status !== 'closed' && (
                 <button onClick={handleClose}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-red-100 hover:text-red-600 transition">
-                  <CloseIcon /> Cerrar
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium bg-slate-100 text-slate-600 hover:bg-red-100 hover:text-red-600 transition">
+                  <CloseIcon />
+                  <span className="hidden sm:inline">Cerrar</span>
                 </button>
               )}
               {selected.status === 'closed' && (
                 <button onClick={() => setDeleteTarget(selected)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-red-50 text-red-500 hover:bg-red-100 transition">
-                  <TrashIcon /> Eliminar
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium bg-red-50 text-red-500 hover:bg-red-100 transition">
+                  <TrashIcon />
+                  <span className="hidden sm:inline">Eliminar</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Mensajes */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 bg-slate-50">
+          {/*
+            FIX SCROLL PRINCIPAL:
+            - flex-1 min-h-0 → permite que este div crezca sin desbordar el padre
+            - overflow-y-auto overscroll-contain → scroll suave sin propagarse
+          */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-6 py-4 space-y-3 bg-slate-50">
             {messages.length === 0 ? (
               <p className="text-center text-slate-400 text-sm py-12">Sin mensajes aún</p>
             ) : messages.map((msg: any) => {
@@ -347,7 +402,7 @@ export default function Conversations() {
               return (
                 <div key={msg.messageId} className={`flex ${isClient ? 'justify-start' : 'justify-end'}`}>
                   <div
-                    className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                    className={`max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
                       isClient
                         ? 'bg-white text-slate-800 border border-slate-100 rounded-tl-sm'
                         : msg.isAiResponse
@@ -367,39 +422,50 @@ export default function Conversations() {
                 </div>
               );
             })}
+            {/* Anchor para auto-scroll */}
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
-          {selected.status === 'human' ? (
-            <div className="bg-white border-t border-slate-100 px-6 py-4">
-              <div className="flex items-end gap-3">
-                <textarea value={text} onChange={e => setText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Escribe un mensaje..." rows={2}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none text-sm" />
-                <button onClick={handleSend} disabled={sending || !text.trim()}
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
-                  <SendIcon />
-                </button>
+          {/* Input — flex-shrink-0 para que nunca se comprima */}
+          <div className="flex-shrink-0">
+            {selected.status === 'human' ? (
+              <div className="bg-white border-t border-slate-100 px-4 md:px-6 py-3 md:py-4">
+                <div className="flex items-end gap-2 md:gap-3">
+                  <textarea
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                    placeholder="Escribe un mensaje..."
+                    rows={2}
+                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none text-sm"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={sending || !text.trim()}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+                  >
+                    <SendIcon />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-400 mt-2">Enter para enviar · Shift+Enter nueva línea</p>
               </div>
-              <p className="text-xs text-slate-400 mt-2">Enter para enviar · Shift+Enter nueva línea</p>
-            </div>
-          ) : selected.status === 'closed' ? (
-            <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 text-center text-sm text-slate-400">
-              Conversación cerrada
-            </div>
-          ) : (
-            <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 text-center text-sm text-slate-500">
-              La IA está manejando esta conversación —
-              <strong className="text-blue-600"> presiona "Tomar control" </strong>
-              para intervenir directamente
-            </div>
-          )}
+            ) : selected.status === 'closed' ? (
+              <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 text-center text-sm text-slate-400">
+                Conversación cerrada
+              </div>
+            ) : (
+              <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 text-center text-sm text-slate-500">
+                La IA está manejando esta conversación —
+                <strong className="text-blue-600"> presiona "Tomar control" </strong>
+                para intervenir directamente
+              </div>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center flex-col gap-3 text-slate-400 bg-slate-50">
+        /* Empty state — solo desktop */
+        <div className="hidden md:flex flex-1 items-center justify-center flex-col gap-3 text-slate-400 bg-slate-50">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
           </svg>
