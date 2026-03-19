@@ -385,7 +385,7 @@ export default function Conversations() {
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium text-white"
                   style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
                   <UserIcon />
-                  <span className="hidden sm:inline">Tomar control</span>
+                  <span className="hidden sm:inline">trol</span>
                 </button>
               )}
               {selected.status === 'human' && (
@@ -504,7 +504,7 @@ export default function Conversations() {
                   onClick={handleTakeover}
                   className="font-semibold text-blue-600 hover:underline"
                 >
-                  Tomar control
+                  tomar el control
                 </button>{' '}
                 para intervenir directamente
               </div>
