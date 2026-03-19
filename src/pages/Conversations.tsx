@@ -72,11 +72,8 @@ export default function Conversations() {
   const bottomRef            = useRef<HTMLDivElement>(null);
   const pollRef              = useRef<NodeJS.Timeout | null>(null);
 
-  // Controla si el usuario está al fondo (permite auto-scroll)
-  const isAtBottomRef = useRef(true);
-  // Muestra el botón "↓ nuevos mensajes"
+  const isAtBottomRef   = useRef(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  // Cantidad de mensajes anterior para detectar mensajes realmente nuevos
   const prevMsgCountRef = useRef(0);
 
   // ── Detectar posición del scroll ──────────────────────────────────────────
@@ -88,8 +85,10 @@ export default function Conversations() {
     setShowScrollBtn(!isAtBottomRef.current && prevMsgCountRef.current < messages.length);
   }, [messages.length]);
 
-  // ── Scroll al fondo manualmente ───────────────────────────────────────────
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+  // ── Scroll al fondo ────────────────────────────────────────────────────────
+  // FIX: 'instant' no existe en los DOM types de react-scripts.
+  // Usamos 'auto' (sin animación) como equivalente compatible.
+  const scrollToBottom = useCallback((behavior: 'smooth' | 'auto' = 'smooth') => {
     bottomRef.current?.scrollIntoView({ behavior });
     setShowScrollBtn(false);
     isAtBottomRef.current = true;
@@ -120,12 +119,9 @@ export default function Conversations() {
           const hadNew = newMsgs.length > prev.length;
           if (hadNew) {
             prevMsgCountRef.current = newMsgs.length;
-            // Solo auto-scroll si el usuario está al fondo
             if (isAtBottomRef.current) {
-              // Pequeño delay para que el DOM renderice primero
               setTimeout(() => scrollToBottom('smooth'), 50);
             } else {
-              // Hay mensajes nuevos pero el usuario está leyendo arriba
               setShowScrollBtn(true);
             }
           }
@@ -133,11 +129,11 @@ export default function Conversations() {
         });
       });
 
-    // Primera carga: ir al fondo sin animación
+    // Primera carga: ir al fondo sin animación ('auto' = sin transición)
     getMessages(selected.conversationId).then(res => {
       setMessages(res.data);
       prevMsgCountRef.current = res.data.length;
-      setTimeout(() => scrollToBottom('instant'), 50);
+      setTimeout(() => scrollToBottom('auto'), 50);
     });
 
     const t = setInterval(load, 3000);
@@ -156,7 +152,6 @@ export default function Conversations() {
         isAiResponse:   false,
       });
       setText('');
-      // Al enviar siempre vamos al fondo
       getMessages(selected.conversationId).then(res => {
         setMessages(res.data);
         prevMsgCountRef.current = res.data.length;
@@ -206,9 +201,9 @@ export default function Conversations() {
   const filtered = conversations.filter(c => {
     if (filter !== 'all' && c.status !== filter) return false;
     if (search) {
-      const q    = search.toLowerCase();
-      const name = (c.customer?.name  ?? '').toLowerCase();
-      const phone= (c.customer?.phone ?? '').toLowerCase();
+      const q     = search.toLowerCase();
+      const name  = (c.customer?.name  ?? '').toLowerCase();
+      const phone = (c.customer?.phone ?? '').toLowerCase();
       if (!name.includes(q) && !phone.includes(q)) return false;
     }
     if (dateFrom && new Date(c.createdAt) < new Date(dateFrom)) return false;
@@ -417,7 +412,7 @@ export default function Conversations() {
             </div>
           </div>
 
-          {/* ── Área de mensajes — scroll inteligente ─────────────────────── */}
+          {/* ── Área de mensajes ──────────────────────────────────────────── */}
           <div className="relative flex-1 min-h-0">
             <div
               ref={messagesContainerRef}
