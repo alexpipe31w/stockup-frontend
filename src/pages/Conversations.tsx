@@ -8,13 +8,14 @@ import api from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
-const TrashIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>);
-const SendIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>);
-const BotIcon  = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>);
-const UserIcon = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
-const CloseIcon = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
+const TrashIcon  = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>);
+const SendIcon   = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>);
+const BotIcon    = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>);
+const UserIcon   = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>);
+const CloseIcon  = () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
 const FilterIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>);
-const BackIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>);
+const BackIcon   = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>);
+const ChevronDownIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FilterKey = 'all' | 'active' | 'pending_human' | 'human' | 'closed';
@@ -28,48 +29,73 @@ const STATUS_TABS: { key: FilterKey; label: string }[] = [
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  active:        { label: 'IA activa',     cls: 'bg-green-100 text-green-700' },
+  active:        { label: 'IA activa',     cls: 'bg-green-100 text-green-700'   },
   pending_human: { label: 'Espera humano', cls: 'bg-orange-100 text-orange-700' },
-  human:         { label: 'Con asesor',    cls: 'bg-blue-100 text-blue-700'   },
-  closed:        { label: 'Cerrada',       cls: 'bg-slate-100 text-slate-500'  },
+  human:         { label: 'Con asesor',    cls: 'bg-blue-100 text-blue-700'     },
+  closed:        { label: 'Cerrada',       cls: 'bg-slate-100 text-slate-500'   },
 };
 
 const fmtTime = (d: string) =>
   new Date(d).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
 const fmtDate = (d: string) => {
-  const date = new Date(d);
+  const date  = new Date(d);
   const today = new Date();
   if (date.toDateString() === today.toDateString()) return fmtTime(d);
   return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
 };
 
+// ── Umbral para considerar que el usuario está "al fondo" del chat
+const SCROLL_THRESHOLD = 80; // px desde el fondo
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Conversations() {
   const { storeId } = useAuth();
 
-  // state
   const [conversations, setConversations] = useState<any[]>([]);
   const [selected,      setSelected]      = useState<any>(null);
   const [messages,      setMessages]      = useState<any[]>([]);
   const [text,          setText]          = useState('');
   const [sending,       setSending]       = useState(false);
 
-  // filters
   const [filter,      setFilter]      = useState<FilterKey>('all');
   const [search,      setSearch]      = useState('');
   const [dateFrom,    setDateFrom]    = useState('');
   const [dateTo,      setDateTo]      = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // delete confirm
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleting,     setDeleting]     = useState(false);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const pollRef   = useRef<NodeJS.Timeout | null>(null);
+  // ── Refs para scroll inteligente ──────────────────────────────────────────
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef            = useRef<HTMLDivElement>(null);
+  const pollRef              = useRef<NodeJS.Timeout | null>(null);
 
-  // ── Load ───────────────────────────────────────────────────────────────────
+  // Controla si el usuario está al fondo (permite auto-scroll)
+  const isAtBottomRef = useRef(true);
+  // Muestra el botón "↓ nuevos mensajes"
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  // Cantidad de mensajes anterior para detectar mensajes realmente nuevos
+  const prevMsgCountRef = useRef(0);
+
+  // ── Detectar posición del scroll ──────────────────────────────────────────
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isAtBottomRef.current = distFromBottom < SCROLL_THRESHOLD;
+    setShowScrollBtn(!isAtBottomRef.current && prevMsgCountRef.current < messages.length);
+  }, [messages.length]);
+
+  // ── Scroll al fondo manualmente ───────────────────────────────────────────
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    bottomRef.current?.scrollIntoView({ behavior });
+    setShowScrollBtn(false);
+    isAtBottomRef.current = true;
+  }, []);
+
+  // ── Load conversaciones ────────────────────────────────────────────────────
   const loadConversations = useCallback(() => {
     getConversations(storeId).then(res => setConversations(res.data));
   }, [storeId]);
@@ -80,18 +106,43 @@ export default function Conversations() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [loadConversations]);
 
+  // ── Load mensajes — scroll inteligente ────────────────────────────────────
   useEffect(() => {
     if (!selected) return;
-    const load = () => getMessages(selected.conversationId).then(res => setMessages(res.data));
-    load();
+    prevMsgCountRef.current = 0;
+    isAtBottomRef.current   = true;
+    setShowScrollBtn(false);
+
+    const load = () =>
+      getMessages(selected.conversationId).then(res => {
+        const newMsgs: any[] = res.data;
+        setMessages(prev => {
+          const hadNew = newMsgs.length > prev.length;
+          if (hadNew) {
+            prevMsgCountRef.current = newMsgs.length;
+            // Solo auto-scroll si el usuario está al fondo
+            if (isAtBottomRef.current) {
+              // Pequeño delay para que el DOM renderice primero
+              setTimeout(() => scrollToBottom('smooth'), 50);
+            } else {
+              // Hay mensajes nuevos pero el usuario está leyendo arriba
+              setShowScrollBtn(true);
+            }
+          }
+          return newMsgs;
+        });
+      });
+
+    // Primera carga: ir al fondo sin animación
+    getMessages(selected.conversationId).then(res => {
+      setMessages(res.data);
+      prevMsgCountRef.current = res.data.length;
+      setTimeout(() => scrollToBottom('instant'), 50);
+    });
+
     const t = setInterval(load, 3000);
     return () => clearInterval(t);
   }, [selected?.conversationId]); // eslint-disable-line
-
-  // FIX: scroll solo cuando hay mensajes nuevos, sin saltar en cada re-render
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleSend = async () => {
@@ -100,15 +151,22 @@ export default function Conversations() {
     try {
       await sendMessage({
         conversationId: selected.conversationId,
-        content: text.trim(),
-        sender: 'store',
-        isAiResponse: false,
+        content:        text.trim(),
+        sender:         'store',
+        isAiResponse:   false,
       });
       setText('');
-      getMessages(selected.conversationId).then(res => setMessages(res.data));
+      // Al enviar siempre vamos al fondo
+      getMessages(selected.conversationId).then(res => {
+        setMessages(res.data);
+        prevMsgCountRef.current = res.data.length;
+        setTimeout(() => scrollToBottom('smooth'), 50);
+      });
     } catch (err: any) {
       console.error('Error enviando:', err.response?.data);
-    } finally { setSending(false); }
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleTakeover = async () => {
@@ -136,22 +194,24 @@ export default function Conversations() {
       await api.delete(`/conversations/${deleteTarget.conversationId}`);
       setConversations(prev => prev.filter(c => c.conversationId !== deleteTarget.conversationId));
       if (selected?.conversationId === deleteTarget.conversationId) setSelected(null);
-    } catch (err) { console.error('Error eliminando:', err); }
-    finally { setDeleting(false); setDeleteTarget(null); }
+    } catch (err) {
+      console.error('Error eliminando:', err);
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
   };
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const filtered = conversations.filter(c => {
     if (filter !== 'all' && c.status !== filter) return false;
     if (search) {
-      const q = search.toLowerCase();
-      const name  = (c.customer?.name  ?? '').toLowerCase();
-      const phone = (c.customer?.phone ?? '').toLowerCase();
+      const q    = search.toLowerCase();
+      const name = (c.customer?.name  ?? '').toLowerCase();
+      const phone= (c.customer?.phone ?? '').toLowerCase();
       if (!name.includes(q) && !phone.includes(q)) return false;
     }
-    if (dateFrom) {
-      if (new Date(c.createdAt) < new Date(dateFrom)) return false;
-    }
+    if (dateFrom && new Date(c.createdAt) < new Date(dateFrom)) return false;
     if (dateTo) {
       const to = new Date(dateTo);
       to.setHours(23, 59, 59);
@@ -162,7 +222,6 @@ export default function Conversations() {
 
   const activeFilterCount = [search, dateFrom, dateTo].filter(Boolean).length;
 
-  // ── Badges ────────────────────────────────────────────────────────────────
   const statusBadge = (status: string) => {
     const s = STATUS_BADGE[status] ?? { label: status, cls: 'bg-slate-100 text-slate-500' };
     return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}`}>{s.label}</span>;
@@ -171,34 +230,19 @@ export default function Conversations() {
   const countFor = (k: FilterKey) =>
     k === 'all' ? conversations.length : conversations.filter(c => c.status === k).length;
 
-  // ── Responsive: en mobile mostrar sidebar O chat, no ambos ────────────────
-  const showSidebar = !selected;   // mobile: oculta sidebar cuando hay chat abierto
-  const showChat    = !!selected;  // mobile: muestra chat solo cuando hay selección
+  const showSidebar = !selected;
+  const showChat    = !!selected;
 
   return (
-    /*
-     * FIX SCROLL:
-     * - El root ocupa exactamente el viewport (h-screen overflow-hidden).
-     * - Cada panel es flex-col con overflow-hidden para que el área de
-     *   mensajes (flex-1 overflow-y-auto) quede encerrada correctamente.
-     */
     <div className="flex h-screen overflow-hidden bg-slate-50">
 
-      {/* ── Sidebar izquierdo ─────────────────────────────────────────────── */}
-      {/*
-        Desktop: siempre visible (md:flex).
-        Mobile:  solo visible cuando NO hay conversación seleccionada.
-      */}
-      <div
-        className={`
-          ${showSidebar ? 'flex' : 'hidden'} md:flex
-          w-full md:w-80 lg:w-96
-          bg-white border-r border-slate-100
-          flex-col flex-shrink-0
-          overflow-hidden
-        `}
-      >
-        {/* Header */}
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      <div className={`
+        ${showSidebar ? 'flex' : 'hidden'} md:flex
+        w-full md:w-80 lg:w-96
+        bg-white border-r border-slate-100
+        flex-col flex-shrink-0 overflow-hidden
+      `}>
         <div className="px-4 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-slate-800 text-lg">Conversaciones</h2>
@@ -218,7 +262,6 @@ export default function Conversations() {
             </button>
           </div>
 
-          {/* Búsqueda */}
           <div className="relative mb-3">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><SearchIcon /></span>
             <input
@@ -229,7 +272,6 @@ export default function Conversations() {
             />
           </div>
 
-          {/* Filtros fecha */}
           {showFilters && (
             <div className="space-y-2 mb-3 bg-slate-50 rounded-xl p-3">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Rango de fecha</p>
@@ -254,7 +296,6 @@ export default function Conversations() {
             </div>
           )}
 
-          {/* Tabs de estado */}
           <div className="flex gap-1 flex-wrap">
             {STATUS_TABS.map(tab => (
               <button
@@ -274,7 +315,6 @@ export default function Conversations() {
           </div>
         </div>
 
-        {/* Lista — FIX: flex-1 + overflow-y-auto correctamente encerrado */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {filtered.length === 0 ? (
             <p className="text-center text-slate-400 text-sm py-12">Sin conversaciones</p>
@@ -316,32 +356,21 @@ export default function Conversations() {
         </div>
       </div>
 
-      {/* ── Panel derecho ──────────────────────────────────────────────────── */}
-      {/*
-        Desktop: siempre visible cuando selected existe.
-        Mobile:  ocupa toda la pantalla cuando hay selección.
-        FIX SCROLL: overflow-hidden aquí es clave para que el área de
-        mensajes (flex-1 overflow-y-auto) sea la única que haga scroll.
-      */}
+      {/* ── Panel chat ───────────────────────────────────────────────────── */}
       {selected ? (
-        <div
-          className={`
-            ${showChat ? 'flex' : 'hidden'} md:flex
-            flex-1 flex-col min-w-0
-            overflow-hidden
-          `}
-        >
-          {/* Chat header — flex-shrink-0 para que no se comprima */}
+        <div className={`
+          ${showChat ? 'flex' : 'hidden'} md:flex
+          flex-1 flex-col min-w-0 overflow-hidden
+        `}>
+          {/* Header */}
           <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-sm flex-shrink-0">
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
-              {/* Botón volver — solo mobile */}
               <button
                 className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-lg transition"
                 onClick={() => setSelected(null)}
               >
                 <BackIcon />
               </button>
-
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
@@ -355,7 +384,6 @@ export default function Conversations() {
               <div className="ml-1 flex-shrink-0">{statusBadge(selected.status)}</div>
             </div>
 
-            {/* Acciones — en mobile se comprimen con iconos */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {(selected.status === 'active' || selected.status === 'pending_human') && (
                 <button onClick={handleTakeover}
@@ -389,44 +417,57 @@ export default function Conversations() {
             </div>
           </div>
 
-          {/*
-            FIX SCROLL PRINCIPAL:
-            - flex-1 min-h-0 → permite que este div crezca sin desbordar el padre
-            - overflow-y-auto overscroll-contain → scroll suave sin propagarse
-          */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-6 py-4 space-y-3 bg-slate-50">
-            {messages.length === 0 ? (
-              <p className="text-center text-slate-400 text-sm py-12">Sin mensajes aún</p>
-            ) : messages.map((msg: any) => {
-              const isClient = msg.sender === 'customer';
-              return (
-                <div key={msg.messageId} className={`flex ${isClient ? 'justify-start' : 'justify-end'}`}>
-                  <div
-                    className={`max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
-                      isClient
-                        ? 'bg-white text-slate-800 border border-slate-100 rounded-tl-sm'
-                        : msg.isAiResponse
-                          ? 'text-white rounded-tr-sm'
-                          : 'bg-blue-600 text-white rounded-tr-sm'
-                    }`}
-                    style={!isClient && msg.isAiResponse ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}
-                  >
-                    {!isClient && (
-                      <p className="text-xs opacity-70 mb-1">{msg.isAiResponse ? 'IA' : 'Tú'}</p>
-                    )}
-                    <p className="leading-relaxed">{msg.content}</p>
-                    <p className={`text-xs mt-1 ${isClient ? 'text-slate-400' : 'opacity-60'}`}>
-                      {fmtTime(msg.createdAt)}
-                    </p>
+          {/* ── Área de mensajes — scroll inteligente ─────────────────────── */}
+          <div className="relative flex-1 min-h-0">
+            <div
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="h-full overflow-y-auto overscroll-contain px-4 md:px-6 py-4 space-y-3 bg-slate-50"
+            >
+              {messages.length === 0 ? (
+                <p className="text-center text-slate-400 text-sm py-12">Sin mensajes aún</p>
+              ) : messages.map((msg: any) => {
+                const isClient = msg.sender === 'customer';
+                return (
+                  <div key={msg.messageId} className={`flex ${isClient ? 'justify-start' : 'justify-end'}`}>
+                    <div
+                      className={`max-w-[75%] sm:max-w-sm md:max-w-md lg:max-w-lg px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                        isClient
+                          ? 'bg-white text-slate-800 border border-slate-100 rounded-tl-sm'
+                          : msg.isAiResponse
+                            ? 'text-white rounded-tr-sm'
+                            : 'bg-blue-600 text-white rounded-tr-sm'
+                      }`}
+                      style={!isClient && msg.isAiResponse ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}
+                    >
+                      {!isClient && (
+                        <p className="text-xs opacity-70 mb-1">{msg.isAiResponse ? 'IA' : 'Tú'}</p>
+                      )}
+                      <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      <p className={`text-xs mt-1 ${isClient ? 'text-slate-400' : 'opacity-60'}`}>
+                        {fmtTime(msg.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-            {/* Anchor para auto-scroll */}
-            <div ref={bottomRef} />
+                );
+              })}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Botón flotante "↓ Nuevos mensajes" */}
+            {showScrollBtn && (
+              <button
+                onClick={() => scrollToBottom('smooth')}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg transition-all animate-bounce"
+                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+              >
+                <ChevronDownIcon />
+                Nuevos mensajes
+              </button>
+            )}
           </div>
 
-          {/* Input — flex-shrink-0 para que nunca se comprima */}
+          {/* Input */}
           <div className="flex-shrink-0">
             {selected.status === 'human' ? (
               <div className="bg-white border-t border-slate-100 px-4 md:px-6 py-3 md:py-4">
@@ -434,7 +475,12 @@ export default function Conversations() {
                   <textarea
                     value={text}
                     onChange={e => setText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
                     placeholder="Escribe un mensaje..."
                     rows={2}
                     className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none text-sm"
@@ -445,7 +491,9 @@ export default function Conversations() {
                     className="w-11 h-11 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition flex-shrink-0"
                     style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
                   >
-                    <SendIcon />
+                    {sending
+                      ? <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                      : <SendIcon />}
                   </button>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">Enter para enviar · Shift+Enter nueva línea</p>
@@ -456,15 +504,19 @@ export default function Conversations() {
               </div>
             ) : (
               <div className="bg-slate-50 border-t border-slate-100 px-6 py-4 text-center text-sm text-slate-500">
-                La IA está manejando esta conversación —
-                <strong className="text-blue-600"> presiona "Tomar control" </strong>
+                La IA está manejando esta conversación —{' '}
+                <button
+                  onClick={handleTakeover}
+                  className="font-semibold text-blue-600 hover:underline"
+                >
+                  Tomar control
+                </button>{' '}
                 para intervenir directamente
               </div>
             )}
           </div>
         </div>
       ) : (
-        /* Empty state — solo desktop */
         <div className="hidden md:flex flex-1 items-center justify-center flex-col gap-3 text-slate-400 bg-slate-50">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
