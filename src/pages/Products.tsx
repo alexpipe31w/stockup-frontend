@@ -25,18 +25,18 @@ interface Category {
 }
 
 interface Variant {
-  variantId:   string;
-  name:        string;
-  sku:         string | null;
-  salePrice:   string | null;
-  costPrice:   string | null;
+  variantId:    string;
+  name:         string;
+  sku:          string | null;
+  salePrice:    string | null;
+  costPrice:    string | null;
   profitMargin: string | null;
-  stock:       number;
-  attributes:  Record<string, string>;
-  imageUrl:    string | null;
-  weight:      string | null;
-  sortOrder:   number;
-  isActive:    boolean;
+  stock:        number;
+  attributes:   Record<string, string>;
+  imageUrl:     string | null;
+  weight:       string | null;
+  sortOrder:    number;
+  isActive:     boolean;
 }
 
 interface Product {
@@ -121,8 +121,8 @@ function ProfitBadge({ sale, cost }: { sale: string | number; cost: string | num
 
 // ── Product Card ──────────────────────────────────────────────────────────────
 function ProductCard({ product, onEdit, onDelete }: {
-  product: Product;
-  onEdit:  (p: Product) => void;
+  product:  Product;
+  onEdit:   (p: Product) => void;
   onDelete: (p: Product) => void;
 }) {
   const activeVariants = product.variants?.filter(v => v.isActive) ?? [];
@@ -134,7 +134,6 @@ function ProductCard({ product, onEdit, onDelete }: {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
-      {/* Imagen */}
       <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden relative">
         {product.imageUrl ? (
           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover"
@@ -165,7 +164,6 @@ function ProductCard({ product, onEdit, onDelete }: {
             dangerouslySetInnerHTML={{ __html: product.description.replace(/<[^>]+>/g, ' ') }} />
         )}
 
-        {/* Precios */}
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-slate-50">
           <div>
             <p className="text-xs text-slate-400">Venta</p>
@@ -190,7 +188,6 @@ function ProductCard({ product, onEdit, onDelete }: {
           </div>
         </div>
 
-        {/* Chips variantes */}
         {hasVars && (
           <div className="flex flex-wrap gap-1">
             {activeVariants.slice(0, 3).map(v => (
@@ -206,7 +203,6 @@ function ProductCard({ product, onEdit, onDelete }: {
           </div>
         )}
 
-        {/* Envío */}
         {product.hasShipping && (
           <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg w-fit">
             <TruckIcon />
@@ -237,8 +233,8 @@ function VariantRow({ variant, onUpdate, onRemove }: {
   onUpdate: (id: string, data: Partial<VariantForm>) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [form, setForm]       = useState<VariantForm>({
+  const [editing, setEditing]           = useState(false);
+  const [form, setForm]                 = useState<VariantForm>({
     name:       variant.name,
     sku:        variant.sku ?? '',
     salePrice:  variant.salePrice ?? '',
@@ -249,7 +245,7 @@ function VariantRow({ variant, onUpdate, onRemove }: {
     attributes: variant.attributes ?? {},
     sortOrder:  String(variant.sortOrder ?? 0),
   });
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]             = useState(false);
   const [newAttrKey, setNewAttrKey]     = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
 
@@ -343,7 +339,6 @@ function VariantRow({ variant, onUpdate, onRemove }: {
           className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
       </div>
 
-      {/* Atributos */}
       <div>
         <p className="text-xs font-semibold text-slate-500 mb-1">Atributos (color, talla, etc.)</p>
         <div className="flex flex-wrap gap-1 mb-1.5">
@@ -372,7 +367,9 @@ function VariantRow({ variant, onUpdate, onRemove }: {
         <button onClick={save} disabled={saving || !form.name.trim()}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50 transition"
           style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
-          {saving ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> : <><SaveIcon /> Guardar</>}
+          {saving
+            ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+            : <><SaveIcon /> Guardar</>}
         </button>
         <button onClick={() => setEditing(false)}
           className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:bg-slate-200 transition">
@@ -409,17 +406,17 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
     shippingExpress:  product.shippingExpress ?? '',
   } : EMPTY_FORM);
 
-  const [variants,       setVariants]       = useState<Variant[]>(product?.variants ?? []);
-  const [newVariant,     setNewVariant]      = useState<VariantForm>(EMPTY_VARIANT);
-  const [newAttrKey,     setNewAttrKey]      = useState('');
-  const [newAttrValue,   setNewAttrValue]    = useState('');
-  const [addingVariant,  setAddingVariant]   = useState(false);
-  const [saving,         setSaving]          = useState(false);
-  const [error,          setError]           = useState('');
-  const [tab,            setTab]             = useState<'info' | 'variants'>('info');
-  const [newCatName,     setNewCatName]      = useState('');
-  const [creatingCat,    setCreatingCat]     = useState(false);
-  const [showCatInput,   setShowCatInput]    = useState(false);
+  const [variants,      setVariants]    = useState<Variant[]>(product?.variants ?? []);
+  const [newVariant,    setNewVariant]  = useState<VariantForm>(EMPTY_VARIANT);
+  const [newAttrKey,    setNewAttrKey]  = useState('');
+  const [newAttrValue,  setNewAttrValue]= useState('');
+  const [addingVariant, setAddingVariant] = useState(false);
+  const [saving,        setSaving]      = useState(false);
+  const [error,         setError]       = useState('');
+  const [tab,           setTab]         = useState<'info' | 'variants'>('info');
+  const [newCatName,    setNewCatName]  = useState('');
+  const [creatingCat,   setCreatingCat] = useState(false);
+  const [showCatInput,  setShowCatInput]= useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => nameRef.current?.focus(), 50); }, []);
@@ -445,8 +442,8 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
   // ── Guardar producto ──────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!form.name.trim())    return setError('El nombre es requerido');
-    if (!form.salePrice)      return setError('El precio de venta es requerido');
+    if (!form.name.trim()) return setError('El nombre es requerido');
+    if (!form.salePrice)   return setError('El precio de venta es requerido');
     setSaving(true); setError('');
     try {
       const payload: any = {
@@ -463,6 +460,20 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
         weight:           form.weight ? Number(form.weight) : undefined,
         shippingStandard: form.shippingStandard ? Number(form.shippingStandard) : undefined,
         shippingExpress:  form.shippingExpress  ? Number(form.shippingExpress)  : undefined,
+        // CAMBIO 3: en creación, enviar variantes locales en el mismo request
+        ...(!isEdit && form.hasVariants && variants.length > 0 && {
+          variants: variants.map(v => ({
+            name:       v.name,
+            sku:        v.sku || undefined,
+            salePrice:  v.salePrice ? Number(v.salePrice) : undefined,
+            costPrice:  v.costPrice ? Number(v.costPrice) : undefined,
+            stock:      v.stock,
+            attributes: v.attributes,
+            imageUrl:   v.imageUrl || undefined,
+            weight:     v.weight ? Number(v.weight) : undefined,
+            sortOrder:  v.sortOrder,
+          })),
+        }),
       };
       const res = isEdit
         ? await updateProduct(product!.productId, payload)
@@ -476,7 +487,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
     }
   };
 
-  // ── Atributos nueva variante ───────────────────────────────────────────────
+  // ── Atributos nueva variante ──────────────────────────────────────────────
   const addNewVariantAttr = () => {
     if (!newAttrKey.trim() || !newAttrValue.trim()) return;
     setNewVariant(v => ({ ...v, attributes: { ...v.attributes, [newAttrKey.trim()]: newAttrValue.trim() } }));
@@ -484,8 +495,33 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
   };
 
   // ── Agregar variante ──────────────────────────────────────────────────────
+  // CAMBIO 4: en creación agrega localmente; en edición llama a la API
   const handleAddVariant = async () => {
-    if (!isEdit || !newVariant.name.trim()) return;
+    if (!newVariant.name.trim()) return;
+
+    // En creación: agregar al estado local, se envían al guardar el producto
+    if (!isEdit) {
+      const tempVariant: Variant = {
+        variantId:    `temp-${Date.now()}`,
+        name:         newVariant.name.trim(),
+        sku:          newVariant.sku || null,
+        salePrice:    newVariant.salePrice || null,
+        costPrice:    newVariant.costPrice || null,
+        profitMargin: null,
+        stock:        Number(newVariant.stock) || 0,
+        attributes:   newVariant.attributes,
+        imageUrl:     newVariant.imageUrl || null,
+        weight:       newVariant.weight || null,
+        sortOrder:    Number(newVariant.sortOrder) || 0,
+        isActive:     true,
+      };
+      setVariants(v => [...v, tempVariant]);
+      setNewVariant(EMPTY_VARIANT);
+      setNewAttrKey(''); setNewAttrValue('');
+      return;
+    }
+
+    // En edición: llamar a la API directamente
     setAddingVariant(true);
     try {
       const res = await addVariant(product!.productId, {
@@ -510,6 +546,22 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
   };
 
   const handleUpdateVariant = async (variantId: string, data: Partial<VariantForm>) => {
+    // Variante temporal (creación): actualizar solo en estado local
+    if (variantId.startsWith('temp-')) {
+      setVariants(v => v.map(x => x.variantId === variantId ? {
+        ...x,
+        name:      data.name ?? x.name,
+        sku:       data.sku || null,
+        salePrice: data.salePrice || null,
+        costPrice: data.costPrice || null,
+        stock:     data.stock !== undefined ? Number(data.stock) : x.stock,
+        imageUrl:  data.imageUrl || null,
+        weight:    data.weight || null,
+        attributes: data.attributes ?? x.attributes,
+        sortOrder: data.sortOrder !== undefined ? Number(data.sortOrder) : x.sortOrder,
+      } : x));
+      return;
+    }
     const res = await updateVariant(variantId, {
       name:       data.name,
       sku:        data.sku || undefined,
@@ -525,11 +577,15 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
   };
 
   const handleRemoveVariant = async (variantId: string) => {
+    // Variante temporal: eliminar solo del estado local
+    if (variantId.startsWith('temp-')) {
+      setVariants(v => v.filter(x => x.variantId !== variantId));
+      return;
+    }
     await deleteVariant(variantId);
     setVariants(v => v.filter(x => x.variantId !== variantId));
   };
 
-  // ── Margen en tiempo real ─────────────────────────────────────────────────
   const liveMargin = form.salePrice && form.costPrice
     ? margin(form.salePrice, form.costPrice)
     : null;
@@ -546,13 +602,13 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           </button>
         </div>
 
-        {/* Tabs */}
-        {isEdit && (
+        {/* CAMBIO 1: tabs visibles cuando isEdit O cuando hasVariants está activo */}
+        {(isEdit || form.hasVariants) && (
           <div className="flex border-b border-slate-100 px-6">
             {(['info', 'variants'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition ${tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                {t === 'info' ? 'Información' : `Variantes (${variants.filter(v => v.isActive).length})`}
+                {t === 'info' ? 'Información' : `Variantes (${variants.length})`}
               </button>
             ))}
           </div>
@@ -562,14 +618,12 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           {/* ── TAB INFO ───────────────────────────────────────────────────── */}
           {tab === 'info' && (
             <>
-              {/* Preview imagen */}
               {form.imageUrl && (
                 <div className="h-40 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
                   <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
                 </div>
               )}
 
-              {/* Nombre */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Nombre *</label>
                 <input ref={nameRef} type="text" value={form.name}
@@ -578,7 +632,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
               </div>
 
-              {/* SKU + Categoría */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">SKU</label>
@@ -617,7 +670,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               </div>
 
-              {/* URL imagen */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">URL de imagen</label>
                 <input type="text" value={form.imageUrl}
@@ -626,21 +678,24 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
               </div>
 
-              {/* Tiene variantes */}
+              {/* CAMBIO 2: al activar hasVariants → ir automáticamente al tab variantes */}
               <div className="flex items-center justify-between py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-2 text-sm text-slate-700">
                   <BoxIcon />
                   <span>Este producto tiene variantes</span>
                   <span className="text-xs text-slate-400">(tallas, colores, etc.)</span>
                 </div>
-                <button onClick={() => set('hasVariants', !form.hasVariants)}
+                <button onClick={() => {
+                  const next = !form.hasVariants;
+                  set('hasVariants', next);
+                  if (next) setTab('variants');
+                }}
                   className="w-11 h-6 rounded-full transition relative flex-shrink-0"
                   style={form.hasVariants ? { background: 'linear-gradient(135deg,#9333ea,#2563eb)' } : { background: '#e2e8f0' }}>
                   <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.hasVariants ? 'left-5' : 'left-0.5'}`} />
                 </button>
               </div>
 
-              {/* Precio + Stock (solo sin variantes) */}
               {!form.hasVariants && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
@@ -674,7 +729,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               )}
 
-              {/* Precio base (con variantes) */}
               {form.hasVariants && (
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Precio base de referencia *</label>
@@ -686,19 +740,16 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               )}
 
-              {/* Descripción */}
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Descripción</label>
                 <textarea value={form.description}
                   onChange={e => set('description', e.target.value)}
                   placeholder="Describe el producto para que la IA pueda informar a clientes..."
-                  rows={3}
-                  maxLength={50000}
+                  rows={3} maxLength={50000}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none" />
                 <p className="text-xs text-slate-400 text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
               </div>
 
-              {/* Envío */}
               <div className="space-y-3 border border-slate-200 rounded-xl p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-slate-700">
@@ -710,7 +761,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.hasShipping ? 'left-5' : 'left-0.5'}`} />
                   </button>
                 </div>
-
                 {form.hasShipping && (
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     <div>
@@ -751,16 +801,22 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           {/* ── TAB VARIANTES ──────────────────────────────────────────────── */}
           {tab === 'variants' && (
             <>
+              {!isEdit && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-xs text-blue-700">
+                  Las variantes se guardarán junto con el producto al hacer clic en <strong>Crear producto</strong>.
+                </div>
+              )}
+
               <p className="text-xs text-slate-400">Cada variante tiene su propio precio, stock y atributos.</p>
 
-              {variants.filter(v => v.isActive).length === 0 ? (
-                <p className="text-center text-slate-400 text-sm py-6">Sin variantes aún</p>
+              {variants.length === 0 ? (
+                <p className="text-center text-slate-400 text-sm py-6">Sin variantes aún — agrega la primera abajo</p>
               ) : (
                 <div className="space-y-1">
                   <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
                     <span>Nombre</span><span>SKU</span><span>Precio</span><span>Stock</span><span />
                   </div>
-                  {variants.filter(v => v.isActive).map(v => (
+                  {variants.map(v => (
                     <VariantRow key={v.variantId} variant={v}
                       onUpdate={handleUpdateVariant}
                       onRemove={handleRemoveVariant} />
@@ -768,7 +824,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               )}
 
-              {/* Agregar variante */}
               <div className="border-t border-slate-100 pt-4 space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Nueva variante</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -802,7 +857,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                     className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
                 </div>
 
-                {/* Atributos nueva variante */}
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Atributos</p>
                   <div className="flex flex-wrap gap-1 mb-1.5">
@@ -835,6 +889,15 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
                   {addingVariant ? 'Agregando...' : <><PlusIcon /> Agregar variante</>}
                 </button>
+
+                {/* Botón guardar también en tab variantes durante creación */}
+                {!isEdit && (
+                  <button onClick={handleSubmit} disabled={saving}
+                    className="w-full py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition mt-2"
+                    style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                    {saving ? 'Guardando...' : `Crear producto${variants.length > 0 ? ` con ${variants.length} variante${variants.length !== 1 ? 's' : ''}` : ''}`}
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -846,16 +909,16 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Products() {
-  const [products,       setProducts]        = useState<Product[]>([]);
-  const [categories,     setCategories]      = useState<Category[]>([]);
-  const [loading,        setLoading]         = useState(true);
-  const [search,         setSearch]          = useState('');
-  const [filterCat,      setFilterCat]       = useState('');
-  const [filterShipping, setFilterShipping]  = useState<'all'|'yes'|'no'>('all');
-  const [filterStock,    setFilterStock]     = useState<'all'|'low'|'out'>('all');
-  const [modalProduct,   setModalProduct]    = useState<Product | null | 'new'>(null);
-  const [deleteTarget,   setDeleteTarget]    = useState<Product | null>(null);
-  const [deleting,       setDeleting]        = useState(false);
+  const [products,       setProducts]       = useState<Product[]>([]);
+  const [categories,     setCategories]     = useState<Category[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [search,         setSearch]         = useState('');
+  const [filterCat,      setFilterCat]      = useState('');
+  const [filterShipping, setFilterShipping] = useState<'all'|'yes'|'no'>('all');
+  const [filterStock,    setFilterStock]    = useState<'all'|'low'|'out'>('all');
+  const [modalProduct,   setModalProduct]   = useState<Product | null | 'new'>(null);
+  const [deleteTarget,   setDeleteTarget]   = useState<Product | null>(null);
+  const [deleting,       setDeleting]       = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -914,19 +977,18 @@ export default function Products() {
     return matchSearch && matchCat && matchShipping && matchStock;
   });
 
-  const statsTotal     = products.length;
-  const statsLowStock  = products.filter(p => {
+  const statsTotal    = products.length;
+  const statsLowStock = products.filter(p => {
     const s = p.hasVariants ? p.variants?.filter(v => v.isActive).reduce((a, v) => a + v.stock, 0) : p.stock;
     return (s ?? 0) > 0 && (s ?? 0) < 5;
   }).length;
-  const statsOutStock  = products.filter(p => {
+  const statsOutStock = products.filter(p => {
     const s = p.hasVariants ? p.variants?.filter(v => v.isActive).reduce((a, v) => a + v.stock, 0) : p.stock;
     return (s ?? 0) === 0;
   }).length;
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
@@ -943,7 +1005,6 @@ export default function Products() {
             </button>
           </div>
 
-          {/* Stats rápidas */}
           {!loading && (
             <div className="flex gap-4 mb-4">
               <div className="text-xs text-slate-500">
@@ -962,7 +1023,6 @@ export default function Products() {
             </div>
           )}
 
-          {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><SearchIcon /></span>
@@ -997,7 +1057,6 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Grid */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -1025,7 +1084,6 @@ export default function Products() {
         )}
       </div>
 
-      {/* Modal crear/editar */}
       {modalProduct !== null && (
         <ProductModal
           product={modalProduct === 'new' ? null : modalProduct}
@@ -1036,14 +1094,12 @@ export default function Products() {
         />
       )}
 
-      {/* Confirm eliminar */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="font-bold text-slate-800 mb-2">¿Eliminar producto?</h3>
             <p className="text-sm text-slate-500 mb-5">
-              <span className="font-semibold">{deleteTarget.name}</span> será desactivado
-              junto con todas sus variantes.
+              <span className="font-semibold">{deleteTarget.name}</span> será desactivado junto con todas sus variantes.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteTarget(null)}
