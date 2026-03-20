@@ -226,7 +226,7 @@ export const updateOrderStatus = (id: string, status: string) =>
 export const getCustomers = (storeId: string) =>
   api.get(`/customers/store/${storeId}`);
 
-export const updateCustomer = (id: string, data: { name?: string; city?: string }) =>
+export const updateCustomer = (id: string, data: { name?: string; city?: string; cedula?: string }) =>
   api.patch(`/customers/${id}`, data);
 
 // ── Campaigns ─────────────────────────────────────────────────────────────

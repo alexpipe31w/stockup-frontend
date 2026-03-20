@@ -48,20 +48,30 @@ const CalendarIcon = () => (
     <line x1="3" y1="10" x2="21" y2="10"/>
   </svg>
 );
+const IdCardIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="2" y="5" width="20" height="14" rx="2"/>
+    <circle cx="8" cy="12" r="2"/>
+    <line x1="13" y1="10" x2="19" y2="10"/>
+    <line x1="13" y1="14" x2="17" y2="14"/>
+  </svg>
+);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Customer {
   customerId: string;
-  storeId: string;
-  phone: string;
-  name: string | null;
-  city: string | null;
-  createdAt: string;
+  storeId:    string;
+  phone:      string;
+  name:       string | null;
+  cedula:     string | null;
+  city:       string | null;
+  createdAt:  string;
 }
 
 interface EditState {
-  name: string;
-  city: string;
+  name:   string;
+  cedula: string;
+  city:   string;
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -77,17 +87,20 @@ function Avatar({ customer }: { customer: Customer }) {
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Empty value ────────────────────────────────────────────────────────────────
+const Empty = () => <span className="text-slate-300 italic">—</span>;
+
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function Customers() {
-  const { storeId } = useAuth();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterCity, setFilterCity] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editState, setEditState] = useState<EditState>({ name: '', city: '' });
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const { storeId }  = useAuth();
+  const [customers,   setCustomers]  = useState<Customer[]>([]);
+  const [loading,     setLoading]    = useState(true);
+  const [search,      setSearch]     = useState('');
+  const [filterCity,  setFilterCity] = useState('');
+  const [editingId,   setEditingId]  = useState<string | null>(null);
+  const [editState,   setEditState]  = useState<EditState>({ name: '', cedula: '', city: '' });
+  const [saving,      setSaving]     = useState(false);
+  const [saveError,   setSaveError]  = useState('');
   const nameRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
@@ -97,9 +110,8 @@ export default function Customers() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [storeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [storeId]); // eslint-disable-line
 
-  // Foco en el input de nombre al abrir edición
   useEffect(() => {
     if (editingId) setTimeout(() => nameRef.current?.focus(), 50);
   }, [editingId]);
@@ -109,14 +121,15 @@ export default function Customers() {
     new Set(customers.map((c) => c.city).filter(Boolean) as string[])
   ).sort();
 
-  // Filtrado combinado: búsqueda por nombre/teléfono + ciudad
+  // Filtrado: nombre, teléfono, cédula o ciudad
   const filtered = customers.filter((c) => {
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
       c.phone.toLowerCase().includes(q) ||
-      (c.name ?? '').toLowerCase().includes(q) ||
-      (c.city ?? '').toLowerCase().includes(q);
+      (c.name   ?? '').toLowerCase().includes(q) ||
+      (c.cedula ?? '').toLowerCase().includes(q) ||
+      (c.city   ?? '').toLowerCase().includes(q);
     const matchCity = !filterCity || c.city === filterCity;
     return matchSearch && matchCity;
   });
@@ -124,26 +137,28 @@ export default function Customers() {
   const startEdit = (c: Customer) => {
     setSaveError('');
     setEditingId(c.customerId);
-    setEditState({ name: c.name ?? '', city: c.city ?? '' });
+    setEditState({ name: c.name ?? '', cedula: c.cedula ?? '', city: c.city ?? '' });
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setSaveError('');
-  };
+  const cancelEdit = () => { setEditingId(null); setSaveError(''); };
 
   const saveEdit = async (customerId: string) => {
-    setSaving(true);
-    setSaveError('');
+    setSaving(true); setSaveError('');
     try {
       await updateCustomer(customerId, {
-        name: editState.name.trim() || undefined,
-        city: editState.city.trim() || undefined,
+        name:   editState.name.trim()   || undefined,
+        cedula: editState.cedula.trim() || undefined,
+        city:   editState.city.trim()   || undefined,
       });
       setCustomers((prev) =>
         prev.map((c) =>
           c.customerId === customerId
-            ? { ...c, name: editState.name.trim() || null, city: editState.city.trim() || null }
+            ? {
+                ...c,
+                name:   editState.name.trim()   || null,
+                cedula: editState.cedula.trim() || null,
+                city:   editState.city.trim()   || null,
+              }
             : c
         )
       );
@@ -155,23 +170,43 @@ export default function Customers() {
     }
   };
 
+  const handleKey = (e: React.KeyboardEvent, customerId: string) => {
+    if (e.key === 'Enter')  saveEdit(customerId);
+    if (e.key === 'Escape') cancelEdit();
+  };
+
   const fmt = (date: string) =>
     new Date(date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  // Stats rápidas
+  const withName   = customers.filter(c => c.name).length;
+  const withCedula = customers.filter(c => c.cedula).length;
 
   return (
     <div className="min-h-screen bg-slate-50">
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Clientes</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
-              {loading ? '...' : `${customers.length} registrados`}
-            </p>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">Clientes</h1>
+              <p className="text-sm text-slate-400 mt-0.5">
+                {loading ? '...' : `${customers.length} registrados`}
+              </p>
+            </div>
           </div>
 
-          {/* Búsqueda + filtro ciudad */}
+          {/* Stats rápidas */}
+          {!loading && customers.length > 0 && (
+            <div className="flex gap-4 mb-4 text-xs text-slate-500">
+              <span><strong className="text-slate-700">{withName}</strong> con nombre</span>
+              <span><strong className="text-slate-700">{withCedula}</strong> con cédula</span>
+              <span><strong className="text-slate-700">{customers.length - withName}</strong> sin identificar</span>
+            </div>
+          )}
+
+          {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -180,11 +215,10 @@ export default function Customers() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nombre, teléfono o ciudad..."
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-72"
+                placeholder="Buscar por nombre, teléfono, cédula o ciudad..."
+                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-80"
               />
             </div>
-
             {cities.length > 0 && (
               <select
                 value={filterCity}
@@ -192,18 +226,23 @@ export default function Customers() {
                 className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-white text-slate-700"
               >
                 <option value="">Todas las ciudades</option>
-                {cities.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
+                {cities.map((city) => <option key={city} value={city}>{city}</option>)}
               </select>
+            )}
+            {(search || filterCity) && (
+              <button
+                onClick={() => { setSearch(''); setFilterCity(''); }}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Limpiar filtros
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Content ── */}
+      {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-6">
-
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <svg className="animate-spin text-blue-600" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -227,10 +266,11 @@ export default function Customers() {
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
-            {/* Tabla header */}
-            <div className="grid grid-cols-[2fr_1.5fr_1.2fr_1.2fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            {/* Tabla header — 6 columnas */}
+            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
               <span className="flex items-center gap-1.5"><UserIcon /> Cliente</span>
               <span className="flex items-center gap-1.5"><PhoneIcon /> Teléfono</span>
+              <span className="flex items-center gap-1.5"><IdCardIcon /> Cédula</span>
               <span className="flex items-center gap-1.5"><CityIcon /> Ciudad</span>
               <span className="flex items-center gap-1.5"><CalendarIcon /> Registrado</span>
               <span>Acciones</span>
@@ -243,7 +283,7 @@ export default function Customers() {
                 return (
                   <div
                     key={c.customerId}
-                    className={`grid grid-cols-[2fr_1.5fr_1.2fr_1.2fr_auto] px-6 py-4 items-center gap-2 transition ${
+                    className={`grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_auto] px-6 py-4 items-center gap-3 transition ${
                       isEditing ? 'bg-blue-50/40' : 'hover:bg-slate-50'
                     }`}
                   >
@@ -256,23 +296,33 @@ export default function Customers() {
                           value={editState.name}
                           onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
                           placeholder="Nombre del cliente"
+                          onKeyDown={(e) => handleKey(e, c.customerId)}
                           className="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') saveEdit(c.customerId);
-                            if (e.key === 'Escape') cancelEdit();
-                          }}
                         />
                       ) : (
-                        <div className="min-w-0">
-                          <p className="font-medium text-slate-800 truncate">
-                            {c.name ?? <span className="text-slate-400 font-normal italic">Sin nombre</span>}
-                          </p>
-                        </div>
+                        <p className="font-medium text-slate-800 truncate">
+                          {c.name ?? <span className="text-slate-400 font-normal italic">Sin nombre</span>}
+                        </p>
                       )}
                     </div>
 
-                    {/* Teléfono */}
+                    {/* Teléfono (no editable — es el identificador único) */}
                     <p className="text-sm text-slate-600 font-mono">{c.phone}</p>
+
+                    {/* Cédula */}
+                    {isEditing ? (
+                      <input
+                        value={editState.cedula}
+                        onChange={(e) => setEditState((s) => ({ ...s, cedula: e.target.value }))}
+                        placeholder="N° cédula"
+                        onKeyDown={(e) => handleKey(e, c.customerId)}
+                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono"
+                      />
+                    ) : (
+                      <p className="text-sm text-slate-600 font-mono">
+                        {c.cedula ?? <Empty />}
+                      </p>
+                    )}
 
                     {/* Ciudad */}
                     {isEditing ? (
@@ -280,15 +330,12 @@ export default function Customers() {
                         value={editState.city}
                         onChange={(e) => setEditState((s) => ({ ...s, city: e.target.value }))}
                         placeholder="Ciudad"
+                        onKeyDown={(e) => handleKey(e, c.customerId)}
                         className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEdit(c.customerId);
-                          if (e.key === 'Escape') cancelEdit();
-                        }}
                       />
                     ) : (
                       <p className="text-sm text-slate-600">
-                        {c.city ?? <span className="text-slate-300 italic">—</span>}
+                        {c.city ?? <Empty />}
                       </p>
                     )}
 
@@ -309,13 +356,9 @@ export default function Customers() {
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-white disabled:opacity-50 transition"
                             style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
                           >
-                            {saving ? (
-                              <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                                <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                              </svg>
-                            ) : (
-                              <SaveIcon />
-                            )}
+                            {saving
+                              ? <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                              : <SaveIcon />}
                           </button>
                           <button
                             onClick={cancelEdit}
@@ -340,10 +383,11 @@ export default function Customers() {
               })}
             </div>
 
-            {/* Footer con conteo */}
+            {/* Footer */}
             <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
               <p className="text-xs text-slate-400">
-                Mostrando <span className="font-semibold text-slate-600">{filtered.length}</span> de{' '}
+                Mostrando{' '}
+                <span className="font-semibold text-slate-600">{filtered.length}</span> de{' '}
                 <span className="font-semibold text-slate-600">{customers.length}</span> clientes
               </p>
               {(search || filterCity) && (
