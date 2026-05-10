@@ -6,7 +6,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: { blue: '#2563eb', purple: '#9333ea' },
+        primary:       'var(--color-primary)',
+        'primary-dark':'var(--color-primary-dark)',
+        'primary-light':'var(--color-primary-light)',
+        secondary:     'var(--color-secondary)',
+        accent:        'var(--color-accent)',
       },
     },
   },

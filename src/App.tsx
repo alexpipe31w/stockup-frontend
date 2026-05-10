@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { getStoreTheme } from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import AiConfig from './pages/AiConfig';
 import Conversations from './pages/Conversations';
 import Customers from './pages/Customers';
 import Orders from './pages/Orders';
@@ -13,8 +13,38 @@ import Analytics from './pages/Analytics';
 import Services from './pages/Services';
 import Users from './pages/Users';
 import WhatsAppPage from './pages/WhatsApp';
-import Blocked from './pages/Blocked';
 import Appointments from './pages/Appointments';
+import Config from './pages/Config';
+
+/** Aplica los colores de la tienda como CSS vars en el elemento raíz */
+function applyTheme(primary?: string, secondary?: string, accent?: string) {
+  const root = document.documentElement;
+  if (primary) {
+    root.style.setProperty('--color-primary', primary);
+    // Aproximación de dark/light — en el futuro puede calcularse dinámicamente
+    root.style.setProperty('--color-primary-dark', primary);
+    root.style.setProperty('--color-primary-light', primary);
+  }
+  if (secondary) root.style.setProperty('--color-secondary', secondary);
+  if (accent)    root.style.setProperty('--color-accent', accent);
+}
+
+/** Carga el tema de la tienda una sola vez al autenticar */
+function ThemeLoader() {
+  const { storeId } = useAuth();
+
+  useEffect(() => {
+    if (!storeId) return;
+    getStoreTheme(storeId)
+      .then(res => {
+        const { primaryColor, secondaryColor, accentColor } = res.data;
+        applyTheme(primaryColor, secondaryColor, accentColor);
+      })
+      .catch(() => {}); // usa la paleta por defecto si falla
+  }, [storeId]);
+
+  return null;
+}
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
@@ -28,20 +58,12 @@ function AdminRoute({ children }: { children: React.ReactElement }) {
   return children;
 }
 
-function AgentRoute({ children }: { children: React.ReactElement }) {
-  const { token, user } = useAuth();
-  if (!token) return <Navigate to="/login" replace />;
-  if (user?.role !== 'admin' && user?.role !== 'superadmin' && user?.role !== 'agent') return <Navigate to="/dashboard" replace />;
-  return children;
-}
-
 function Layout({ children }: { children: React.ReactElement }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const canConfigAI = isAdmin || user?.role === 'agent';
 
   const navItems = [
     {
@@ -85,16 +107,12 @@ function Layout({ children }: { children: React.ReactElement }) {
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     },
     {
-      to: '/blocked', label: 'Excluidos',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      to: '/config', label: 'Configuración',
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     },
   ];
 
   const adminNavItems = [
-    {
-      to: '/ai-config', label: 'Configurar IA',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/></svg>
-    },
     {
       to: '/users', label: 'Usuarios',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -103,8 +121,6 @@ function Layout({ children }: { children: React.ReactElement }) {
 
   const allNavItems = isAdmin
     ? [...navItems, ...adminNavItems]
-    : canConfigAI
-    ? [...navItems, adminNavItems[0]]
     : navItems;
 
   // Sidebar content reutilizable para desktop y drawer móvil
@@ -113,7 +129,7 @@ function Layout({ children }: { children: React.ReactElement }) {
       <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+          style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="white"/>
@@ -134,7 +150,7 @@ function Layout({ children }: { children: React.ReactElement }) {
               }`
             }
             style={({ isActive }) =>
-              isActive ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}
+              isActive ? { background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' } : {}
             }
           >
             {item.icon}
@@ -160,7 +176,7 @@ function Layout({ children }: { children: React.ReactElement }) {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen">
 
       {/* ── SIDEBAR DESKTOP (oculto en móvil) ── */}
       <aside className="hidden md:flex w-64 bg-white border-r border-slate-100 flex-col shadow-sm flex-shrink-0">
@@ -212,7 +228,7 @@ function Layout({ children }: { children: React.ReactElement }) {
           <div className="flex items-center gap-2">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="white"/>
@@ -224,7 +240,7 @@ function Layout({ children }: { children: React.ReactElement }) {
           {/* Avatar / inicial del usuario */}
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-            style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
           >
             {user?.email?.[0]?.toUpperCase() ?? 'U'}
           </div>
@@ -242,6 +258,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ThemeLoader />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
@@ -254,8 +271,7 @@ function App() {
           <Route path="/appointments" element={<PrivateRoute><Layout><Appointments /></Layout></PrivateRoute>} />
           <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
-          <Route path="/blocked" element={<PrivateRoute><Layout><Blocked /></Layout></PrivateRoute>} />
-          <Route path="/ai-config" element={<AgentRoute><Layout><AiConfig /></Layout></AgentRoute>} />
+          <Route path="/config" element={<PrivateRoute><Layout><Config /></Layout></PrivateRoute>} />
           <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

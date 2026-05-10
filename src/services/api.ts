@@ -307,6 +307,16 @@ export const getWhatsAppStatus = (storeId: string) =>
 export const disconnectWhatsApp = (storeId: string) =>
   api.delete(`/whatsapp/disconnect/${storeId}`);
 
+// ── Store Theme ───────────────────────────────────────────────────────────
+export const getStoreTheme = (storeId: string) =>
+  api.get(`/stores/${storeId}/theme`);
+
+export const updateStoreTheme = (storeId: string, data: {
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+}) => api.patch(`/stores/${storeId}/theme`, data);
+
 // ── AI Config ─────────────────────────────────────────────────────────────
 export const getAiConfig = (storeId: string) =>
   api.get(`/ai-config/${storeId}`);
