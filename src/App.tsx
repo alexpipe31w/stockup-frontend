@@ -15,6 +15,8 @@ import Users from './pages/Users';
 import WhatsAppPage from './pages/WhatsApp';
 import Appointments from './pages/Appointments';
 import Config from './pages/Config';
+import SuperAdminLogin from './pages/SuperAdminLogin';
+import SuperAdmin from './pages/SuperAdmin';
 
 /** Aplica los colores de la tienda como CSS vars en el elemento raíz */
 function applyTheme(primary?: string, secondary?: string, accent?: string) {
@@ -273,6 +275,8 @@ function App() {
           <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
           <Route path="/config" element={<PrivateRoute><Layout><Config /></Layout></PrivateRoute>} />
           <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
+          <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+          <Route path="/superadmin" element={<SuperAdmin />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

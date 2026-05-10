@@ -335,3 +335,33 @@ export const blockContact = (data: { phone: string; label?: string }) =>
 
 export const unblockContact = (id: string) =>
   api.delete(`/blocked/${id}`);
+
+// ── SuperAdmin ─────────────────────────────────────────────────────────────
+// Usa sa_token separado del token de usuario normal
+function saHeaders() {
+  return { Authorization: `Bearer ${localStorage.getItem('sa_token') ?? ''}` };
+}
+
+export const superAdminLogin = (email: string, password: string) =>
+  api.post('/superadmin/login', { email, password });
+
+export const getSuperAdminDashboard = () =>
+  api.get('/superadmin/dashboard', { headers: saHeaders() });
+
+export const getSuperAdminStores = () =>
+  api.get('/superadmin/stores', { headers: saHeaders() });
+
+export const toggleSuperAdminStore = (storeId: string) =>
+  api.patch(`/superadmin/stores/${storeId}/toggle`, {}, { headers: saHeaders() });
+
+export const getSuperAdminUsers = () =>
+  api.get('/superadmin/users', { headers: saHeaders() });
+
+export const toggleSuperAdminUser = (userId: string) =>
+  api.patch(`/superadmin/users/${userId}/toggle`, {}, { headers: saHeaders() });
+
+export const deleteSuperAdminUser = (userId: string) =>
+  api.delete(`/superadmin/users/${userId}`, { headers: saHeaders() });
+
+export const getSuperAdminAudit = () =>
+  api.get('/superadmin/audit', { headers: saHeaders() });
