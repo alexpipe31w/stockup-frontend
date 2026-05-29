@@ -12,7 +12,7 @@ interface AuthContextType {
   token: string | null;
   user: UserData | null;
   storeId: string;
-  loginFn: (email: string, password: string) => Promise<void>;
+  loginFn: (email: string, password: string) => Promise<UserData>;
   logout: () => void;
 }
 
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getInitialToken);
   const [user, setUser]   = useState<UserData | null>(getInitialUser);
 
-  const loginFn = async (email: string, password: string) => {
+  const loginFn = async (email: string, password: string): Promise<UserData> => {
     const res = await loginApi(email, password);
     const { access_token } = res.data;
 
@@ -83,11 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     localStorage.setItem('token', access_token);
-    // user se reconstruye del JWT en cada carga — no necesita persistirse
-    // pero lo guardamos por si acaso para UX (nombre, email visible)
     localStorage.setItem('user', JSON.stringify(userObj));
+    if (userObj.role === 'superadmin') {
+      localStorage.setItem('sa_token', access_token);
+    }
     setToken(access_token);
     setUser(userObj);
+    return userObj;
   };
 
   const logout = () => {

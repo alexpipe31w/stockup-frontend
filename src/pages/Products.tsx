@@ -988,7 +988,7 @@ export default function Products() {
   }).length;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen page-bg">
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">

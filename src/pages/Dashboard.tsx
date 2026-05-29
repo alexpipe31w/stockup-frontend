@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getDashboard, getWhatsAppStatus, getAppointmentStats } from '../services/api';
 
@@ -74,25 +74,42 @@ function WAStatusBadge({ storeId }: { storeId: string }) {
 
 export default function Dashboard() {
   const { storeId } = useAuth();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData]         = useState<DashboardData | null>(null);
   const [apptStats, setApptStats] = useState<AppointmentStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(false);
+  const abortRef                = useRef<AbortController | null>(null);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-  useEffect(() => {
+  const loadData = React.useCallback(() => {
+    // Cancelar request anterior si aún está en vuelo
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+
+    setLoading(true);
+    setError(false);
+
     Promise.all([
       getDashboard(storeId),
       getAppointmentStats().catch(() => ({ data: null })),
     ]).then(([dashRes, apptRes]) => {
       setData(dashRes.data);
       if (apptRes.data) setApptStats(apptRes.data);
+      setError(false);
+    }).catch(() => {
+      setError(true);
     }).finally(() => setLoading(false));
   }, [storeId]);
 
+  useEffect(() => {
+    loadData();
+    return () => abortRef.current?.abort();
+  }, [loadData]);
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen page-bg">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Cabecera + WA status */}
@@ -235,17 +252,24 @@ export default function Dashboard() {
               </div>
             </div>
           </>
-        ) : (
+        ) : error ? (
           <div className="text-center py-20">
-            <p className="text-slate-400">Error cargando el dashboard</p>
+            <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <p className="text-slate-600 font-medium">No pudimos cargar el dashboard</p>
+            <p className="text-slate-400 text-sm mt-1">Verifica tu conexión e intenta de nuevo</p>
             <button
-              onClick={() => window.location.reload()}
-              className="mt-4 text-sm text-primary hover:underline"
+              onClick={loadData}
+              className="mt-4 px-5 py-2 rounded-xl text-white text-sm font-medium"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
             >
               Reintentar
             </button>
           </div>
-        )}
+        ) : null}
       </main>
     </div>
   );

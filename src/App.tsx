@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { SubscriptionProvider, useSubscription } from './hooks/useSubscription';
 import { getStoreTheme } from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -17,6 +18,9 @@ import Appointments from './pages/Appointments';
 import Config from './pages/Config';
 import SuperAdminLogin from './pages/SuperAdminLogin';
 import SuperAdmin from './pages/SuperAdmin';
+import Register from './pages/Register';
+import Subscription from './pages/Subscription';
+import PaymentStatus from './pages/PaymentStatus';
 
 /** Aplica los colores de la tienda como CSS vars en el elemento raíz */
 function applyTheme(primary?: string, secondary?: string, accent?: string) {
@@ -53,10 +57,47 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
   return token ? children : <Navigate to="/login" replace />;
 }
 
+// Requiere suscripción activa; si está pendiente redirige a /subscription
+function SubscribedRoute({ children }: { children: React.ReactElement }) {
+  const { token } = useAuth();
+  const { isActive, loading, error, refresh } = useSubscription();
+
+  if (!token) return <Navigate to="/login" replace />;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <svg className="animate-spin w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-slate-600 font-medium">No pudimos verificar tu suscripción</p>
+        <button
+          onClick={refresh}
+          className="px-5 py-2 rounded-xl text-white text-sm font-medium"
+          style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  if (!isActive) return <Navigate to="/subscription" replace />;
+  return children;
+}
+
 function AdminRoute({ children }: { children: React.ReactElement }) {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
-  if (user?.role !== 'admin' && user?.role !== 'superadmin') return <Navigate to="/dashboard" replace />;
+  if (user?.role !== 'superadmin') return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -65,7 +106,7 @@ function Layout({ children }: { children: React.ReactElement }) {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isAdmin = user?.role === 'superadmin';
 
   const navItems = [
     {
@@ -248,7 +289,7 @@ function Layout({ children }: { children: React.ReactElement }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto page-bg">
           {children}
         </main>
       </div>
@@ -259,27 +300,34 @@ function Layout({ children }: { children: React.ReactElement }) {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <ThemeLoader />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
-          <Route path="/whatsapp" element={<PrivateRoute><Layout><WhatsAppPage /></Layout></PrivateRoute>} />
-          <Route path="/conversations" element={<PrivateRoute><Layout><Conversations /></Layout></PrivateRoute>} />
-          <Route path="/customers" element={<PrivateRoute><Layout><Customers /></Layout></PrivateRoute>} />
-          <Route path="/orders" element={<PrivateRoute><Layout><Orders /></Layout></PrivateRoute>} />
-          <Route path="/products" element={<PrivateRoute><Layout><Products /></Layout></PrivateRoute>} />
-          <Route path="/services" element={<PrivateRoute><Layout><Services /></Layout></PrivateRoute>} />
-          <Route path="/appointments" element={<PrivateRoute><Layout><Appointments /></Layout></PrivateRoute>} />
-          <Route path="/campaigns" element={<PrivateRoute><Layout><Campaigns /></Layout></PrivateRoute>} />
-          <Route path="/analytics" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
-          <Route path="/config" element={<PrivateRoute><Layout><Config /></Layout></PrivateRoute>} />
-          <Route path="/users" element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
-          <Route path="/superadmin/login" element={<SuperAdminLogin />} />
-          <Route path="/superadmin" element={<SuperAdmin />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <SubscriptionProvider>
+        <BrowserRouter>
+          <ThemeLoader />
+          <Routes>
+            <Route path="/login"          element={<Login />} />
+            <Route path="/register"       element={<Register />} />
+            <Route path="/payment-status" element={<PrivateRoute><PaymentStatus /></PrivateRoute>} />
+            {/* /subscription accesible aunque esté pendiente — es donde se paga */}
+            <Route path="/subscription"   element={<PrivateRoute><Layout><Subscription /></Layout></PrivateRoute>} />
+            {/* Rutas que requieren suscripción activa */}
+            <Route path="/dashboard"      element={<SubscribedRoute><Layout><Dashboard /></Layout></SubscribedRoute>} />
+            <Route path="/whatsapp"       element={<SubscribedRoute><Layout><WhatsAppPage /></Layout></SubscribedRoute>} />
+            <Route path="/conversations"  element={<SubscribedRoute><Layout><Conversations /></Layout></SubscribedRoute>} />
+            <Route path="/customers"      element={<SubscribedRoute><Layout><Customers /></Layout></SubscribedRoute>} />
+            <Route path="/orders"         element={<SubscribedRoute><Layout><Orders /></Layout></SubscribedRoute>} />
+            <Route path="/products"       element={<SubscribedRoute><Layout><Products /></Layout></SubscribedRoute>} />
+            <Route path="/services"       element={<SubscribedRoute><Layout><Services /></Layout></SubscribedRoute>} />
+            <Route path="/appointments"   element={<SubscribedRoute><Layout><Appointments /></Layout></SubscribedRoute>} />
+            <Route path="/campaigns"      element={<SubscribedRoute><Layout><Campaigns /></Layout></SubscribedRoute>} />
+            <Route path="/analytics"      element={<SubscribedRoute><Layout><Analytics /></Layout></SubscribedRoute>} />
+            <Route path="/config"         element={<SubscribedRoute><Layout><Config /></Layout></SubscribedRoute>} />
+            <Route path="/users"          element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
+            <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+            <Route path="/superadmin"     element={<SuperAdmin />} />
+            <Route path="*"              element={<Navigate to="/login" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

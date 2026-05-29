@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getStoreTheme, updateStoreTheme, getAiConfig, saveAiConfig } from '../services/api';
+import { getStoreTheme, updateStoreTheme, getAiConfig, saveAiConfig, getMySubscription, createCheckout } from '../services/api';
 import api from '../services/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Tab = 'apariencia' | 'negocio' | 'ia' | 'excluidos';
+type Tab = 'apariencia' | 'negocio' | 'ia' | 'excluidos' | 'suscripcion';
 
 interface ThemeColors {
   primaryColor: string;
@@ -244,7 +244,7 @@ function AparienciaSection({ storeId }: { storeId: string }) {
         {saveError && (
           <span className="text-sm text-red-500 font-medium flex items-center gap-1.5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Error al guardar — despliega el backend actualizado
+            Error al guardar el tema. Intenta de nuevo
           </span>
         )}
       </div>
@@ -825,6 +825,222 @@ function ExcluidosSection() {
   );
 }
 
+// ── TAB: SUSCRIPCIÓN ───────────────────────────────────────────────────────
+
+interface SubPayment {
+  paymentId: string;
+  mpPaymentId: string | null;
+  amount: number;
+  status: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+interface SubData {
+  subscriptionStatus: string;
+  subscriptionEnd: string | null;
+  apiBlocked: boolean;
+  currentPrice: number;
+  currency: string;
+  subscription: {
+    status: string;
+    currentPeriodStart: string | null;
+    currentPeriodEnd: string | null;
+    priceAmount: number;
+    payments: SubPayment[];
+  } | null;
+}
+
+function paymentStatusLabel(s: string) {
+  if (s === 'approved') return { label: 'Pagado', cls: 'bg-emerald-100 text-emerald-700' };
+  if (s === 'pending')  return { label: 'Pendiente', cls: 'bg-amber-100 text-amber-700' };
+  if (s === 'rejected') return { label: 'Rechazado', cls: 'bg-red-100 text-red-700' };
+  return { label: s, cls: 'bg-slate-100 text-slate-600' };
+}
+
+function subStatusInfo(s: string) {
+  if (s === 'active')   return { label: 'Activa', cls: 'bg-emerald-100 text-emerald-700' };
+  if (s === 'pending')  return { label: 'Pendiente de pago', cls: 'bg-amber-100 text-amber-700' };
+  if (s === 'expired')  return { label: 'Vencida', cls: 'bg-red-100 text-red-700' };
+  return { label: 'Sin suscripción', cls: 'bg-slate-100 text-slate-500' };
+}
+
+function SuscripcionSection() {
+  const [data, setData] = useState<SubData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [payLoading, setPayLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getMySubscription()
+      .then(res => setData(res.data))
+      .catch(() => setError('No se pudo cargar la suscripción'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleRenew = async () => {
+    setPayLoading(true);
+    setError('');
+    try {
+      const res = await createCheckout();
+      window.location.href = res.data.initPoint;
+    } catch {
+      setError('Error al generar el enlace de pago. Intenta de nuevo.');
+      setPayLoading(false);
+    }
+  };
+
+  if (loading) return <Spinner />;
+
+  if (!data) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-600 text-sm">
+        {error || 'No se pudo cargar la información de suscripción.'}
+      </div>
+    );
+  }
+
+  const status = subStatusInfo(data.subscriptionStatus);
+  const isActive = data.subscriptionStatus === 'active';
+  const payments = data.subscription?.payments ?? [];
+
+  return (
+    <div className="space-y-5">
+      {/* Estado actual */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Estado de tu plan</p>
+            <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${status.cls}`}>
+              {status.label}
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-400 mb-1">Plan mensual</p>
+            <p className="text-2xl font-bold text-slate-800">
+              {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(data.currentPrice)}
+            </p>
+          </div>
+        </div>
+
+        {isActive && data.subscription?.currentPeriodEnd && (
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4 mb-5">
+            <div>
+              <p className="text-xs text-slate-400 mb-0.5">Desde</p>
+              <p className="text-sm font-medium text-slate-700">
+                {new Date(data.subscription.currentPeriodStart!).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-0.5">Vence el</p>
+              <p className="text-sm font-medium text-slate-700">
+                {new Date(data.subscription.currentPeriodEnd).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {data.apiBlocked && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Tu cuenta está bloqueada. Renueva tu suscripción para reactivarla.
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleRenew}
+          disabled={payLoading}
+          className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition disabled:opacity-60 flex items-center justify-center gap-2"
+          style={{ background: 'linear-gradient(135deg, #009ee3, #003087)' }}
+        >
+          {payLoading ? (
+            <>
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Redirigiendo a MercadoPago...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="5" width="20" height="14" rx="2" stroke="white" strokeWidth="2"/>
+                <path d="M2 10h20" stroke="white" strokeWidth="2"/>
+              </svg>
+              {isActive ? 'Renovar suscripción' : 'Activar suscripción — Pagar con MercadoPago'}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Historial de pagos */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100">
+          <h3 className="font-semibold text-slate-800 text-sm">Historial de pagos</h3>
+        </div>
+
+        {payments.length === 0 ? (
+          <div className="px-6 py-8 text-center text-slate-400 text-sm">
+            Aún no tienes pagos registrados
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {payments.map(p => {
+              const st = paymentStatusLabel(p.status);
+              const date = p.paidAt ?? p.createdAt;
+              return (
+                <div key={p.paymentId} className="flex items-center justify-between px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      p.status === 'approved' ? 'bg-emerald-100' :
+                      p.status === 'pending' ? 'bg-amber-100' : 'bg-red-100'
+                    }`}>
+                      {p.status === 'approved' ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      ) : p.status === 'pending' ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">
+                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(p.amount))}
+                        {' '}— Plan mensual
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(date).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        {p.mpPaymentId && <span className="ml-2 font-mono text-slate-300">#{p.mpPaymentId.slice(-8)}</span>}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${st.cls}`}>
+                    {st.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main: Config ───────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -871,6 +1087,16 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'suscripcion',
+    label: 'Suscripción',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="2" y="5" width="20" height="14" rx="2"/>
+        <path d="M2 10h20"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function Config() {
@@ -903,10 +1129,11 @@ export default function Config() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'apariencia' && <AparienciaSection storeId={storeId} />}
-      {activeTab === 'negocio'    && <NegocioSection    storeId={storeId} />}
-      {activeTab === 'ia'         && <IASection         storeId={storeId} />}
-      {activeTab === 'excluidos'  && <ExcluidosSection />}
+      {activeTab === 'apariencia'  && <AparienciaSection storeId={storeId} />}
+      {activeTab === 'negocio'     && <NegocioSection    storeId={storeId} />}
+      {activeTab === 'ia'          && <IASection         storeId={storeId} />}
+      {activeTab === 'excluidos'   && <ExcluidosSection />}
+      {activeTab === 'suscripcion' && <SuscripcionSection />}
     </div>
   );
 }

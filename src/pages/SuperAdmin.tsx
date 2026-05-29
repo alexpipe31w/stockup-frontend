@@ -8,9 +8,12 @@ import {
   toggleSuperAdminStore,
   toggleSuperAdminUser,
   deleteSuperAdminUser,
+  getSuperAdminSubscriptionConfig,
+  updateSuperAdminSubscriptionConfig,
+  getSuperAdminSubscriptions,
 } from '../services/api';
 
-type Tab = 'dashboard' | 'stores' | 'users' | 'audit';
+type Tab = 'dashboard' | 'stores' | 'users' | 'audit' | 'subscriptions';
 
 interface DashboardStats {
   totalStores: number;
@@ -48,6 +51,26 @@ interface AuditLog {
   targetId: string;
   details: Record<string, any>;
   createdAt: string;
+}
+
+interface SubscriptionConfig {
+  configId: string;
+  priceAmount: number;
+  currency: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+interface SubRecord {
+  subscriptionId: string;
+  storeId: string;
+  status: string;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  priceAmount: number;
+  updatedAt: string;
+  store: { name: string; phone: string; ownerName: string | null };
+  payments: { status: string; amount: number; paidAt: string | null }[];
 }
 
 function decodeJwt(token: string): any {
@@ -102,6 +125,11 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [subConfig, setSubConfig] = useState<SubscriptionConfig | null>(null);
+  const [subs, setSubs] = useState<SubRecord[]>([]);
+  const [editPrice, setEditPrice] = useState('');
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [priceLoading, setPriceLoading] = useState(false);
 
   const token = localStorage.getItem('sa_token');
   const adminEmail = token ? decodeJwt(token)?.email : '';
@@ -128,6 +156,14 @@ export default function SuperAdmin() {
       } else if (t === 'audit') {
         const res = await getSuperAdminAudit();
         setAudit(res.data);
+      } else if (t === 'subscriptions') {
+        const [cfgRes, subsRes] = await Promise.all([
+          getSuperAdminSubscriptionConfig(),
+          getSuperAdminSubscriptions(),
+        ]);
+        setSubConfig(cfgRes.data);
+        setEditPrice(String(cfgRes.data.priceAmount));
+        setSubs(subsRes.data);
       }
     } catch (e: any) {
       if (e.response?.status === 401 || e.response?.status === 403) {
@@ -178,11 +214,27 @@ export default function SuperAdmin() {
     navigate('/superadmin/login', { replace: true });
   };
 
+  const handleSavePrice = async () => {
+    const price = Number(editPrice);
+    if (!price || price <= 0) return;
+    setPriceLoading(true);
+    try {
+      const res = await updateSuperAdminSubscriptionConfig(price);
+      setSubConfig(res.data);
+      setEditingPrice(false);
+    } catch {
+      setError('Error al actualizar el precio');
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
   const tabs: { key: Tab; label: string }[] = [
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'stores', label: 'Tiendas' },
     { key: 'users', label: 'Usuarios' },
     { key: 'audit', label: 'Auditoría' },
+    { key: 'subscriptions', label: 'Suscripciones' },
   ];
 
   return (
@@ -390,6 +442,135 @@ export default function SuperAdmin() {
                         {users.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-10 text-center text-slate-500">No hay usuarios registrados</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SUSCRIPCIONES ── */}
+            {tab === 'subscriptions' && (
+              <div>
+                <h2 className="text-xl font-bold text-white mb-6">Suscripciones</h2>
+
+                {/* Precio global */}
+                <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Precio del plan mensual</p>
+                      <p className="text-slate-500 text-xs mt-0.5">Se aplica a todos los nuevos pagos de la plataforma</p>
+                    </div>
+                    {subConfig?.updatedBy && (
+                      <p className="text-slate-500 text-xs">Editado por {subConfig.updatedBy}</p>
+                    )}
+                  </div>
+
+                  {editingPrice ? (
+                    <div className="flex items-center gap-3 mt-4">
+                      <div className="flex items-center gap-2 bg-slate-900 rounded-xl border border-slate-600 px-4 py-2 flex-1 max-w-xs">
+                        <span className="text-slate-400 text-sm font-medium">COP $</span>
+                        <input
+                          type="number"
+                          value={editPrice}
+                          onChange={e => setEditPrice(e.target.value)}
+                          className="bg-transparent text-white text-xl font-bold w-full outline-none"
+                          min="1000"
+                          step="1000"
+                        />
+                      </div>
+                      <button
+                        onClick={handleSavePrice}
+                        disabled={priceLoading}
+                        className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition disabled:opacity-60"
+                      >
+                        {priceLoading ? 'Guardando...' : 'Guardar'}
+                      </button>
+                      <button
+                        onClick={() => { setEditingPrice(false); setEditPrice(String(subConfig?.priceAmount ?? 24000)); }}
+                        className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-600 transition"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4 mt-4">
+                      <span className="text-4xl font-bold text-white">
+                        ${Number(subConfig?.priceAmount ?? 24000).toLocaleString('es-CO')}
+                      </span>
+                      <span className="text-slate-400 text-sm">COP / mes</span>
+                      <button
+                        onClick={() => setEditingPrice(true)}
+                        className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-600 transition"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Editar precio
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tabla de suscripciones */}
+                <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-700">
+                    <h3 className="text-white font-semibold">Tiendas suscritas ({subs.length})</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-700">
+                          {['Tienda', 'Teléfono', 'Estado', 'Inicio', 'Vence', 'Monto', 'Último pago'].map(h => (
+                            <th key={h} className="px-4 py-3 text-left text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subs.map(sub => {
+                          const lastPay = sub.payments[0];
+                          return (
+                            <tr key={sub.subscriptionId} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+                              <td className="px-4 py-3 font-medium text-white">{sub.store.name}</td>
+                              <td className="px-4 py-3 text-slate-400 font-mono text-xs">{sub.store.phone}</td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  sub.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' :
+                                  sub.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                                  'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {sub.status === 'active' ? 'Activa' : sub.status === 'pending' ? 'Pendiente' : 'Vencida'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-slate-400 text-xs">
+                                {sub.currentPeriodStart ? fmtDate(sub.currentPeriodStart) : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-slate-300 text-xs">
+                                {sub.currentPeriodEnd ? fmtDate(sub.currentPeriodEnd) : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-slate-300 text-xs">
+                                ${Number(sub.priceAmount).toLocaleString('es-CO')}
+                              </td>
+                              <td className="px-4 py-3">
+                                {lastPay ? (
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    lastPay.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' :
+                                    lastPay.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
+                                    'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {lastPay.status === 'approved' ? 'Aprobado' : lastPay.status === 'pending' ? 'Pendiente' : 'Rechazado'}
+                                  </span>
+                                ) : <span className="text-slate-500 text-xs">Sin pagos</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {subs.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-10 text-center text-slate-500">No hay suscripciones registradas</td>
                           </tr>
                         )}
                       </tbody>

@@ -163,7 +163,7 @@ export default function Campaigns() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen page-bg">
 
       {/* Header */}
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">

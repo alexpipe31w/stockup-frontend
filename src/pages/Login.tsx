@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
@@ -16,8 +16,8 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      await loginFn(email, password);
-      navigate('/dashboard');
+      const userData = await loginFn(email, password);
+      navigate(userData.role === 'superadmin' ? '/superadmin' : '/dashboard');
     } catch {
       setError('Correo o contraseña incorrectos');
     } finally {
@@ -85,7 +85,10 @@ export default function Login() {
           </div>
 
           <h1 className="text-3xl font-bold text-slate-800 mb-1">Bienvenido</h1>
-          <p className="text-slate-500 mb-8">Ingresa tus credenciales para continuar</p>
+          <p className="text-slate-500 mb-8">
+            Ingresa tus credenciales para continuar.{' '}
+            <Link to="/register" className="text-blue-600 hover:underline font-medium">Crear cuenta</Link>
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
 

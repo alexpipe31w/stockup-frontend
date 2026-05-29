@@ -598,7 +598,7 @@ export default function Appointments() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen page-bg flex flex-col">
 
       {/* header */}
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm flex-shrink-0">

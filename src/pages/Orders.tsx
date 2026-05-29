@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders, updateOrderStatus } from '../services/api';
+import { getOrders, updateOrderStatus, createManualOrder, getCustomers } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -15,6 +15,251 @@ const CloseIcon = () => (
   </svg>
 );
 
+// ── Plus Icon ─────────────────────────────────────────────────────────────────
+const PlusIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+const TrashIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+    <path d="M10 11v6"/><path d="M14 11v6"/>
+  </svg>
+);
+
+// ── Manual Order Modal ────────────────────────────────────────────────────────
+interface ManualItem { description: string; quantity: number; unitPrice: number; }
+interface CustomerOption { customerId: string; name: string | null; phone: string; }
+
+function ManualOrderModal({ storeId, onClose, onCreated }: {
+  storeId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [customers, setCustomers]       = useState<CustomerOption[]>([]);
+  const [customerSearch, setCSearch]    = useState('');
+  const [selectedCustomer, setSelCust]  = useState<CustomerOption | null>(null);
+  const [items, setItems]               = useState<ManualItem[]>([{ description: '', quantity: 1, unitPrice: 0 }]);
+  const [payMethod, setPayMethod]       = useState('CASH');
+  const [discountPct, setDiscountPct]   = useState(0);
+  const [notes, setNotes]               = useState('');
+  const [submitting, setSubmitting]     = useState(false);
+  const [error, setError]               = useState('');
+
+  useEffect(() => { getCustomers(storeId).then((r) => setCustomers(r.data)); }, [storeId]);
+
+  const filteredCustomers = customers.filter((c) => {
+    const q = customerSearch.toLowerCase();
+    return !q || c.phone.includes(q) || (c.name ?? '').toLowerCase().includes(q);
+  }).slice(0, 8);
+
+  const subtotal      = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const discountAmt   = Math.round(subtotal * (discountPct / 100) * 100) / 100;
+  const total         = subtotal - discountAmt;
+
+  const addItem    = () => setItems((p) => [...p, { description: '', quantity: 1, unitPrice: 0 }]);
+  const removeItem = (i: number) => setItems((p) => p.filter((_, idx) => idx !== i));
+  const updateItem = (i: number, field: keyof ManualItem, val: string | number) =>
+    setItems((p) => p.map((it, idx) => idx === i ? { ...it, [field]: val } : it));
+
+  const submit = async () => {
+    if (!selectedCustomer) return setError('Selecciona un cliente.');
+    if (items.some((i) => !i.description.trim())) return setError('Completa la descripción de todos los ítems.');
+    if (items.some((i) => i.unitPrice <= 0)) return setError('El precio de cada ítem debe ser mayor a 0.');
+    setError(''); setSubmitting(true);
+    try {
+      await createManualOrder({
+        customerId:          selectedCustomer.customerId,
+        items:               items.map((i) => ({ description: i.description.trim(), quantity: i.quantity, unitPrice: i.unitPrice })),
+        notes:               notes.trim() || undefined,
+        discountPercent:     discountPct || undefined,
+        manualPaymentMethod: payMethod,
+        idempotencyKey:      `manual-${storeId}-${Date.now()}`,
+      });
+      onCreated();
+      onClose();
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'Error al crear la orden.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const PAY_METHODS = [
+    { value: 'CASH',     label: 'Efectivo' },
+    { value: 'TRANSFER', label: 'Transferencia' },
+    { value: 'CARD',     label: 'Tarjeta' },
+    { value: 'OTHER',    label: 'Otro' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
+
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+          <div>
+            <h2 className="font-bold text-slate-800">Nueva venta manual</h2>
+            <p className="text-xs text-slate-400">Registra una venta en efectivo o transferencia</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100">
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-5">
+
+          {/* Cliente */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Cliente</label>
+            {selectedCustomer ? (
+              <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <div>
+                  <p className="font-medium text-slate-800 text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
+                  <p className="text-xs text-slate-500 font-mono">{selectedCustomer.phone}</p>
+                </div>
+                <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-blue-600 hover:underline">Cambiar</button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  value={customerSearch}
+                  onChange={(e) => setCSearch(e.target.value)}
+                  placeholder="Buscar por nombre o teléfono..."
+                  className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {customerSearch && filteredCustomers.length > 0 && (
+                  <div className="absolute w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden z-10">
+                    {filteredCustomers.map((c) => (
+                      <button key={c.customerId} onClick={() => { setSelCust(c); setCSearch(''); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition">
+                        <p className="text-sm font-medium text-slate-800">{c.name ?? 'Sin nombre'}</p>
+                        <p className="text-xs text-slate-400 font-mono">{c.phone}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {customerSearch && filteredCustomers.length === 0 && (
+                  <p className="mt-2 text-xs text-slate-400">Sin coincidencias</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Ítems */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Productos / Servicios</label>
+            <div className="space-y-2">
+              {items.map((item, i) => (
+                <div key={i} className="grid grid-cols-[1fr_80px_100px_32px] gap-2 items-center">
+                  <input
+                    value={item.description}
+                    onChange={(e) => updateItem(i, 'description', e.target.value)}
+                    placeholder="Descripción del ítem"
+                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="number" min={1} value={item.quantity}
+                    onChange={(e) => updateItem(i, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                    placeholder="Cant."
+                  />
+                  <input
+                    type="number" min={0} value={item.unitPrice || ''}
+                    onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Precio"
+                  />
+                  <button onClick={() => items.length > 1 && removeItem(i)}
+                    disabled={items.length === 1}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 disabled:opacity-30 transition">
+                    <TrashIcon />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button onClick={addItem}
+              className="mt-2 flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 transition">
+              <PlusIcon /> Agregar ítem
+            </button>
+          </div>
+
+          {/* Método de pago + descuento */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Método de pago</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {PAY_METHODS.map((m) => (
+                  <button key={m.value} type="button"
+                    onClick={() => setPayMethod(m.value)}
+                    className={`py-2 rounded-lg text-xs font-medium transition ${
+                      payMethod === m.value ? 'text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                    style={payMethod === m.value ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Descuento (%)</label>
+              <input
+                type="number" min={0} max={100} value={discountPct || ''}
+                onChange={(e) => setDiscountPct(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0%"
+              />
+            </div>
+          </div>
+
+          {/* Notas */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Notas (opcional)</label>
+            <textarea
+              value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              placeholder="Notas adicionales del pedido..."
+              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
+
+          {/* Resumen */}
+          <div className="bg-slate-50 rounded-xl px-4 py-3 space-y-1">
+            <div className="flex justify-between text-sm text-slate-600">
+              <span>Subtotal</span><span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(subtotal)}</span>
+            </div>
+            {discountAmt > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Descuento ({discountPct}%)</span>
+                <span>-{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(discountAmt)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-slate-800 border-t border-slate-200 pt-1 mt-1">
+              <span>Total</span>
+              <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(total)}</span>
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+
+          {/* Botones */}
+          <div className="flex gap-2 pt-1">
+            <button onClick={submit} disabled={submitting || !selectedCustomer}
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
+              style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+              {submitting ? 'Registrando...' : 'Registrar venta'}
+            </button>
+            <button onClick={onClose}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface OrderItem {
   itemId: string;
@@ -26,16 +271,21 @@ interface OrderItem {
 }
 
 interface Order {
-  orderId: string;
-  type: string;
-  status: string;
-  total: string;
-  notes: string | null;
-  estimatedTime: number | null;
-  deliveryAddress: string | null;
-  createdAt: string;
-  customer: { customerId: string; name: string | null; phone: string };
-  orderItems: OrderItem[];
+  orderId:             string;
+  type:                string;
+  status:              string;
+  total:               string;
+  subtotal:            string;
+  discountAmount:      string;
+  discountPercent:     string | null;
+  notes:               string | null;
+  estimatedTime:       number | null;
+  deliveryAddress:     string | null;
+  isManual:            boolean;
+  manualPaymentMethod: string | null;
+  createdAt:           string;
+  customer:    { customerId: string; name: string | null; phone: string };
+  orderItems:  OrderItem[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -120,6 +370,14 @@ function OrderDetail({
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
               {TYPE_CONFIG[order.type] ?? order.type}
             </span>
+            {order.isManual && (
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                Venta manual · {
+                  { CASH: 'Efectivo', TRANSFER: 'Transferencia', CARD: 'Tarjeta', OTHER: 'Otro' }
+                  [order.manualPaymentMethod ?? ''] ?? order.manualPaymentMethod
+                }
+              </span>
+            )}
             <span className="text-xs text-slate-400">{fmtDate(order.createdAt)}</span>
           </div>
 
@@ -165,6 +423,17 @@ function OrderDetail({
                   </div>
                 );
               })}
+              {Number(order.discountAmount) > 0 && (
+                <>
+                  <div className="px-4 py-2 flex justify-between bg-slate-50 text-sm text-slate-500">
+                    <span>Subtotal</span><span>{fmt(order.subtotal)}</span>
+                  </div>
+                  <div className="px-4 py-2 flex justify-between bg-slate-50 text-sm text-green-600">
+                    <span>Descuento ({order.discountPercent}%)</span>
+                    <span>-{fmt(order.discountAmount)}</span>
+                  </div>
+                </>
+              )}
               <div className="px-4 py-3 flex justify-between bg-slate-50">
                 <p className="text-sm font-semibold text-slate-600">Total</p>
                 <p className="font-bold text-slate-800">{fmt(order.total)}</p>
@@ -217,6 +486,7 @@ export default function Orders() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
+  const [showManual, setShowManual] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -254,7 +524,7 @@ export default function Orders() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen page-bg">
 
       {/* Header */}
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
@@ -267,8 +537,17 @@ export default function Orders() {
               </p>
             </div>
 
-            {/* Búsqueda */}
-            <div className="relative">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowManual(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition"
+                style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+              >
+                <PlusIcon /> Nueva venta manual
+              </button>
+
+              {/* Búsqueda */}
+              <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <SearchIcon />
               </span>
@@ -278,6 +557,7 @@ export default function Orders() {
                 placeholder="Buscar por cliente, ID, dirección..."
                 className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-72"
               />
+            </div>
             </div>
           </div>
 
@@ -436,6 +716,15 @@ export default function Orders() {
           order={selected}
           onClose={() => setSelected(null)}
           onStatusChange={handleStatusChange}
+        />
+      )}
+
+      {/* Manual order modal */}
+      {showManual && (
+        <ManualOrderModal
+          storeId={storeId}
+          onClose={() => setShowManual(false)}
+          onCreated={load}
         />
       )}
     </div>

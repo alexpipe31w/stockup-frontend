@@ -14,9 +14,16 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Limpiar sesión y redirigir — solo si no estamos ya en login/register
+      const isAuthPage = ['/login', '/register', '/superadmin/login'].some(
+        p => window.location.pathname.startsWith(p),
+      );
+      if (!isAuthPage) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Usar replace para no dejar /login en el historial si el usuario vuelve atrás
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(err);
   }
@@ -222,12 +229,32 @@ export const getOrders = (storeId: string) =>
 export const updateOrderStatus = (id: string, status: string) =>
   api.patch(`/orders/${id}/status`, { status });
 
+export const createManualOrder = (data: {
+  customerId: string;
+  items: { productId?: string; serviceId?: string; variantId?: string; description?: string; quantity: number; unitPrice: number }[];
+  notes?: string;
+  deliveryAddress?: string;
+  discountPercent?: number;
+  manualPaymentMethod?: string;
+  idempotencyKey?: string;
+}) => api.post('/orders/manual', data);
+
 // ── Customers ─────────────────────────────────────────────────────────────
 export const getCustomers = (storeId: string) =>
   api.get(`/customers/store/${storeId}`);
 
-export const updateCustomer = (id: string, data: { name?: string; city?: string; cedula?: string }) =>
+export const getCustomer = (id: string) =>
+  api.get(`/customers/${id}`);
+
+export const updateCustomer = (id: string, data: { name?: string; city?: string; cedula?: string; acceptsMarketing?: boolean }) =>
   api.patch(`/customers/${id}`, data);
+
+// ── Analytics ─────────────────────────────────────────────────────────────
+export const getRevenueTrends = (days = 30) =>
+  api.get(`/analytics/trends?days=${days}`);
+
+export const getConversationInsights = () =>
+  api.post('/analytics/conversation-insights', {});
 
 // ── Campaigns ─────────────────────────────────────────────────────────────
 export const getCampaigns = (storeId: string) =>
@@ -365,3 +392,22 @@ export const deleteSuperAdminUser = (userId: string) =>
 
 export const getSuperAdminAudit = () =>
   api.get('/superadmin/audit', { headers: saHeaders() });
+
+export const getSuperAdminSubscriptionConfig = () =>
+  api.get('/superadmin/subscription-config', { headers: saHeaders() });
+
+export const updateSuperAdminSubscriptionConfig = (priceAmount: number) =>
+  api.patch('/superadmin/subscription-config', { priceAmount }, { headers: saHeaders() });
+
+export const getSuperAdminSubscriptions = () =>
+  api.get('/superadmin/subscriptions', { headers: saHeaders() });
+
+// ── Subscriptions (usuario) ────────────────────────────────────────────────
+export const getMySubscription = () =>
+  api.get('/subscriptions/my');
+
+export const createCheckout = () =>
+  api.post('/subscriptions/checkout', {});
+
+export const processPaymentManually = (paymentId: string) =>
+  api.post(`/subscriptions/process-payment/${paymentId}`, {});

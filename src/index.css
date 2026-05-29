@@ -29,10 +29,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--color-primary) 5%, #f8fafc) 0%,
-    color-mix(in srgb, var(--color-secondary) 3%, #f1f5f9) 100%
+    color-mix(in srgb, var(--color-primary) 10%, #f8fafc) 0%,
+    color-mix(in srgb, var(--color-secondary) 7%, #f1f5f9) 100%
   );
   color: #0f172a;
+}
+
+/* Fondo de páginas que hereda el tema de color actual */
+.page-bg {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 10%, #f8fafc) 0%,
+    color-mix(in srgb, var(--color-secondary) 7%, #f1f5f9) 100%
+  );
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }

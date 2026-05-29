@@ -2,76 +2,50 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getCustomers, updateCustomer } from '../services/api';
 
-// ── SVG Icons ────────────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
   </svg>
 );
 const EditIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
   </svg>
 );
 const SaveIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polyline points="20 6 9 17 4 12"/>
   </svg>
 );
 const CancelIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-  </svg>
-);
-const UserIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
-const PhoneIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-  </svg>
-);
-const CityIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-);
-const CalendarIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-    <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-    <line x1="3" y1="10" x2="21" y2="10"/>
-  </svg>
-);
-const IdCardIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="2" y="5" width="20" height="14" rx="2"/>
-    <circle cx="8" cy="12" r="2"/>
-    <line x1="13" y1="10" x2="19" y2="10"/>
-    <line x1="13" y1="14" x2="17" y2="14"/>
   </svg>
 );
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Customer {
-  customerId: string;
-  storeId:    string;
-  phone:      string;
-  name:       string | null;
-  cedula:     string | null;
-  city:       string | null;
-  createdAt:  string;
+  customerId:       string;
+  storeId:          string;
+  phone:            string;
+  name:             string | null;
+  cedula:           string | null;
+  city:             string | null;
+  totalOrders:      number;
+  totalSpent:       number | string;
+  firstOrderDate:   string | null;
+  lastOrderDate:    string | null;
+  acceptsMarketing: boolean;
+  createdAt:        string;
 }
 
 interface EditState {
-  name:   string;
-  cedula: string;
-  city:   string;
+  name:             string;
+  cedula:           string;
+  city:             string;
+  acceptsMarketing: boolean;
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -79,7 +53,7 @@ function Avatar({ customer }: { customer: Customer }) {
   const letter = customer.name?.[0]?.toUpperCase() ?? customer.phone[1];
   return (
     <div
-      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
       style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
     >
       {letter}
@@ -87,18 +61,35 @@ function Avatar({ customer }: { customer: Customer }) {
   );
 }
 
-// ── Empty value ────────────────────────────────────────────────────────────────
-const Empty = () => <span className="text-slate-300 italic">—</span>;
+const Empty = () => <span className="text-slate-300 italic text-xs">—</span>;
 
-// ── Main Component ────────────────────────────────────────────────────────────
+const fmt = (date: string | null) =>
+  date ? new Date(date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+
+const fmtMoney = (val: number | string) =>
+  `$${Number(val).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`;
+
+// ── Stat Card ─────────────────────────────────────────────────────────────────
+function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-slate-100 shadow-sm px-5 py-4 flex flex-col gap-1">
+      <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-2xl font-bold" style={{ color: color ?? '#1e293b' }}>{value}</p>
+      {sub && <p className="text-xs text-slate-400">{sub}</p>}
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function Customers() {
-  const { storeId }  = useAuth();
+  const { storeId } = useAuth();
   const [customers,   setCustomers]  = useState<Customer[]>([]);
   const [loading,     setLoading]    = useState(true);
   const [search,      setSearch]     = useState('');
   const [filterCity,  setFilterCity] = useState('');
+  const [filterMkt,   setFilterMkt]  = useState<'all' | 'yes' | 'no'>('all');
   const [editingId,   setEditingId]  = useState<string | null>(null);
-  const [editState,   setEditState]  = useState<EditState>({ name: '', cedula: '', city: '' });
+  const [editState,   setEditState]  = useState<EditState>({ name: '', cedula: '', city: '', acceptsMarketing: true });
   const [saving,      setSaving]     = useState(false);
   const [saveError,   setSaveError]  = useState('');
   const nameRef = useRef<HTMLInputElement>(null);
@@ -111,17 +102,10 @@ export default function Customers() {
   };
 
   useEffect(() => { load(); }, [storeId]); // eslint-disable-line
+  useEffect(() => { if (editingId) setTimeout(() => nameRef.current?.focus(), 50); }, [editingId]);
 
-  useEffect(() => {
-    if (editingId) setTimeout(() => nameRef.current?.focus(), 50);
-  }, [editingId]);
+  const cities = Array.from(new Set(customers.map((c) => c.city).filter(Boolean) as string[])).sort();
 
-  // Ciudades únicas para el filtro
-  const cities = Array.from(
-    new Set(customers.map((c) => c.city).filter(Boolean) as string[])
-  ).sort();
-
-  // Filtrado: nombre, teléfono, cédula o ciudad
   const filtered = customers.filter((c) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -131,40 +115,37 @@ export default function Customers() {
       (c.cedula ?? '').toLowerCase().includes(q) ||
       (c.city   ?? '').toLowerCase().includes(q);
     const matchCity = !filterCity || c.city === filterCity;
-    return matchSearch && matchCity;
+    const matchMkt  = filterMkt === 'all' || (filterMkt === 'yes' ? c.acceptsMarketing : !c.acceptsMarketing);
+    return matchSearch && matchCity && matchMkt;
   });
 
   const startEdit = (c: Customer) => {
     setSaveError('');
     setEditingId(c.customerId);
-    setEditState({ name: c.name ?? '', cedula: c.cedula ?? '', city: c.city ?? '' });
+    setEditState({ name: c.name ?? '', cedula: c.cedula ?? '', city: c.city ?? '', acceptsMarketing: c.acceptsMarketing });
   };
-
   const cancelEdit = () => { setEditingId(null); setSaveError(''); };
 
   const saveEdit = async (customerId: string) => {
     setSaving(true); setSaveError('');
     try {
       await updateCustomer(customerId, {
-        name:   editState.name.trim()   || undefined,
-        cedula: editState.cedula.trim() || undefined,
-        city:   editState.city.trim()   || undefined,
+        name:             editState.name.trim()   || undefined,
+        cedula:           editState.cedula.trim() || undefined,
+        city:             editState.city.trim()   || undefined,
+        acceptsMarketing: editState.acceptsMarketing,
       });
       setCustomers((prev) =>
         prev.map((c) =>
           c.customerId === customerId
-            ? {
-                ...c,
-                name:   editState.name.trim()   || null,
-                cedula: editState.cedula.trim() || null,
-                city:   editState.city.trim()   || null,
-              }
+            ? { ...c, name: editState.name.trim() || null, cedula: editState.cedula.trim() || null,
+                city: editState.city.trim() || null, acceptsMarketing: editState.acceptsMarketing }
             : c
         )
       );
       setEditingId(null);
     } catch {
-      setSaveError('Error al guardar. Intenta de nuevo.');
+      setSaveError('Error al guardar.');
     } finally {
       setSaving(false);
     }
@@ -175,20 +156,19 @@ export default function Customers() {
     if (e.key === 'Escape') cancelEdit();
   };
 
-  const fmt = (date: string) =>
-    new Date(date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
-
-  // Stats rápidas
-  const withName   = customers.filter(c => c.name).length;
-  const withCedula = customers.filter(c => c.cedula).length;
+  // Stats
+  const totalRevenue  = customers.reduce((s, c) => s + Number(c.totalSpent), 0);
+  const withMarketing = customers.filter((c) => c.acceptsMarketing).length;
+  const topCustomer   = [...customers].sort((a, b) => Number(b.totalSpent) - Number(a.totalSpent))[0];
+  const avgSpent      = customers.length ? totalRevenue / customers.filter(c => Number(c.totalSpent) > 0).length : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen page-bg">
 
       {/* Header */}
       <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-5">
             <div>
               <h1 className="text-xl font-bold text-slate-800">Clientes</h1>
               <p className="text-sm text-slate-400 mt-0.5">
@@ -197,43 +177,48 @@ export default function Customers() {
             </div>
           </div>
 
-          {/* Stats rápidas */}
+          {/* Stats */}
           {!loading && customers.length > 0 && (
-            <div className="flex gap-4 mb-4 text-xs text-slate-500">
-              <span><strong className="text-slate-700">{withName}</strong> con nombre</span>
-              <span><strong className="text-slate-700">{withCedula}</strong> con cédula</span>
-              <span><strong className="text-slate-700">{customers.length - withName}</strong> sin identificar</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              <StatCard label="Total clientes"    value={customers.length}             sub={`${customers.filter(c => c.name).length} identificados`} />
+              <StatCard label="Ingresos totales"  value={fmtMoney(totalRevenue)}       sub={`Prom. ${fmtMoney(avgSpent || 0)} por cliente activo`} color="#059669" />
+              <StatCard label="Acepta marketing"  value={withMarketing}                sub={`de ${customers.length} clientes`} color="#2563eb" />
+              <StatCard
+                label="Top cliente"
+                value={topCustomer?.name ?? topCustomer?.phone ?? '—'}
+                sub={topCustomer ? fmtMoney(topCustomer.totalSpent) : undefined}
+                color="#9333ea"
+              />
             </div>
           )}
 
           {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <SearchIcon />
-              </span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><SearchIcon /></span>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, teléfono, cédula o ciudad..."
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-80"
+                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
               />
             </div>
             {cities.length > 0 && (
-              <select
-                value={filterCity}
-                onChange={(e) => setFilterCity(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition bg-white text-slate-700"
-              >
+              <select value={filterCity} onChange={(e) => setFilterCity(e.target.value)}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700">
                 <option value="">Todas las ciudades</option>
                 {cities.map((city) => <option key={city} value={city}>{city}</option>)}
               </select>
             )}
-            {(search || filterCity) && (
-              <button
-                onClick={() => { setSearch(''); setFilterCity(''); }}
-                className="text-xs text-blue-600 hover:underline"
-              >
+            <select value={filterMkt} onChange={(e) => setFilterMkt(e.target.value as any)}
+              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700">
+              <option value="all">Todos</option>
+              <option value="yes">Acepta marketing</option>
+              <option value="no">No acepta marketing</option>
+            </select>
+            {(search || filterCity || filterMkt !== 'all') && (
+              <button onClick={() => { setSearch(''); setFilterCity(''); setFilterMkt('all'); }}
+                className="text-xs text-blue-600 hover:underline">
                 Limpiar filtros
               </button>
             )}
@@ -255,39 +240,36 @@ export default function Customers() {
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-              <path d="M16 3.13a4 4 0 010 7.75"/>
             </svg>
-            <p className="text-sm">
-              {search || filterCity ? 'Sin resultados para esa búsqueda' : 'Sin clientes aún'}
-            </p>
+            <p className="text-sm">{search || filterCity ? 'Sin resultados' : 'Sin clientes aún'}</p>
           </div>
 
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
 
-            {/* Tabla header — 6 columnas */}
-            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              <span className="flex items-center gap-1.5"><UserIcon /> Cliente</span>
-              <span className="flex items-center gap-1.5"><PhoneIcon /> Teléfono</span>
-              <span className="flex items-center gap-1.5"><IdCardIcon /> Cédula</span>
-              <span className="flex items-center gap-1.5"><CityIcon /> Ciudad</span>
-              <span className="flex items-center gap-1.5"><CalendarIcon /> Registrado</span>
+            {/* Header tabla */}
+            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_1fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              <span>Cliente</span>
+              <span>Teléfono</span>
+              <span>Pedidos / Gasto</span>
+              <span>Cédula</span>
+              <span>Ciudad</span>
+              <span>Marketing</span>
               <span>Acciones</span>
             </div>
 
-            {/* Filas */}
             <div className="divide-y divide-slate-50">
               {filtered.map((c) => {
                 const isEditing = editingId === c.customerId;
+                const spent     = Number(c.totalSpent);
                 return (
                   <div
                     key={c.customerId}
-                    className={`grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_auto] px-6 py-4 items-center gap-3 transition ${
+                    className={`grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_1fr_auto] px-6 py-4 items-center gap-3 transition ${
                       isEditing ? 'bg-blue-50/40' : 'hover:bg-slate-50'
                     }`}
                   >
-                    {/* Nombre */}
+                    {/* Cliente */}
                     <div className="flex items-center gap-3 min-w-0">
                       <Avatar customer={c} />
                       {isEditing ? (
@@ -297,17 +279,32 @@ export default function Customers() {
                           onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
                           placeholder="Nombre del cliente"
                           onKeyDown={(e) => handleKey(e, c.customerId)}
-                          className="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                          className="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       ) : (
-                        <p className="font-medium text-slate-800 truncate">
-                          {c.name ?? <span className="text-slate-400 font-normal italic">Sin nombre</span>}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-800 truncate text-sm">
+                            {c.name ?? <span className="text-slate-400 font-normal italic">Sin nombre</span>}
+                          </p>
+                          {c.lastOrderDate && (
+                            <p className="text-xs text-slate-400">Último pedido: {fmt(c.lastOrderDate)}</p>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    {/* Teléfono (no editable — es el identificador único) */}
+                    {/* Teléfono */}
                     <p className="text-sm text-slate-600 font-mono">{c.phone}</p>
+
+                    {/* Pedidos / Gasto */}
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">
+                        {spent > 0 ? fmtMoney(spent) : <Empty />}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {c.totalOrders > 0 ? `${c.totalOrders} pedido${c.totalOrders !== 1 ? 's' : ''}` : 'Sin pedidos'}
+                      </p>
+                    </div>
 
                     {/* Cédula */}
                     {isEditing ? (
@@ -316,12 +313,10 @@ export default function Customers() {
                         onChange={(e) => setEditState((s) => ({ ...s, cedula: e.target.value }))}
                         placeholder="N° cédula"
                         onKeyDown={(e) => handleKey(e, c.customerId)}
-                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition font-mono"
+                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                       />
                     ) : (
-                      <p className="text-sm text-slate-600 font-mono">
-                        {c.cedula ?? <Empty />}
-                      </p>
+                      <p className="text-sm text-slate-600 font-mono">{c.cedula ?? <Empty />}</p>
                     )}
 
                     {/* Ciudad */}
@@ -331,24 +326,38 @@ export default function Customers() {
                         onChange={(e) => setEditState((s) => ({ ...s, city: e.target.value }))}
                         placeholder="Ciudad"
                         onKeyDown={(e) => handleKey(e, c.customerId)}
-                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     ) : (
-                      <p className="text-sm text-slate-600">
-                        {c.city ?? <Empty />}
-                      </p>
+                      <p className="text-sm text-slate-600">{c.city ?? <Empty />}</p>
                     )}
 
-                    {/* Fecha */}
-                    <p className="text-sm text-slate-400">{fmt(c.createdAt)}</p>
+                    {/* Marketing */}
+                    {isEditing ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditState((s) => ({ ...s, acceptsMarketing: !s.acceptsMarketing }))}
+                        className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${
+                          editState.acceptsMarketing ? 'bg-blue-500' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                          editState.acceptsMarketing ? 'translate-x-5' : 'translate-x-0.5'
+                        }`} />
+                      </button>
+                    ) : (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        c.acceptsMarketing ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {c.acceptsMarketing ? 'Activo' : 'No'}
+                      </span>
+                    )}
 
                     {/* Acciones */}
                     <div className="flex items-center gap-1 justify-end">
                       {isEditing ? (
                         <>
-                          {saveError && (
-                            <span className="text-xs text-red-500 mr-2">{saveError}</span>
-                          )}
+                          {saveError && <span className="text-xs text-red-500 mr-1">{saveError}</span>}
                           <button
                             onClick={() => saveEdit(c.customerId)}
                             disabled={saving}
@@ -357,23 +366,17 @@ export default function Customers() {
                             style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
                           >
                             {saving
-                              ? <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                              ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
                               : <SaveIcon />}
                           </button>
-                          <button
-                            onClick={cancelEdit}
-                            title="Cancelar"
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 bg-slate-100 hover:bg-slate-200 transition"
-                          >
+                          <button onClick={cancelEdit} title="Cancelar"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 bg-slate-100 hover:bg-slate-200 transition">
                             <CancelIcon />
                           </button>
                         </>
                       ) : (
-                        <button
-                          onClick={() => startEdit(c)}
-                          title="Editar"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
-                        >
+                        <button onClick={() => startEdit(c)} title="Editar"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition">
                           <EditIcon />
                         </button>
                       )}
@@ -383,18 +386,14 @@ export default function Customers() {
               })}
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
               <p className="text-xs text-slate-400">
-                Mostrando{' '}
-                <span className="font-semibold text-slate-600">{filtered.length}</span> de{' '}
+                Mostrando <span className="font-semibold text-slate-600">{filtered.length}</span> de{' '}
                 <span className="font-semibold text-slate-600">{customers.length}</span> clientes
               </p>
-              {(search || filterCity) && (
-                <button
-                  onClick={() => { setSearch(''); setFilterCity(''); }}
-                  className="text-xs text-blue-600 hover:underline"
-                >
+              {(search || filterCity || filterMkt !== 'all') && (
+                <button onClick={() => { setSearch(''); setFilterCity(''); setFilterMkt('all'); }}
+                  className="text-xs text-blue-600 hover:underline">
                   Limpiar filtros
                 </button>
               )}
