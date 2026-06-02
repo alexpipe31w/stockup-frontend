@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getStoreTheme, updateStoreTheme, getAiConfig, saveAiConfig, getMySubscription, createCheckout } from '../services/api';
 import api from '../services/api';
+import AiConfigPage from './AiConfig';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -1133,7 +1134,7 @@ export default function Config() {
       {/* Tab content */}
       {activeTab === 'apariencia'  && <AparienciaSection storeId={storeId} />}
       {activeTab === 'negocio'     && <NegocioSection    storeId={storeId} />}
-      {activeTab === 'ia'          && <IASection         storeId={storeId} />}
+      {activeTab === 'ia'          && <AiConfigPage />}
       {activeTab === 'excluidos'   && <ExcluidosSection />}
       {activeTab === 'suscripcion' && <SuscripcionSection />}
     </div>
