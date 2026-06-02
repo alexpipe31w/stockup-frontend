@@ -349,7 +349,7 @@ export const getAiConfig = (storeId: string) =>
   api.get(`/ai-config/${storeId}`);
 
 export const saveAiConfig = (data: {
-  groqApiKey: string; systemPrompt: string;
+  aiProvider: string; apiKey: string; systemPrompt: string;
   model?: string; temperature?: number; maxTokens?: number;
 }) => api.post('/ai-config', data);
 

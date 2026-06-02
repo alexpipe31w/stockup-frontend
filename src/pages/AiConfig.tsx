@@ -1,41 +1,128 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getAiConfig, saveAiConfig } from '../services/api';
-// import api eliminado — ya no se usa directo
+
+type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic';
+
+interface ProviderInfo {
+  name:    string;
+  color:   string;
+  docsUrl: string;
+  keyHint: string;
+  models:  Array<{ value: string; name: string; tag: string; tagColor: string; desc: string; speed?: string }>;
+}
+
+const PROVIDERS: Record<AIProvider, ProviderInfo> = {
+  groq: {
+    name:    'Groq',
+    color:   '#f97316',
+    docsUrl: 'console.groq.com',
+    keyHint: 'gsk_xxxxxxxxxxxxxxxxxxxx',
+    models: [
+      { value: 'llama-3.3-70b-versatile',             name: 'Llama 3.3 70B',  tag: 'BALANCEADO',     tagColor: '#2563eb', speed: '280 t/s',  desc: 'Modelo probado. Buen equilibrio calidad/velocidad.' },
+      { value: 'llama-3.1-8b-instant',                name: 'Llama 3.1 8B',   tag: 'ECONÓMICO',      tagColor: '#64748b', speed: '560 t/s',  desc: 'Ultra rápido y de bajo costo. Alto volumen.' },
+      { value: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout', tag: 'NUEVO',       tagColor: '#ea580c', speed: '750 t/s',  desc: 'Llama 4 multimodal. Muy rápido.' },
+      { value: 'qwen/qwen3-32b',                      name: 'Qwen3 32B',       tag: 'PREVIEW',        tagColor: '#0891b2', speed: '400 t/s',  desc: 'Excelente en idiomas y razonamiento.' },
+    ],
+  },
+  openai: {
+    name:    'OpenAI',
+    color:   '#10a37f',
+    docsUrl: 'platform.openai.com',
+    keyHint: 'sk-xxxxxxxxxxxxxxxxxxxx',
+    models: [
+      { value: 'gpt-4o',        name: 'GPT-4o',       tag: 'RECOMENDADO',   tagColor: '#2563eb', desc: 'El más capaz. Entiende contexto complejo.' },
+      { value: 'gpt-4o-mini',   name: 'GPT-4o mini',  tag: 'ECONÓMICO',     tagColor: '#64748b', desc: 'Rápido y barato. Ideal para alto volumen.' },
+      { value: 'gpt-4.1',       name: 'GPT-4.1',      tag: 'NUEVO',         tagColor: '#ea580c', desc: 'Mayor ventana de contexto que GPT-4o.' },
+      { value: 'o4-mini',       name: 'o4-mini',      tag: 'RAZONAMIENTO',  tagColor: '#7c3aed', desc: 'Razonamiento paso a paso. Respuestas más precisas.' },
+    ],
+  },
+  together: {
+    name:    'Together AI',
+    color:   '#6366f1',
+    docsUrl: 'api.together.xyz',
+    keyHint: 'xxxxxxxxxxxxxxxxxxxx',
+    models: [
+      { value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', name: 'Llama 3.3 70B Turbo', tag: 'RECOMENDADO', tagColor: '#2563eb', desc: 'El mejor equilibrio en Together.' },
+      { value: 'meta-llama/Llama-3.1-8B-Instruct-Turbo',  name: 'Llama 3.1 8B Turbo',  tag: 'ECONÓMICO',   tagColor: '#64748b', desc: 'Muy rápido y barato.' },
+      { value: 'Qwen/Qwen2.5-72B-Instruct-Turbo',         name: 'Qwen 2.5 72B',         tag: 'ALTERNATIVA', tagColor: '#0891b2', desc: 'Fuerte en matemáticas e idiomas.' },
+      { value: 'deepseek-ai/DeepSeek-V3',                  name: 'DeepSeek V3',           tag: 'NUEVO',       tagColor: '#ea580c', desc: 'Modelo chino de alto rendimiento.' },
+    ],
+  },
+  mistral: {
+    name:    'Mistral',
+    color:   '#ff7000',
+    docsUrl: 'console.mistral.ai',
+    keyHint: 'xxxxxxxxxxxxxxxxxxxx',
+    models: [
+      { value: 'mistral-large-latest',  name: 'Mistral Large',  tag: 'MÁS CAPAZ',  tagColor: '#2563eb', desc: 'El modelo más potente de Mistral.' },
+      { value: 'mistral-small-latest',  name: 'Mistral Small',  tag: 'ECONÓMICO',  tagColor: '#64748b', desc: 'Rápido y eficiente para producción.' },
+      { value: 'open-mixtral-8x22b',    name: 'Mixtral 8x22B',  tag: 'OPEN SOURCE', tagColor: '#7c3aed', desc: 'MoE de alto rendimiento, open source.' },
+      { value: 'codestral-latest',      name: 'Codestral',      tag: 'CÓDIGO',     tagColor: '#059669', desc: 'Especializado en código y técnico.' },
+    ],
+  },
+  anthropic: {
+    name:    'Anthropic',
+    color:   '#c97f4a',
+    docsUrl: 'console.anthropic.com',
+    keyHint: 'sk-ant-xxxxxxxxxxxxxxxxxxxx',
+    models: [
+      { value: 'claude-opus-4-8',           name: 'Claude Opus 4',   tag: 'MÁS INTELIGENTE', tagColor: '#7c3aed', desc: 'El más capaz de Claude. Para casos complejos.' },
+      { value: 'claude-sonnet-4-6',         name: 'Claude Sonnet 4', tag: 'RECOMENDADO',     tagColor: '#2563eb', desc: 'Mejor equilibrio inteligencia/velocidad.' },
+      { value: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4',  tag: 'ECONÓMICO',       tagColor: '#64748b', desc: 'El más rápido de Claude. Ideal para volumen.' },
+      { value: 'claude-sonnet-3-5',         name: 'Claude Sonnet 3.5', tag: 'ANTERIOR',      tagColor: '#94a3b8', desc: 'Versión anterior. Altamente confiable.' },
+    ],
+  },
+};
 
 export default function AiConfig() {
   const { storeId } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
   const [form, setForm] = useState({
-    groqApiKey: '',
-    model: 'openai/gpt-oss-20b',
+    aiProvider:   'groq' as AIProvider,
+    apiKey:       '',
+    model:        'llama-3.3-70b-versatile',
     systemPrompt: '',
-    temperature: 0.7,
-    maxTokens: 500,
+    temperature:  0.7,
+    maxTokens:    500,
   });
 
   useEffect(() => {
     getAiConfig(storeId)
       .then((res) => {
-        if (res.data) setForm({
-          groqApiKey:   res.data.groqApiKey   ?? '',
-          model:        res.data.model        ?? 'openai/gpt-oss-20b',
-          systemPrompt: res.data.systemPrompt ?? '',
-          temperature:  res.data.temperature  ?? 0.7,
-          maxTokens:    res.data.maxTokens    ?? 500,
-        });
+        if (res.data) {
+          const d = res.data;
+          const provider = (d.aiProvider ?? 'groq') as AIProvider;
+          setForm({
+            aiProvider:   provider,
+            apiKey:       d.apiKey ?? d.groqApiKey ?? '',
+            model:        d.model ?? PROVIDERS[provider].models[0].value,
+            systemPrompt: d.systemPrompt ?? '',
+            temperature:  d.temperature ?? 0.7,
+            maxTokens:    d.maxTokens ?? 500,
+          });
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [storeId]);
 
+  const handleProviderChange = (p: AIProvider) => {
+    setForm(f => ({
+      ...f,
+      aiProvider: p,
+      model:      PROVIDERS[p].models[0].value,
+      apiKey:     '',
+    }));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await saveAiConfig(form); // storeId lo toma el backend del JWT
+      await saveAiConfig(form);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } finally {
@@ -43,75 +130,8 @@ export default function AiConfig() {
     }
   };
 
-  // ── Modelos Groq actualizados — marzo 2026 ─────────────────────────────────
-  const modelGroups = [
-    {
-      label: '⚡ Producción',
-      models: [
-        {
-          value: 'openai/gpt-oss-20b',
-          name: 'GPT OSS 20B',
-          tag: 'MÁS RÁPIDO',
-          tagColor: '#059669',
-          speed: '1000 t/s',
-          desc: 'El más rápido disponible. Respuestas instantáneas en WhatsApp.',
-        },
-        {
-          value: 'openai/gpt-oss-120b',
-          name: 'GPT OSS 120B',
-          tag: 'MÁS INTELIGENTE',
-          tagColor: '#7c3aed',
-          speed: '500 t/s',
-          desc: 'Mayor razonamiento. Ideal para catálogos complejos o negociación.',
-        },
-        {
-          value: 'llama-3.3-70b-versatile',
-          name: 'Llama 3.3 70B',
-          tag: 'BALANCEADO',
-          tagColor: '#2563eb',
-          speed: '280 t/s',
-          desc: 'Modelo probado y confiable. Buen equilibrio calidad/velocidad.',
-        },
-        {
-          value: 'llama-3.1-8b-instant',
-          name: 'Llama 3.1 8B',
-          tag: 'ECONÓMICO',
-          tagColor: '#64748b',
-          speed: '560 t/s',
-          desc: 'Ultra rápido y de bajo costo. Para negocios con alto volumen.',
-        },
-      ],
-    },
-    {
-      label: '🔬 Preview (nuevos)',
-      models: [
-        {
-          value: 'meta-llama/llama-4-scout-17b-16e-instruct',
-          name: 'Llama 4 Scout 17B',
-          tag: 'NUEVO',
-          tagColor: '#ea580c',
-          speed: '750 t/s',
-          desc: 'Llama 4 con soporte de imágenes. Muy rápido.',
-        },
-        {
-          value: 'qwen/qwen3-32b',
-          name: 'Qwen3 32B',
-          tag: 'PREVIEW',
-          tagColor: '#0891b2',
-          speed: '400 t/s',
-          desc: 'Alibaba Cloud. Excelente en idiomas y razonamiento.',
-        },
-        {
-          value: 'moonshotai/kimi-k2-instruct-0905',
-          name: 'Kimi K2',
-          tag: 'PREVIEW',
-          tagColor: '#0891b2',
-          speed: '200 t/s',
-          desc: 'Contexto gigante de 262K tokens. Conversaciones muy largas.',
-        },
-      ],
-    },
-  ];
+  const pInfo    = PROVIDERS[form.aiProvider];
+  const whisperOk = form.aiProvider === 'groq' || form.aiProvider === 'openai';
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -123,13 +143,55 @@ export default function AiConfig() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-800">Configuración de IA</h1>
-        <p className="text-slate-500 mt-1">Personaliza el comportamiento del asistente para tu tienda</p>
+        <p className="text-slate-500 mt-1">Personaliza el asistente para tu tienda — elige el proveedor y modelo</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
+
+        {/* Selector de provider */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-semibold text-slate-800">Proveedor de IA</h2>
+              <p className="text-xs text-slate-400">Elige dónde se ejecutan las respuestas de tu asistente</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {(Object.keys(PROVIDERS) as AIProvider[]).map((p) => {
+              const selected = form.aiProvider === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => handleProviderChange(p)}
+                  className={`py-3 rounded-xl border-2 text-sm font-semibold transition flex flex-col items-center gap-1 ${
+                    selected
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-slate-100 hover:border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <span style={{ color: selected ? PROVIDERS[p].color : undefined }}>
+                    {PROVIDERS[p].name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {!whisperOk && (
+            <p className="mt-3 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Transcripción de audio (Whisper) no disponible con {pInfo.name}. Solo Groq y OpenAI soportan audios de WhatsApp.
+            </p>
+          )}
+        </div>
 
         {/* API Key */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -140,15 +202,15 @@ export default function AiConfig() {
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-slate-800">Groq API Key</h2>
-              <p className="text-xs text-slate-400">Obtén tu key gratis en console.groq.com</p>
+              <h2 className="font-semibold text-slate-800">{pInfo.name} API Key</h2>
+              <p className="text-xs text-slate-400">Obtén tu key en {pInfo.docsUrl}</p>
             </div>
           </div>
           <input
             type="password"
-            value={form.groqApiKey}
-            onChange={(e) => setForm({ ...form, groqApiKey: e.target.value })}
-            placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
+            value={form.apiKey}
+            onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
+            placeholder={pInfo.keyHint}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition font-mono text-sm"
           />
         </div>
@@ -162,56 +224,50 @@ export default function AiConfig() {
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-slate-800">Modelo de IA</h2>
-              <p className="text-xs text-slate-400">Elige según velocidad vs inteligencia — todos gratis en Groq</p>
+              <h2 className="font-semibold text-slate-800">Modelo</h2>
+              <p className="text-xs text-slate-400">Modelos disponibles en {pInfo.name}</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {modelGroups.map((group) => (
-              <div key={group.label}>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {group.models.map((m) => {
-                    const selected = form.model === m.value;
-                    return (
-                      <button
-                        key={m.value}
-                        type="button"
-                        onClick={() => setForm({ ...form, model: m.value })}
-                        className={`p-3.5 rounded-xl border-2 text-left transition ${
-                          selected
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-slate-100 hover:border-slate-200 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`font-semibold text-sm ${selected ? 'text-blue-700' : 'text-slate-700'}`}>
-                            {m.name}
-                          </span>
-                          <span
-                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white"
-                            style={{ backgroundColor: m.tagColor }}
-                          >
-                            {m.tag}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-tight">{m.desc}</p>
-                        <p className={`text-xs font-medium mt-1.5 ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
-                          {m.speed}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {pInfo.models.map((m) => {
+              const selected = form.model === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, model: m.value })}
+                  className={`p-3.5 rounded-xl border-2 text-left transition ${
+                    selected
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-100 hover:border-slate-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`font-semibold text-sm ${selected ? 'text-blue-700' : 'text-slate-700'}`}>
+                      {m.name}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white"
+                      style={{ backgroundColor: m.tagColor }}
+                    >
+                      {m.tag}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-tight">{m.desc}</p>
+                  {m.speed && (
+                    <p className={`text-xs font-medium mt-1.5 ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
+                      {m.speed}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Modelo seleccionado */}
-          <div className="mt-4 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="mt-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
             <p className="text-xs text-slate-400">
-              Modelo seleccionado: <span className="font-mono text-slate-600 font-medium">{form.model}</span>
+              Modelo: <span className="font-mono text-slate-600 font-medium">{form.model}</span>
             </p>
           </div>
         </div>
@@ -304,7 +360,6 @@ export default function AiConfig() {
           </div>
         </div>
 
-        {/* Botón guardar */}
         <button
           type="submit"
           disabled={saving}

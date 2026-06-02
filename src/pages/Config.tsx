@@ -375,8 +375,9 @@ function IASection({ storeId }: { storeId: string }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
-    groqApiKey: '',
-    model: 'openai/gpt-oss-20b',
+    aiProvider: 'groq',
+    apiKey: '',
+    model: 'llama-3.3-70b-versatile',
     systemPrompt: '',
     temperature: 0.7,
     maxTokens: 500,
@@ -386,8 +387,9 @@ function IASection({ storeId }: { storeId: string }) {
     getAiConfig(storeId)
       .then(res => {
         if (res.data) setForm({
-          groqApiKey:   res.data.groqApiKey   ?? '',
-          model:        res.data.model        ?? 'openai/gpt-oss-20b',
+          aiProvider:   res.data.aiProvider   ?? 'groq',
+          apiKey:       res.data.apiKey       ?? res.data.groqApiKey ?? '',
+          model:        res.data.model        ?? 'llama-3.3-70b-versatile',
           systemPrompt: res.data.systemPrompt ?? '',
           temperature:  res.data.temperature  ?? 0.7,
           maxTokens:    res.data.maxTokens    ?? 500,
@@ -428,8 +430,8 @@ function IASection({ storeId }: { storeId: string }) {
         </div>
         <input
           type="password"
-          value={form.groqApiKey}
-          onChange={e => setForm({ ...form, groqApiKey: e.target.value })}
+          value={form.apiKey}
+          onChange={e => setForm({ ...form, apiKey: e.target.value })}
           placeholder="gsk_xxxxxxxxxxxxxxxxxxxx"
           className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:bg-white transition font-mono text-sm"
         />
