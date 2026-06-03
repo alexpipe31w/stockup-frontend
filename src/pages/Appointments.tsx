@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getAppointments, getAppointmentStats,
   updateAppointment, getAppointmentTimeline,
+  createAppointment, getCustomers, getServices,
 } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,8 @@ interface Appointment {
   pendingActionReason?: string | null;
   pendingActionData?:  Record<string, any> | null;
 }
+interface CustomerOption { customerId: string; name: string | null; phone: string; }
+interface ServiceOption  { serviceId:  string; name: string; }
 interface Stats {
   total: number; pending: number; confirmed: number; todayCount: number;
   upcomingWeek: number; inProgress: number; completedTotal: number;
@@ -648,6 +652,245 @@ function DetailPanel({ appt, onUpdate, onClose }: {
   );
 }
 
+// ─── New Appointment Modal ─────────────────────────────────────────────────────
+
+function NewAppointmentModal({ storeId, onCreated, onClose }: {
+  storeId: string;
+  onCreated: () => void;
+  onClose: () => void;
+}) {
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [services,  setServices]  = useState<ServiceOption[]>([]);
+  const [loadingOpts, setLoadingOpts] = useState(true);
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(10, 0, 0, 0);
+  const defaultDT = tomorrow.toISOString().slice(0, 16);
+
+  const [form, setForm] = useState({
+    customerId:      '',
+    serviceId:       '',
+    scheduledAt:     defaultDT,
+    durationMinutes: '60',
+    description:     '',
+    address:         '',
+    agreedPrice:     '',
+    notes:           '',
+    priority:        'NORMAL' as AppointmentPriority,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState('');
+
+  useEffect(() => {
+    Promise.all([getCustomers(storeId), getServices()])
+      .then(([cr, sr]) => {
+        setCustomers(cr.data);
+        setServices(sr.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingOpts(false));
+  }, [storeId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.customerId || !form.scheduledAt) {
+      setError('Cliente y fecha/hora son obligatorios.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await createAppointment({
+        customerId:      form.customerId,
+        serviceId:       form.serviceId       || undefined,
+        scheduledAt:     new Date(form.scheduledAt).toISOString(),
+        durationMinutes: form.durationMinutes  ? Number(form.durationMinutes) : undefined,
+        description:     form.description     || undefined,
+        address:         form.address         || undefined,
+        agreedPrice:     form.agreedPrice      ? Number(form.agreedPrice) : undefined,
+        notes:           form.notes           || undefined,
+        priority:        form.priority,
+        source:          'MANUAL',
+      });
+      onCreated();
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Error al crear la cita.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const ic = 'w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <h2 className="text-base font-bold text-slate-800">Nueva cita manual</h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        {loadingOpts ? (
+          <div className="flex items-center justify-center py-16">
+            <svg className="animate-spin text-blue-600" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            </svg>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Cliente *</label>
+              <select
+                value={form.customerId}
+                onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}
+                className={ic}
+                required
+              >
+                <option value="">Seleccionar cliente...</option>
+                {customers.map(c => (
+                  <option key={c.customerId} value={c.customerId}>
+                    {c.name ? `${c.name} — ${c.phone}` : c.phone}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Servicio</label>
+              <select
+                value={form.serviceId}
+                onChange={e => setForm(f => ({ ...f, serviceId: e.target.value }))}
+                className={ic}
+              >
+                <option value="">Sin servicio específico</option>
+                {services.map(s => (
+                  <option key={s.serviceId} value={s.serviceId}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Fecha y hora *</label>
+                <input
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))}
+                  className={ic}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Duración (min)</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={1440}
+                  value={form.durationMinutes}
+                  onChange={e => setForm(f => ({ ...f, durationMinutes: e.target.value }))}
+                  className={ic}
+                  placeholder="60"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Precio acordado (COP)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.agreedPrice}
+                  onChange={e => setForm(f => ({ ...f, agreedPrice: e.target.value }))}
+                  className={ic}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Prioridad</label>
+                <select
+                  value={form.priority}
+                  onChange={e => setForm(f => ({ ...f, priority: e.target.value as AppointmentPriority }))}
+                  className={ic}
+                >
+                  <option value="LOW">Baja</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="HIGH">Alta</option>
+                  <option value="URGENT">Urgente</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Descripción</label>
+              <textarea
+                rows={2}
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Detalles del servicio..."
+                className={`${ic} resize-none`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Dirección</label>
+              <input
+                value={form.address}
+                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="Calle, barrio..."
+                className={ic}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notas al cliente</label>
+              <textarea
+                rows={2}
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Instrucciones, recordatorios..."
+                className={`${ic} resize-none`}
+              />
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-3 py-2.5 text-xs">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={saving || !form.customerId || !form.scheduledAt}
+                className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition btn-gradient"
+              >
+                {saving ? 'Creando...' : 'Crear cita'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── List View ────────────────────────────────────────────────────────────────
 
 function ListView({ appointments, selected, onSelect }: {
@@ -885,6 +1128,8 @@ export default function Appointments() {
   const [search,             setSearch]             = useState('');
   const [selected,           setSelected]           = useState<Appointment | null>(null);
   const [view,               setView]               = useState<ViewMode>('list');
+  const [showNewAppt, setShowNewAppt] = useState(false);
+  const { storeId } = useAuth();
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -944,6 +1189,15 @@ export default function Appointments() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowNewAppt(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold btn-gradient"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Nueva cita
+              </button>
               {/* view toggle */}
               <div className="flex items-center bg-slate-100 rounded-xl p-1">
                 {([
@@ -1055,6 +1309,13 @@ export default function Appointments() {
           </div>
         )}
       </div>
+      {showNewAppt && (
+        <NewAppointmentModal
+          storeId={storeId}
+          onCreated={load}
+          onClose={() => setShowNewAppt(false)}
+        />
+      )}
     </div>
   );
 }
