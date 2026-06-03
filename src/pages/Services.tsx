@@ -64,6 +64,24 @@ const PRICE_TYPE_OPTIONS: { value: PriceType; label: string; hint: string }[] = 
   { value: 'VARIABLE', label: 'Precio variable',  hint: 'Sin precio fijo — el admin cotiza cada caso' },
 ];
 
+const BARBERIA_TEMPLATES: Array<{
+  name: string; category: string; description: string;
+  priceType: PriceType; basePrice: number; estimatedMinutes: number;
+}> = [
+  { name: 'Corte de cabello',        category: 'Corte',        description: 'Corte de cabello con tijeras o máquina',       priceType: 'FIXED',    basePrice: 20000,  estimatedMinutes: 30  },
+  { name: 'Corte + Barba',           category: 'Combo',        description: 'Corte de cabello y arreglo de barba',          priceType: 'FIXED',    basePrice: 35000,  estimatedMinutes: 45  },
+  { name: 'Arreglo de barba',        category: 'Barba',        description: 'Perfilado y arreglo de barba con navaja',      priceType: 'FIXED',    basePrice: 15000,  estimatedMinutes: 20  },
+  { name: 'Tinte de cabello',        category: 'Color',        description: 'Coloración completa con tinte profesional',    priceType: 'VARIABLE', basePrice: 80000,  estimatedMinutes: 90  },
+  { name: 'Mechas / highlights',     category: 'Color',        description: 'Mechas parciales o completas',                 priceType: 'VARIABLE', basePrice: 100000, estimatedMinutes: 120 },
+  { name: 'Manicure',                category: 'Uñas',         description: 'Limpieza y esmaltado de uñas de manos',        priceType: 'FIXED',    basePrice: 25000,  estimatedMinutes: 45  },
+  { name: 'Pedicure',                category: 'Uñas',         description: 'Limpieza y esmaltado de uñas de pies',         priceType: 'FIXED',    basePrice: 30000,  estimatedMinutes: 60  },
+  { name: 'Manicure + Pedicure',     category: 'Uñas',         description: 'Combo manicure y pedicure',                    priceType: 'FIXED',    basePrice: 50000,  estimatedMinutes: 90  },
+  { name: 'Alisado / keratina',      category: 'Tratamientos', description: 'Alisado con keratina o formol',                priceType: 'VARIABLE', basePrice: 150000, estimatedMinutes: 180 },
+  { name: 'Hidratación capilar',     category: 'Tratamientos', description: 'Mascarilla nutritiva + baño de crema',         priceType: 'FIXED',    basePrice: 45000,  estimatedMinutes: 60  },
+  { name: 'Maquillaje',              category: 'Estética',     description: 'Maquillaje social o artístico',                priceType: 'VARIABLE', basePrice: 60000,  estimatedMinutes: 60  },
+  { name: 'Depilación con cera',     category: 'Depilación',   description: 'Depilación zona a convenir',                   priceType: 'VARIABLE', basePrice: 20000,  estimatedMinutes: 30  },
+];
+
 const PRICE_TYPE_COLORS: Record<PriceType, string> = {
   FIXED:    'bg-blue-50 text-blue-700',
   PER_HOUR: 'bg-purple-50 text-purple-700',
@@ -798,6 +816,8 @@ export default function Services() {
   const [modalService,   setModalService]  = useState<Service | null | 'new'>(null);
   const [deleteTarget,   setDeleteTarget]  = useState<Service | null>(null);
   const [deleting,       setDeleting]      = useState(false);
+  const [showTemplates,    setShowTemplates]    = useState(false);
+  const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -807,6 +827,26 @@ export default function Services() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleApplyTemplate = async (tpl: typeof BARBERIA_TEMPLATES[0]) => {
+    setApplyingTemplate(tpl.name);
+    try {
+      await createService({
+        name:             tpl.name,
+        category:         tpl.category,
+        description:      tpl.description,
+        priceType:        tpl.priceType,
+        basePrice:        tpl.basePrice,
+        estimatedMinutes: tpl.estimatedMinutes,
+      });
+      await load();
+      setShowTemplates(false);
+    } catch {
+      // ignore if already exists
+    } finally {
+      setApplyingTemplate(null);
+    }
+  };
 
   const handleSaved = (saved: Service) => {
     setServices(prev => {
@@ -852,6 +892,16 @@ export default function Services() {
                 {loading ? '...' : `${services.length} servicio${services.length !== 1 ? 's' : ''} activo${services.length !== 1 ? 's' : ''}`}
               </p>
             </div>
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              Plantillas
+            </button>
             <button onClick={() => setModalService('new')}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
               style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
@@ -950,6 +1000,68 @@ export default function Services() {
                 className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition disabled:opacity-50">
                 {deleting ? 'Eliminando...' : 'Eliminar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTemplates && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">Plantillas de servicios</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Barbería, salón de belleza y estética — un clic para agregar</p>
+              </div>
+              <button
+                onClick={() => setShowTemplates(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {BARBERIA_TEMPLATES.map(tpl => {
+                const isApplying = applyingTemplate === tpl.name;
+                return (
+                  <button
+                    key={tpl.name}
+                    onClick={() => handleApplyTemplate(tpl)}
+                    disabled={isApplying}
+                    className="text-left p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/40 transition group disabled:opacity-50"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-700">{tpl.name}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">{tpl.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{tpl.category}</span>
+                          <span className="text-xs font-medium text-emerald-600">
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(tpl.basePrice)}
+                          </span>
+                          <span className="text-xs text-slate-400">{tpl.estimatedMinutes} min</span>
+                        </div>
+                      </div>
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100">
+                        {isApplying ? (
+                          <svg className="animate-spin text-blue-500" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                          </svg>
+                        ) : (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50">
+              <p className="text-xs text-slate-400 text-center">
+                Cada plantilla crea un nuevo servicio. Puedes editarlo después desde el panel de servicios.
+              </p>
             </div>
           </div>
         </div>
