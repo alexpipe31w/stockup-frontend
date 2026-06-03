@@ -27,6 +27,17 @@ interface Appointment {
   internalNotes:   string | null; agreedPrice: string | null;
   cancelReason:    string | null; createdAt: string;
   customer:        Customer; service: ServiceInfo | null; serviceVariant: VariantInfo | null;
+  // Payment fields
+  paymentStatus?:      string | null;
+  paymentMethod?:      string | null;
+  paymentAmount?:      number | null;
+  paymentNotes?:       string | null;
+  paymentConfirmedAt?: string | null;
+  paymentProofUrl?:    string | null;
+  // Pending action fields
+  pendingAction?:      string | null;
+  pendingActionReason?: string | null;
+  pendingActionData?:  Record<string, any> | null;
 }
 interface Stats {
   total: number; pending: number; confirmed: number; todayCount: number;
@@ -180,9 +191,19 @@ function CancelModal({ onConfirm, onClose, saving }: { onConfirm:(r:string)=>voi
 function DetailPanel({ appt, onUpdate, onClose }: {
   appt: Appointment; onUpdate:(id:string,data:any)=>Promise<void>; onClose:()=>void;
 }) {
-  const [saving,       setSaving]       = useState(false);
-  const [showTL,       setShowTL]       = useState(false);
-  const [showCancel,   setShowCancel]   = useState(false);
+  const [saving,          setSaving]          = useState(false);
+  const [showTL,          setShowTL]          = useState(false);
+  const [showCancel,      setShowCancel]      = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState<'detalle' | 'pago'>('detalle');
+  const [paymentForm,     setPaymentForm]     = useState({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
+  const [resolvingAction, setResolvingAction] = useState(false);
+
+  // Reset tabs and payment form when the appointment changes
+  useEffect(() => {
+    setActiveDetailTab('detalle');
+    setPaymentForm({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
+  }, [appt.appointmentId]);
+
   const cfg = SC[appt.status];
   const transitions = TRANSITIONS[appt.status] ?? [];
 
@@ -191,6 +212,37 @@ function DetailPanel({ appt, onUpdate, onClose }: {
     setSaving(true);
     await onUpdate(appt.appointmentId, { status: s, ...(cancelReason ? { cancelReason } : {}) });
     setSaving(false); setShowCancel(false);
+  };
+
+  const handleConfirmPayment = async () => {
+    setSaving(true);
+    try {
+      await onUpdate(appt.appointmentId, {
+        paymentStatus: 'PAID',
+        ...(paymentForm.paymentMethod && { paymentMethod: paymentForm.paymentMethod }),
+        ...(paymentForm.paymentAmount && { paymentAmount: Number(paymentForm.paymentAmount) }),
+        ...(paymentForm.paymentNotes  && { paymentNotes:  paymentForm.paymentNotes }),
+      });
+      setPaymentForm({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
+    } catch (err: any) {
+      console.error('Error confirming payment:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResolveAction = async (resolution: 'approved' | 'rejected') => {
+    if (resolvingAction) return;
+    setResolvingAction(true);
+    try {
+      await onUpdate(appt.appointmentId, {
+        pendingActionResolution: resolution,
+        ...(resolution === 'rejected' && { rejectionReason: 'Solicitud rechazada por el admin' }),
+      });
+      onClose();
+    } finally {
+      setResolvingAction(false);
+    }
   };
 
   const label = appt.service
@@ -218,98 +270,231 @@ function DetailPanel({ appt, onUpdate, onClose }: {
           </button>
         </div>
 
-        {/* body */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-sm">
-
-          {/* status + priority */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <StatusBadge status={appt.status} />
-            {appt.priority !== 'NORMAL' && (
-              <span className="text-xs font-semibold" style={{ color: PC[appt.priority].dot }}>
-                ● {PC[appt.priority].label}
-              </span>
-            )}
-          </div>
-
-          {/* datetime */}
-          <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-            <p className="text-xs text-slate-400 mb-0.5">📅 Fecha y hora</p>
-            <p className="font-semibold text-slate-800">{fmtDateFull(appt.scheduledAt)}</p>
-            <p className="text-slate-600 text-sm">
-              {fmtTime(appt.scheduledAt)}{appt.endsAt ? ` → ${fmtTime(appt.endsAt)}` : ''}
-              {appt.durationMinutes && <span className="text-slate-400 ml-1.5">({fmtMins(appt.durationMinutes)})</span>}
-            </p>
-          </div>
-
-          {/* cliente */}
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Cliente</p>
-            <p className="font-medium text-slate-800">{appt.customer.name ?? 'Sin nombre'}</p>
-            <p className="text-xs text-slate-500">{appt.customer.phone}</p>
-            {appt.customer.cedula && <p className="text-xs text-slate-400">CC {appt.customer.cedula}</p>}
-            {appt.customer.city   && <p className="text-xs text-slate-400">{appt.customer.city}</p>}
-          </div>
-
-          {/* detalles */}
-          {[
-            appt.description && ['📝 Descripción', appt.description],
-            appt.address     && ['📍 Dirección',   appt.address],
-            appt.notes       && ['🗒️ Notas',       appt.notes],
-            appt.agreedPrice && ['💰 Precio acordado', fmtCOP(appt.agreedPrice)],
-          ].filter(Boolean).map(([k, v]: any) => (
-            <div key={k}>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{k}</p>
-              <p className="text-slate-700 text-sm">{v}</p>
-            </div>
+        {/* Detail tab selector */}
+        <div className="flex border-b border-slate-100 px-4">
+          {(['detalle', 'pago'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveDetailTab(tab)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition capitalize ${
+                activeDetailTab === tab
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {tab === 'detalle' ? 'Detalle' : 'Pago'}
+            </button>
           ))}
+        </div>
 
-          {/* notas internas / cancelación */}
-          {(appt.internalNotes || appt.cancelReason) && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-              <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Solo admin</p>
-              {appt.internalNotes && <p className="text-xs text-amber-800">{appt.internalNotes}</p>}
-              {appt.cancelReason && (
-                <>
-                  <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider mt-1.5 mb-0.5">Cancelación</p>
-                  <p className="text-xs text-red-700">{appt.cancelReason}</p>
-                </>
+        {/* body */}
+        {activeDetailTab === 'detalle' && (
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 text-sm">
+
+            {/* status + priority */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <StatusBadge status={appt.status} />
+              {appt.priority !== 'NORMAL' && (
+                <span className="text-xs font-semibold" style={{ color: PC[appt.priority].dot }}>
+                  ● {PC[appt.priority].label}
+                </span>
               )}
             </div>
-          )}
 
-          {/* fuente */}
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>{SRC[appt.source] ?? appt.source}</span>
-            <span>{fmtDT(appt.createdAt)}</span>
-          </div>
-
-          {/* transiciones */}
-          {transitions.length > 0 && (
-            <div className="border-t border-slate-100 pt-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cambiar estado</p>
-              <div className="flex flex-col gap-1.5">
-                {transitions.map(s => (
-                  <button key={s} onClick={() => doStatus(s)} disabled={saving}
-                    className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-left transition flex items-center gap-2 disabled:opacity-50"
-                    style={{ background: SC[s].bg, color: SC[s].color }}>
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SC[s].bar }} />
-                    {SC[s].label}
-                  </button>
-                ))}
-              </div>
+            {/* datetime */}
+            <div className="bg-slate-50 rounded-xl px-3 py-2.5">
+              <p className="text-xs text-slate-400 mb-0.5">📅 Fecha y hora</p>
+              <p className="font-semibold text-slate-800">{fmtDateFull(appt.scheduledAt)}</p>
+              <p className="text-slate-600 text-sm">
+                {fmtTime(appt.scheduledAt)}{appt.endsAt ? ` → ${fmtTime(appt.endsAt)}` : ''}
+                {appt.durationMinutes && <span className="text-slate-400 ml-1.5">({fmtMins(appt.durationMinutes)})</span>}
+              </p>
             </div>
-          )}
 
-          {/* historial */}
-          <button onClick={() => setShowTL(v => !v)}
-            className="w-full text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1.5 py-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            {showTL ? 'Ocultar historial' : 'Ver historial'}
-          </button>
-          {showTL && <TimelinePanel id={appt.appointmentId} onClose={() => setShowTL(false)} />}
-        </div>
+            {/* cliente */}
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Cliente</p>
+              <p className="font-medium text-slate-800">{appt.customer.name ?? 'Sin nombre'}</p>
+              <p className="text-xs text-slate-500">{appt.customer.phone}</p>
+              {appt.customer.cedula && <p className="text-xs text-slate-400">CC {appt.customer.cedula}</p>}
+              {appt.customer.city   && <p className="text-xs text-slate-400">{appt.customer.city}</p>}
+            </div>
+
+            {/* detalles */}
+            {[
+              appt.description && ['📝 Descripción', appt.description],
+              appt.address     && ['📍 Dirección',   appt.address],
+              appt.notes       && ['🗒️ Notas',       appt.notes],
+              appt.agreedPrice && ['💰 Precio acordado', fmtCOP(appt.agreedPrice)],
+            ].filter(Boolean).map(([k, v]: any) => (
+              <div key={k}>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{k}</p>
+                <p className="text-slate-700 text-sm">{v}</p>
+              </div>
+            ))}
+
+            {/* notas internas / cancelación */}
+            {(appt.internalNotes || appt.cancelReason) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Solo admin</p>
+                {appt.internalNotes && <p className="text-xs text-amber-800">{appt.internalNotes}</p>}
+                {appt.cancelReason && (
+                  <>
+                    <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider mt-1.5 mb-0.5">Cancelación</p>
+                    <p className="text-xs text-red-700">{appt.cancelReason}</p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* fuente */}
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>{SRC[appt.source] ?? appt.source}</span>
+              <span>{fmtDT(appt.createdAt)}</span>
+            </div>
+
+            {/* pending action card */}
+            {appt.pendingAction && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-sm font-semibold text-amber-800 mb-1">
+                  ⚠️ Solicitud de {appt.pendingAction === 'CANCEL_REQUESTED' ? 'cancelación' : 'reprogramación'}
+                </p>
+                {appt.pendingActionReason && (
+                  <p className="text-xs text-amber-700 mb-2">
+                    Motivo: "{String(appt.pendingActionReason).slice(0, 150)}"
+                  </p>
+                )}
+                {appt.pendingAction === 'RESCHEDULE_REQUESTED' &&
+                 (appt.pendingActionData as any)?.newDate && (
+                  <p className="text-xs text-amber-700 mb-2">
+                    Nueva fecha: {(appt.pendingActionData as any).newDate}
+                    {(appt.pendingActionData as any).newTime
+                      ? ` a las ${(appt.pendingActionData as any).newTime}`
+                      : ''}
+                  </p>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleResolveAction('approved')}
+                    disabled={resolvingAction}
+                    className="flex-1 py-1.5 rounded-lg bg-green-500 text-white text-xs font-semibold hover:bg-green-600 disabled:opacity-50 transition"
+                  >
+                    ✅ Aprobar
+                  </button>
+                  <button
+                    onClick={() => handleResolveAction('rejected')}
+                    disabled={resolvingAction}
+                    className="flex-1 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 disabled:opacity-50 transition"
+                  >
+                    ❌ Rechazar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* transiciones */}
+            {transitions.length > 0 && (
+              <div className="border-t border-slate-100 pt-3">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cambiar estado</p>
+                <div className="flex flex-col gap-1.5">
+                  {transitions.map(s => (
+                    <button key={s} onClick={() => doStatus(s)} disabled={saving}
+                      className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-left transition flex items-center gap-2 disabled:opacity-50"
+                      style={{ background: SC[s].bg, color: SC[s].color }}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: SC[s].bar }} />
+                      {SC[s].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* historial */}
+            <button onClick={() => setShowTL(v => !v)}
+              className="w-full text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1.5 py-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              {showTL ? 'Ocultar historial' : 'Ver historial'}
+            </button>
+            {showTL && <TimelinePanel id={appt.appointmentId} onClose={() => setShowTL(false)} />}
+          </div>
+        )}
+
+        {/* payment tab */}
+        {activeDetailTab === 'pago' && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm">
+            {/* Payment status badge */}
+            <div className="flex items-center gap-2">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                appt.paymentStatus === 'PAID'     ? 'bg-green-100 text-green-700' :
+                appt.paymentStatus === 'PARTIAL'  ? 'bg-yellow-100 text-yellow-700' :
+                appt.paymentStatus === 'REFUNDED' ? 'bg-blue-100 text-blue-700' :
+                                                     'bg-slate-100 text-slate-600'
+              }`}>
+                {appt.paymentStatus === 'PAID'     ? '✅ Pagado' :
+                 appt.paymentStatus === 'PARTIAL'  ? '⚠️ Parcial' :
+                 appt.paymentStatus === 'REFUNDED' ? '↩️ Reembolsado' : '⏳ Pendiente'}
+              </span>
+              {appt.paymentConfirmedAt && (
+                <span className="text-xs text-slate-400">
+                  Confirmado el {new Date(appt.paymentConfirmedAt).toLocaleDateString('es-CO')}
+                </span>
+              )}
+            </div>
+
+            {appt.paymentStatus !== 'PAID' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Método de pago</label>
+                  <select
+                    value={paymentForm.paymentMethod}
+                    onChange={e => setPaymentForm(f => ({ ...f, paymentMethod: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {['efectivo','transferencia','tarjeta','nequi','daviplata','otro'].map(m => (
+                      <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Monto pagado</label>
+                  <input
+                    type="number"
+                    value={paymentForm.paymentAmount}
+                    onChange={e => setPaymentForm(f => ({ ...f, paymentAmount: e.target.value }))}
+                    placeholder="0"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600 mb-1 block">Notas</label>
+                  <textarea
+                    rows={2}
+                    value={paymentForm.paymentNotes}
+                    onChange={e => setPaymentForm(f => ({ ...f, paymentNotes: e.target.value }))}
+                    placeholder="Referencia, número de transacción..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                {appt.paymentProofUrl && (
+                  <div className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+                    💳 Comprobante detectado por IA: "{String(appt.paymentProofUrl).slice(0, 100)}"
+                  </div>
+                )}
+                <button
+                  onClick={handleConfirmPayment}
+                  disabled={saving}
+                  className="w-full py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition"
+                  style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
+                >
+                  {saving ? 'Guardando...' : 'Confirmar pago'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showCancel && (
@@ -549,24 +734,26 @@ export default function Appointments() {
   const [stats,        setStats]        = useState<Stats>({ total:0, pending:0, confirmed:0, todayCount:0, upcomingWeek:0, inProgress:0, completedTotal:0, cancelledTotal:0, noShowTotal:0 });
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus,       setFilterStatus]       = useState('');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [filterType,   setFilterType]   = useState('');
-  const [search,       setSearch]       = useState('');
-  const [selected,     setSelected]     = useState<Appointment | null>(null);
-  const [view,         setView]         = useState<ViewMode>('list');
+  const [filterType,         setFilterType]         = useState('');
+  const [filterPendingAction, setFilterPendingAction] = useState('');
+  const [search,             setSearch]             = useState('');
+  const [selected,           setSelected]           = useState<Appointment | null>(null);
+  const [view,               setView]               = useState<ViewMode>('list');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const p: Record<string,string> = {};
-      if (filterStatus) p.status = filterStatus;
-      if (filterType)   p.type   = filterType;
+      if (filterStatus)        p.status           = filterStatus;
+      if (filterType)          p.type             = filterType;
+      if (filterPendingAction) p.hasPendingAction = filterPendingAction;
       const [aR, sR] = await Promise.all([getAppointments(p), getAppointmentStats()]);
       setAppointments(aR.data); setStats(sR.data);
     } catch { setError('Error cargando agendamientos.'); }
     finally { setLoading(false); }
-  }, [filterStatus, filterType]);
+  }, [filterStatus, filterType, filterPendingAction]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -676,8 +863,24 @@ export default function Appointments() {
               <option value="corte">Corte</option>
               <option value="otro">Otro</option>
             </select>
-            {(search || filterStatus || filterType) && (
-              <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); }}
+            {/* Pending actions badge */}
+            {appointments.filter((a: Appointment) => a.pendingAction).length > 0 && (
+              <button
+                onClick={() => setFilterPendingAction(v => v === 'true' ? '' : 'true')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                  filterPendingAction === 'true'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
+                }`}
+              >
+                <span className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
+                  {appointments.filter((a: Appointment) => a.pendingAction).length}
+                </span>
+                Solicitudes pendientes
+              </button>
+            )}
+            {(search || filterStatus || filterType || filterPendingAction) && (
+              <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); setFilterPendingAction(''); }}
                 className="text-xs text-blue-600 hover:underline">Limpiar</button>
             )}
           </div>
