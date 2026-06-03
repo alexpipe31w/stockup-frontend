@@ -194,7 +194,19 @@ function DetailPanel({ appt, onUpdate, onClose }: {
   const [saving,          setSaving]          = useState(false);
   const [showTL,          setShowTL]          = useState(false);
   const [showCancel,      setShowCancel]      = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'detalle' | 'pago'>('detalle');
+  const [activeDetailTab, setActiveDetailTab] = useState<'detalle' | 'pago' | 'editar'>('detalle');
+  const [editForm, setEditForm] = useState({
+    scheduledAt:     '',
+    endsAt:          '',
+    durationMinutes: '',
+    description:     '',
+    address:         '',
+    agreedPrice:     '',
+    notes:           '',
+    internalNotes:   '',
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editSaved,  setEditSaved]  = useState(false);
   const [paymentForm,     setPaymentForm]     = useState({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
   const [resolvingAction, setResolvingAction] = useState(false);
 
@@ -202,6 +214,16 @@ function DetailPanel({ appt, onUpdate, onClose }: {
   useEffect(() => {
     setActiveDetailTab('detalle');
     setPaymentForm({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
+    setEditForm({
+      scheduledAt:     appt.scheduledAt ? appt.scheduledAt.slice(0, 16) : '',
+      endsAt:          appt.endsAt      ? appt.endsAt.slice(0, 16)      : '',
+      durationMinutes: appt.durationMinutes != null ? String(appt.durationMinutes) : '',
+      description:     appt.description    ?? '',
+      address:         appt.address        ?? '',
+      agreedPrice:     appt.agreedPrice    != null ? String(appt.agreedPrice) : '',
+      notes:           appt.notes          ?? '',
+      internalNotes:   appt.internalNotes  ?? '',
+    });
   }, [appt.appointmentId]);
 
   const cfg = SC[appt.status];
@@ -245,6 +267,27 @@ function DetailPanel({ appt, onUpdate, onClose }: {
     }
   };
 
+  const handleEditSave = async () => {
+    setEditSaving(true);
+    setEditSaved(false);
+    try {
+      const payload: Record<string, any> = {};
+      if (editForm.scheduledAt)     payload.scheduledAt     = new Date(editForm.scheduledAt).toISOString();
+      if (editForm.endsAt)          payload.endsAt          = new Date(editForm.endsAt).toISOString();
+      if (editForm.durationMinutes) payload.durationMinutes = Number(editForm.durationMinutes);
+      payload.description   = editForm.description   || null;
+      payload.address       = editForm.address       || null;
+      payload.agreedPrice   = editForm.agreedPrice   ? Number(editForm.agreedPrice) : null;
+      payload.notes         = editForm.notes         || null;
+      payload.internalNotes = editForm.internalNotes || null;
+      await onUpdate(appt.appointmentId, payload);
+      setEditSaved(true);
+      setTimeout(() => setEditSaved(false), 3000);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const label = appt.service
     ? `${appt.service.name}${appt.serviceVariant ? ` · ${appt.serviceVariant.name}` : ''}`
     : appt.type;
@@ -272,7 +315,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
         {/* Detail tab selector */}
         <div className="flex border-b border-slate-100 px-4">
-          {(['detalle', 'pago'] as const).map(tab => (
+          {(['detalle', 'pago', 'editar'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveDetailTab(tab)}
@@ -282,7 +325,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                   : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
             >
-              {tab === 'detalle' ? 'Detalle' : 'Pago'}
+              {tab === 'detalle' ? 'Detalle' : tab === 'pago' ? 'Pago' : 'Editar'}
             </button>
           ))}
         </div>
@@ -492,6 +535,107 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                   {saving ? 'Guardando...' : 'Confirmar pago'}
                 </button>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* edit tab */}
+        {activeDetailTab === 'editar' && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Fecha y hora</label>
+              <input
+                type="datetime-local"
+                value={editForm.scheduledAt}
+                onChange={e => setEditForm(f => ({ ...f, scheduledAt: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Hora de fin</label>
+              <input
+                type="datetime-local"
+                value={editForm.endsAt}
+                onChange={e => setEditForm(f => ({ ...f, endsAt: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Duración (minutos)</label>
+              <input
+                type="number"
+                min={5}
+                max={1440}
+                value={editForm.durationMinutes}
+                onChange={e => setEditForm(f => ({ ...f, durationMinutes: e.target.value }))}
+                placeholder="60"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+              <textarea
+                rows={2}
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Tipo de servicio, detalles..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Dirección</label>
+              <input
+                value={editForm.address}
+                onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="Calle 123..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Precio acordado (COP)</label>
+              <input
+                type="number"
+                min={0}
+                value={editForm.agreedPrice}
+                onChange={e => setEditForm(f => ({ ...f, agreedPrice: e.target.value }))}
+                placeholder="0"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas al cliente</label>
+              <textarea
+                rows={2}
+                value={editForm.notes}
+                onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Instrucciones, recordatorios..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas internas</label>
+              <textarea
+                rows={2}
+                value={editForm.internalNotes}
+                onChange={e => setEditForm(f => ({ ...f, internalNotes: e.target.value }))}
+                placeholder="Solo visible para el admin..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onClick={handleEditSave}
+              disabled={editSaving}
+              className="w-full py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition btn-gradient"
+            >
+              {editSaving ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+            {editSaved && (
+              <p className="text-xs text-green-600 font-medium text-center flex items-center justify-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Cita actualizada correctamente
+              </p>
             )}
           </div>
         )}
