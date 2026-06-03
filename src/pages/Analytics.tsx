@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api, { getRevenueTrends, getConversationInsights } from '../services/api';
+import api, { getRevenueTrends, getConversationInsights, getDailyReports, generateReport } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SparkIcon   = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>);
@@ -252,6 +252,9 @@ export default function Analytics() {
   const [insLoading,setInsLoading]= useState(false);
   const [context,   setContext]   = useState('');
 
+  const [dailyReports,     setDailyReports]     = useState<any[]>([]);
+  const [generatingReport, setGeneratingReport] = useState(false);
+
   const [messages,  setMessages]  = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [input,     setInput]     = useState('');
   const [thinking,  setThinking]  = useState(false);
@@ -362,7 +365,12 @@ PRODUCTOS:
     }
   }, [storeId]);
 
-  useEffect(() => { loadStats(); }, [loadStats]);
+  useEffect(() => {
+    loadStats();
+    getDailyReports(30)
+      .then(r => setDailyReports(r.data ?? []))
+      .catch(() => {});
+  }, [loadStats]);
 
   // ── Analizar conversaciones ────────────────────────────────────────────────
   const analyzeConversations = async () => {
@@ -516,6 +524,72 @@ PRODUCTOS:
                 loading={insLoading}
                 onAnalyze={analyzeConversations}
               />
+            </div>
+
+            {/* ── Daily Report Section ── */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2">
+                      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-slate-800">Reporte del Día</h2>
+                    <p className="text-xs text-slate-400">Enviado automáticamente a las 9pm Colombia vía WA y email</p>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    setGeneratingReport(true);
+                    try {
+                      await generateReport();
+                    } catch {
+                      // ignore
+                    } finally {
+                      setGeneratingReport(false);
+                    }
+                  }}
+                  disabled={generatingReport}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-60 transition"
+                  style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}
+                >
+                  {generatingReport ? 'Generando...' : 'Generar ahora'}
+                </button>
+              </div>
+
+              {dailyReports.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8">
+                  Aún no hay reportes generados. El primero se enviará automáticamente esta noche a las 9pm.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {dailyReports.slice(0, 10).map((r: any) => {
+                    const d    = r.appointmentsData ?? {};
+                    const p    = r.paymentsData ?? {};
+                    const date = new Date(r.date).toLocaleDateString('es-CO', {
+                      weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                    });
+                    const fmtMoney = (n: number) => `$${n.toLocaleString('es-CO')}`;
+                    return (
+                      <div key={r.reportId} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-slate-700">{date}</span>
+                          <span className="text-sm font-bold text-emerald-600">
+                            {fmtMoney(p.confirmed ?? 0)}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 text-xs text-slate-500">
+                          <span>✅ {d.completed ?? 0} completadas</span>
+                          <span>❌ {d.cancelled ?? 0} canceladas</span>
+                          <span>👻 {d.noShow ?? 0} no-show</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* ── AI Advisor ── */}

@@ -303,23 +303,17 @@ export const createAppointment = (data: {
   agreedPrice?: number;
 }) => api.post('/appointments', data);
 
-export const updateAppointment = (id: string, data: {
-  status?: string;
-  priority?: string;
-  type?: string;
-  scheduledAt?: string;
-  endsAt?: string;
-  durationMinutes?: number;
-  description?: string;
-  address?: string;
-  notes?: string;
-  internalNotes?: string;
-  agreedPrice?: number;
-  cancelReason?: string;
-}) => api.patch(`/appointments/${id}`, data);
+export const updateAppointment = (id: string, data: Record<string, any>) =>
+  api.patch(`/appointments/${id}`, data);
 
 export const deleteAppointment = (id: string) =>
   api.delete(`/appointments/${id}`);
+
+export const getDailyReports = (limit = 30) =>
+  api.get(`/reports/daily?limit=${limit}`);
+
+export const generateReport = () =>
+  api.post('/reports/generate');
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────
 export const connectWhatsApp = (storeId: string) =>
