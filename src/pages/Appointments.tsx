@@ -228,6 +228,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
       notes:           appt.notes          ?? '',
       internalNotes:   appt.internalNotes  ?? '',
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appt.appointmentId]);
 
   const cfg = SC[appt.status];
