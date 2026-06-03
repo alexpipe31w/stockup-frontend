@@ -236,7 +236,7 @@ function AparienciaSection({ storeId }: { storeId: string }) {
 // ── TAB: NEGOCIO ───────────────────────────────────────────────────────────
 
 function NegocioSection({ storeId }: { storeId: string }) {
-  const [form, setForm] = useState({ name: '', phone: '', ownerName: '' });
+  const [form, setForm] = useState({ name: '', phone: '', ownerName: '', adminPhone: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -246,9 +246,10 @@ function NegocioSection({ storeId }: { storeId: string }) {
     api.get(`/stores/${storeId}`)
       .then(res => {
         setForm({
-          name:      res.data.name      ?? '',
-          phone:     res.data.phone     ?? '',
-          ownerName: res.data.ownerName ?? '',
+          name:       res.data.name       ?? '',
+          phone:      res.data.phone      ?? '',
+          ownerName:  res.data.ownerName  ?? '',
+          adminPhone: res.data.adminPhone ?? '',
         });
       })
       .catch(() => {})
@@ -260,7 +261,12 @@ function NegocioSection({ storeId }: { storeId: string }) {
     setSaving(true);
     setError('');
     try {
-      await api.patch(`/stores/${storeId}`, { name: form.name, phone: form.phone, ownerName: form.ownerName });
+      await api.patch(`/stores/${storeId}`, {
+        name:       form.name,
+        phone:      form.phone,
+        ownerName:  form.ownerName,
+        adminPhone: form.adminPhone || undefined,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -318,6 +324,21 @@ function NegocioSection({ storeId }: { storeId: string }) {
             placeholder="Juan Pérez"
             className={inputClass}
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+            Teléfono personal del admin
+            <span className="ml-2 text-xs font-normal text-slate-400">(opcional)</span>
+          </label>
+          <input
+            value={form.adminPhone}
+            onChange={e => setForm({ ...form, adminPhone: e.target.value })}
+            placeholder="+573001234567"
+            className={inputClass}
+          />
+          <p className="text-xs text-slate-400 mt-1.5">
+            Notificaciones de citas (pagos, solicitudes cancel/reagenda, reportes diarios) llegan a este número por WhatsApp.
+          </p>
         </div>
 
         {error && (
