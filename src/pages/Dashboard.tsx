@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users, MessageCircle, ShoppingCart, DollarSign, Bot, UserCheck,
-  Megaphone, CalendarDays, TrendingUp, AlertCircle, RefreshCw,
+  Megaphone, CalendarDays, AlertCircle, RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getDashboard, getWhatsAppStatus, getAppointmentStats } from '../services/api';
@@ -19,17 +19,6 @@ interface DashboardData {
 interface AppointmentStats {
   total?: number; pending?: number; confirmed?: number; today?: number; upcoming?: number;
 }
-
-const kpiConfig = [
-  { key: 'clientes',    label: 'Clientes',         icon: Users,        color: 'text-info' },
-  { key: 'chats',       label: 'Chats activos',     icon: MessageCircle,color: 'text-whatsapp' },
-  { key: 'ordenes',     label: 'Órdenes pendientes',icon: ShoppingCart, color: 'text-warning' },
-  { key: 'revenue',     label: 'Revenue total',     icon: DollarSign,   color: 'text-lime' },
-  { key: 'ia',          label: 'Mensajes por IA',   icon: Bot,          color: 'text-info' },
-  { key: 'atencion',    label: 'Esperando asesor',  icon: UserCheck,    color: 'text-error' },
-  { key: 'campanas',    label: 'Campañas enviadas',  icon: Megaphone,    color: 'text-warning' },
-  { key: 'citas',       label: 'Citas pendientes',   icon: CalendarDays, color: 'text-success' },
-];
 
 const containerVariants = {
   hidden: { opacity: 0 },
