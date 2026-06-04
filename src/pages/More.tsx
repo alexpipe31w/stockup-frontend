@@ -1,4 +1,4 @@
-﻿import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag, Scissors, Users, BarChart3, Settings,

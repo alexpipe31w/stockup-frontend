@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getServiceOrders } from '../services/api';
-import { Scissors, Calendar, CreditCard, User, TrendingUp, Search, Download } from 'lucide-react';
+import { Scissors, Calendar, CreditCard, TrendingUp, Search, Download } from 'lucide-react';
 import { exportCashReport } from '../utils/exportExcel';
 
 const fmt = (n: number) =>
