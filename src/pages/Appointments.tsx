@@ -192,7 +192,7 @@ function CancelModal({ onConfirm, onClose, saving }: { onConfirm:(r:string)=>voi
         <p className="text-sm text-txt-secondary mb-3">Motivo de cancelación (requerido)</p>
         <textarea value={r} onChange={e => setR(e.target.value)} rows={3}
           placeholder="Ej: Cliente canceló, sin disponibilidad..."
-          className="w-full px-3 py-2 text-sm border border-border-default rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
+          className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">Volver</button>
           <button onClick={() => onConfirm(r)} disabled={!r.trim() || saving}

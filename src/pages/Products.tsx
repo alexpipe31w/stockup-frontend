@@ -318,25 +318,25 @@ function VariantRow({ variant, onUpdate, onRemove }: {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Nombre de variante *"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.sku} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
           placeholder="SKU"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
           type="number" placeholder="Stock"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.salePrice} onChange={e => setForm(f => ({ ...f, salePrice: e.target.value }))}
           type="number" placeholder="Precio venta"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.costPrice} onChange={e => setForm(f => ({ ...f, costPrice: e.target.value }))}
           type="number" placeholder="Precio costo"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))}
           type="number" step="0.01" placeholder="Peso (kg)"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
           placeholder="URL imagen"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
       </div>
 
       <div>

@@ -718,7 +718,7 @@ PRODUCTOS:
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && input.trim()) { e.preventDefault(); askGroq(input); } }}
                     placeholder="Ej: ¿Qué problema se repite más en las conversaciones?"
                     disabled={thinking}
-                    className="flex-1 px-4 py-2.5 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition disabled:opacity-50"
                   />
                   <button onClick={() => input.trim() && askGroq(input)}
                     disabled={thinking || !input.trim()}

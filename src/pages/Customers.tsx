@@ -279,7 +279,7 @@ export default function Customers() {
                           onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
                           placeholder="Nombre del cliente"
                           onKeyDown={(e) => handleKey(e, c.customerId)}
-                          className="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                          className="flex-1 px-3 py-1.5 text-sm border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                         />
                       ) : (
                         <div className="min-w-0">
@@ -313,7 +313,7 @@ export default function Customers() {
                         onChange={(e) => setEditState((s) => ({ ...s, cedula: e.target.value }))}
                         placeholder="N° cédula"
                         onKeyDown={(e) => handleKey(e, c.customerId)}
-                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 font-mono"
+                        className="px-3 py-1.5 text-sm border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 font-mono"
                       />
                     ) : (
                       <p className="text-sm text-txt-secondary font-mono">{c.cedula ?? <Empty />}</p>
@@ -326,7 +326,7 @@ export default function Customers() {
                         onChange={(e) => setEditState((s) => ({ ...s, city: e.target.value }))}
                         placeholder="Ciudad"
                         onKeyDown={(e) => handleKey(e, c.customerId)}
-                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                        className="px-3 py-1.5 text-sm border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                       />
                     ) : (
                       <p className="text-sm text-txt-secondary">{c.city ?? <Empty />}</p>

@@ -127,7 +127,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                   value={customerSearch}
                   onChange={(e) => setCSearch(e.target.value)}
                   placeholder="Buscar por nombre o teléfono..."
-                  className="w-full px-4 py-2.5 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
+                  className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
                 />
                 {customerSearch && filteredCustomers.length > 0 && (
                   <div className="absolute w-full bg-surface border border-border-default rounded-xl shadow-lg mt-1 overflow-hidden z-10">
@@ -157,18 +157,18 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                     value={item.description}
                     onChange={(e) => updateItem(i, 'description', e.target.value)}
                     placeholder="Descripción del ítem"
-                    className="px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                   />
                   <input
                     type="number" min={1} value={item.quantity}
                     onChange={(e) => updateItem(i, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                    className="px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 text-center"
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 text-center"
                     placeholder="Cant."
                   />
                   <input
                     type="number" min={0} value={item.unitPrice || ''}
                     onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    className="px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                     placeholder="Precio"
                   />
                   <button onClick={() => items.length > 1 && removeItem(i)}
@@ -207,7 +207,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
               <input
                 type="number" min={0} max={100} value={discountPct || ''}
                 onChange={(e) => setDiscountPct(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                 placeholder="0%"
               />
             </div>
@@ -219,7 +219,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
             <textarea
               value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
               placeholder="Notas adicionales del pedido..."
-              className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 resize-none"
+              className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 resize-none"
             />
           </div>
 
