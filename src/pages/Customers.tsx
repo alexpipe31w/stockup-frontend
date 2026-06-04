@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getCustomers, updateCustomer } from '../services/api';
 
@@ -200,7 +200,7 @@ export default function Customers() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, teléfono, cédula o ciudad..."
-                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 w-80"
+                className="pl-9 pr-4 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 w-80"
               />
             </div>
             {cities.length > 0 && (
@@ -404,3 +404,4 @@ export default function Customers() {
     </div>
   );
 }
+

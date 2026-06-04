@@ -293,10 +293,10 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Nombre *"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
           placeholder="Descripción (opcional)"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <div>
           <label className="text-xs text-txt-secondary block mb-0.5">Precio fijo (override)</label>
           <input value={form.priceOverride} onChange={e => setForm(f => ({ ...f, priceOverride: e.target.value, priceModifier: '' }))}
@@ -311,7 +311,7 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
         </div>
         <input value={form.estimatedMinutes} onChange={e => setForm(f => ({ ...f, estimatedMinutes: e.target.value }))}
           type="number" placeholder="Duración (minutos)"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
       </div>
       {bothPrices && (
         <p className="text-xs text-red-500">Solo usa precio fijo O porcentaje, no ambos.</p>
@@ -535,7 +535,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                 <input ref={nameRef} type="text" value={form.name}
                   onChange={e => set('name', e.target.value)}
                   placeholder="Ej: Corte de cabello, Instalación de paneles, Bartender"
-                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               {/* Categoría + URL imagen */}
@@ -547,14 +547,14 @@ function ServiceModal({ service, onClose, onSaved }: {
                   <input type="text" value={form.category}
                     onChange={e => set('category', e.target.value)}
                     placeholder="Ej: Cortes, Reparaciones, Eventos"
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">URL imagen</label>
                   <input type="text" value={form.imageUrl}
                     onChange={e => set('imageUrl', e.target.value)}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
               </div>
 
@@ -565,7 +565,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                   onChange={e => set('description', e.target.value)}
                   rows={3} maxLength={50000}
                   placeholder="Describe el servicio para que la IA lo pueda explicar a los clientes..."
-                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none" />
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none" />
                 <p className="text-xs text-txt-tertiary text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
               </div>
 
@@ -605,7 +605,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                     <input type="number" value={form.basePrice}
                       onChange={e => set('basePrice', e.target.value)}
                       placeholder="0"
-                      className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                      className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   </div>
                   {form.priceType !== 'FIXED' && (
                     <div>
@@ -615,7 +615,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                       <input type="text" value={form.unitLabel}
                         onChange={e => set('unitLabel', e.target.value)}
                         placeholder="hora, día, m², panel, persona"
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                   )}
                 </div>
@@ -633,14 +633,14 @@ function ServiceModal({ service, onClose, onSaved }: {
                       <input type="number" value={form.minPrice}
                         onChange={e => set('minPrice', e.target.value)}
                         placeholder="50000"
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio máximo</label>
                       <input type="number" value={form.maxPrice}
                         onChange={e => set('maxPrice', e.target.value)}
                         placeholder="200000"
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                   </div>
                 </div>
@@ -654,7 +654,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                 <input type="number" value={form.costPrice}
                   onChange={e => set('costPrice', e.target.value)}
                   placeholder="Costo interno del servicio"
-                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 {liveMargin !== null && (
                   <p className={`text-xs font-semibold mt-1 ${liveMargin >= 40 ? 'text-green-600' : liveMargin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
                     Margen estimado: {liveMargin}%
@@ -671,7 +671,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                   <input type="number" value={form.estimatedMinutes}
                     onChange={e => set('estimatedMinutes', e.target.value)}
                     placeholder="Ej: 60 = 1h, 90 = 1h 30min"
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   {form.estimatedMinutes && Number(form.estimatedMinutes) > 0 && (
                     <p className="text-xs text-blue-600 mt-0.5">{fmtMinutes(Number(form.estimatedMinutes))}</p>
                   )}
@@ -713,10 +713,10 @@ function ServiceModal({ service, onClose, onSaved }: {
                 <div className="flex gap-1">
                   <input value={cfKey} onChange={e => setCfKey(e.target.value)}
                     placeholder="Campo (requiereVisita)"
-                    className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                    className="flex-1 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                   <input value={cfValue} onChange={e => setCfValue(e.target.value)}
                     placeholder="Valor (true)"
-                    className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                    className="flex-1 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                   <button onClick={addCf} type="button"
                     className="px-2 py-1.5 text-xs bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition">
                     +
@@ -764,29 +764,29 @@ function ServiceModal({ service, onClose, onSaved }: {
                   <input value={newVariant.name}
                     onChange={e => setNewVariant(v => ({ ...v, name: e.target.value }))}
                     placeholder="Nombre * (ej: Básica, Express, Premium)"
-                    className="col-span-2 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="col-span-2 px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.description}
                     onChange={e => setNewVariant(v => ({ ...v, description: e.target.value }))}
                     placeholder="Descripción (opcional)"
-                    className="col-span-2 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="col-span-2 px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <div>
                     <label className="text-xs text-txt-secondary block mb-1">Precio fijo</label>
                     <input value={newVariant.priceOverride}
                       onChange={e => setNewVariant(v => ({ ...v, priceOverride: e.target.value, priceModifier: '' }))}
                       type="number" placeholder="Ej: 80000"
-                      className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                      className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   </div>
                   <div>
                     <label className="text-xs text-txt-secondary block mb-1">% sobre base</label>
                     <input value={newVariant.priceModifier}
                       onChange={e => setNewVariant(v => ({ ...v, priceModifier: e.target.value, priceOverride: '' }))}
                       type="number" placeholder="Ej: 30 (+30%)"
-                      className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                      className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   </div>
                   <input value={newVariant.estimatedMinutes}
                     onChange={e => setNewVariant(v => ({ ...v, estimatedMinutes: e.target.value }))}
                     type="number" placeholder="Duración (min)"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
 
                 {error && <p className="text-xs text-red-500">{error}</p>}
@@ -915,7 +915,7 @@ export default function Services() {
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre o descripción..."
-                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-64" />
+                className="pl-9 pr-4 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-64" />
             </div>
             <select value={filterType} onChange={e => setFilterType(e.target.value as any)}
               className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">

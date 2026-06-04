@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api, { getRevenueTrends, getConversationInsights, getDailyReports, generateReport } from '../services/api';
-import { CheckCircle2, XCircle, Ghost } from 'lucide-react';
+import { CheckCircle2, XCircle, Ghost, Download } from 'lucide-react';
+import { exportCashReport } from '../utils/exportExcel';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SparkIcon   = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>);
@@ -256,6 +257,13 @@ export default function Analytics() {
   const [dailyReports,     setDailyReports]     = useState<any[]>([]);
   const [generatingReport, setGeneratingReport] = useState(false);
 
+  const [rawOrders,    setRawOrders]    = useState<any[]>([]);
+  const [rawAppts,     setRawAppts]     = useState<any[]>([]);
+  const [storeName,    setStoreName]    = useState('Tienda');
+  const [exporting,    setExporting]    = useState(false);
+  const [dateFrom,     setDateFrom]     = useState('');
+  const [dateTo,       setDateTo]       = useState('');
+
   const [messages,  setMessages]  = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [input,     setInput]     = useState('');
   const [thinking,  setThinking]  = useState(false);
@@ -267,18 +275,25 @@ export default function Analytics() {
   const loadStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [ordersRes, customersRes, convsRes, productsRes, trendsRes] = await Promise.all([
+      const [ordersRes, customersRes, convsRes, productsRes, trendsRes, apptsRes, storeRes] = await Promise.all([
         api.get(`/orders/store/${storeId}`).catch(() => ({ data: [] })),
         api.get(`/customers/store/${storeId}`).catch(() => ({ data: [] })),
         api.get(`/conversations/store/${storeId}`).catch(() => ({ data: [] })),
         api.get(`/products/store/${storeId}`).catch(() => ({ data: [] })),
         getRevenueTrends(30).catch(() => ({ data: null })),
+        api.get('/appointments').catch(() => ({ data: [] })),
+        api.get(`/stores/${storeId}`).catch(() => ({ data: { name: 'Tienda' } })),
       ]);
 
       const orders:    any[] = ordersRes.data    ?? [];
       const customers: any[] = customersRes.data ?? [];
       const convs:     any[] = convsRes.data     ?? [];
       const products:  any[] = productsRes.data  ?? [];
+      const appts:     any[] = Array.isArray(apptsRes.data) ? apptsRes.data : [];
+
+      setRawOrders(orders);
+      setRawAppts(appts);
+      setStoreName(storeRes.data?.name ?? storeRes.data?.storeName ?? 'Tienda');
 
       setTrends(trendsRes.data);
 
@@ -420,15 +435,65 @@ PRODUCTOS:
 
       {/* Header */}
       <div className="bg-surface border-b border-border-subtle px-4 md:px-6 py-4 md:py-5 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-txt-primary">Analíticas</h1>
-            <p className="text-sm text-txt-tertiary mt-0.5">Resumen del negocio + satisfacción + asesor IA</p>
+        <div className="max-w-7xl mx-auto space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-xl font-bold text-txt-primary">Analíticas</h1>
+              <p className="text-sm text-txt-tertiary mt-0.5">Resumen del negocio + satisfacción + asesor IA</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={loadStats} disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition disabled:opacity-50">
+                <RefreshIcon /> Actualizar
+              </button>
+              <button
+                onClick={async () => {
+                  setExporting(true);
+                  try {
+                    exportCashReport(
+                      rawOrders,
+                      rawAppts,
+                      storeName,
+                      dateFrom || dateTo ? { from: dateFrom || undefined, to: dateTo || undefined } : undefined,
+                    );
+                  } finally {
+                    setExporting(false);
+                  }
+                }}
+                disabled={exporting || rawOrders.length === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#0A0A0F] disabled:opacity-50 transition"
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
+              >
+                <Download size={15} />
+                {exporting ? 'Generando...' : 'Exportar Excel'}
+              </button>
+            </div>
           </div>
-          <button onClick={loadStats} disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition disabled:opacity-50">
-            <RefreshIcon /> Actualizar
-          </button>
+          {/* Filtro de fechas para el reporte */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-txt-tertiary font-medium">Rango reporte:</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={e => setDateFrom(e.target.value)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-border-default bg-surface-elevated text-txt-primary focus:outline-none focus:ring-1 focus:ring-lime/40"
+            />
+            <span className="text-xs text-txt-tertiary">→</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={e => setDateTo(e.target.value)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-border-default bg-surface-elevated text-txt-primary focus:outline-none focus:ring-1 focus:ring-lime/40"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                className="text-xs text-txt-tertiary hover:text-txt-secondary transition"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

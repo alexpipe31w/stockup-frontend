@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+﻿import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
   getConversations, getMessages, sendMessage,
@@ -263,7 +263,7 @@ export default function Conversations() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar cliente o teléfono..."
-              className="w-full pl-8 pr-3 py-2 text-xs border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition"
+              className="w-full pl-8 pr-3 py-2 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition"
             />
           </div>
 
@@ -548,3 +548,4 @@ export default function Conversations() {
     </div>
   );
 }
+

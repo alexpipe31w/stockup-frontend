@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getProducts, createProduct, updateProduct, deleteProduct,
   addVariant, updateVariant, deleteVariant,
@@ -352,10 +352,10 @@ function VariantRow({ variant, onUpdate, onRemove }: {
         <div className="flex gap-1">
           <input value={newAttrKey} onChange={e => setNewAttrKey(e.target.value)}
             placeholder="Atributo (ej: color)"
-            className="flex-1 px-2 py-1 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+            className="flex-1 px-2 py-1 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
           <input value={newAttrValue} onChange={e => setNewAttrValue(e.target.value)}
             placeholder="Valor (ej: Rojo)"
-            className="flex-1 px-2 py-1 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+            className="flex-1 px-2 py-1 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
           <button onClick={addAttr} type="button"
             className="px-2 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
             +
@@ -629,7 +629,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 <input ref={nameRef} type="text" value={form.name}
                   onChange={e => set('name', e.target.value)}
                   placeholder="Ej: Camiseta básica"
-                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -638,7 +638,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   <input type="text" value={form.sku}
                     onChange={e => set('sku', e.target.value)}
                     placeholder="Ej: CAM-001"
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1 flex items-center gap-1">
@@ -660,7 +660,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                     <div className="flex gap-1 mt-1.5">
                       <input value={newCatName} onChange={e => setNewCatName(e.target.value)}
                         placeholder="Nueva categoría"
-                        className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                        className="flex-1 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                       <button onClick={handleCreateCategory} disabled={creatingCat || !newCatName.trim()}
                         className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
                         {creatingCat ? '...' : 'Crear'}
@@ -675,7 +675,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 <input type="text" value={form.imageUrl}
                   onChange={e => set('imageUrl', e.target.value)}
                   placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               {/* CAMBIO 2: al activar hasVariants → ir automáticamente al tab variantes */}
@@ -704,21 +704,21 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                       <input type="number" value={form.salePrice}
                         onChange={e => set('salePrice', e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio costo</label>
                       <input type="number" value={form.costPrice}
                         onChange={e => set('costPrice', e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Stock</label>
                       <input type="number" value={form.stock}
                         onChange={e => set('stock', e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                   </div>
                   {liveMargin !== null && (
@@ -735,7 +735,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   <input type="number" value={form.salePrice}
                     onChange={e => set('salePrice', e.target.value)}
                     placeholder="Precio de referencia"
-                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <p className="text-xs text-txt-tertiary mt-1">Cada variante puede tener su propio precio en la pestaña Variantes.</p>
                 </div>
               )}
@@ -746,7 +746,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   onChange={e => set('description', e.target.value)}
                   placeholder="Describe el producto para que la IA pueda informar a clientes..."
                   rows={3} maxLength={50000}
-                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none" />
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none" />
                 <p className="text-xs text-txt-tertiary text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
               </div>
 
@@ -768,21 +768,21 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                       <input type="number" step="0.01" value={form.weight}
                         onChange={e => set('weight', e.target.value)}
                         placeholder="1.5"
-                        className="w-full px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                        className="w-full px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     </div>
                     <div>
                       <label className="text-xs text-txt-secondary block mb-1">Envío estándar</label>
                       <input type="number" value={form.shippingStandard}
                         onChange={e => set('shippingStandard', e.target.value)}
                         placeholder="5000"
-                        className="w-full px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                        className="w-full px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     </div>
                     <div>
                       <label className="text-xs text-txt-secondary block mb-1">Envío express</label>
                       <input type="number" value={form.shippingExpress}
                         onChange={e => set('shippingExpress', e.target.value)}
                         placeholder="12000"
-                        className="w-full px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                        className="w-full px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     </div>
                   </div>
                 )}
@@ -830,31 +830,31 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   <input value={newVariant.name}
                     onChange={e => setNewVariant(v => ({ ...v, name: e.target.value }))}
                     placeholder="Nombre * (ej: Talla M / Rojo)"
-                    className="col-span-2 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="col-span-2 px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.sku}
                     onChange={e => setNewVariant(v => ({ ...v, sku: e.target.value }))}
                     placeholder="SKU (opcional)"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.stock}
                     onChange={e => setNewVariant(v => ({ ...v, stock: e.target.value }))}
                     placeholder="Stock" type="number"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.salePrice}
                     onChange={e => setNewVariant(v => ({ ...v, salePrice: e.target.value }))}
                     placeholder="Precio venta" type="number"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.costPrice}
                     onChange={e => setNewVariant(v => ({ ...v, costPrice: e.target.value }))}
                     placeholder="Precio costo" type="number"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.weight}
                     onChange={e => setNewVariant(v => ({ ...v, weight: e.target.value }))}
                     placeholder="Peso kg" type="number" step="0.01"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.imageUrl}
                     onChange={e => setNewVariant(v => ({ ...v, imageUrl: e.target.value }))}
                     placeholder="URL imagen"
-                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
 
                 <div>
@@ -874,10 +874,10 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   <div className="flex gap-1">
                     <input value={newAttrKey} onChange={e => setNewAttrKey(e.target.value)}
                       placeholder="Atributo (color, talla…)"
-                      className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                      className="flex-1 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     <input value={newAttrValue} onChange={e => setNewAttrValue(e.target.value)}
                       placeholder="Valor (Rojo, M…)"
-                      className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+                      className="flex-1 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     <button onClick={addNewVariantAttr} type="button"
                       className="px-2 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">+</button>
                   </div>
@@ -1028,7 +1028,7 @@ export default function Products() {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary"><SearchIcon /></span>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, SKU, atributo..."
-                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-64" />
+                className="pl-9 pr-4 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-64" />
             </div>
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
               className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">
@@ -1117,3 +1117,4 @@ export default function Products() {
     </div>
   );
 }
+

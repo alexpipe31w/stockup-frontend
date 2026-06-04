@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getCampaigns, createCampaign, sendCampaign } from '../services/api';
 
@@ -94,7 +94,7 @@ function CampaignModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Promo fin de semana"
               autoFocus
-              className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition"
+              className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition"
             />
           </div>
 
@@ -107,7 +107,7 @@ function CampaignModal({
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Escribe el mensaje que recibirán todos tus clientes..."
               rows={5}
-              className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none"
+              className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none"
             />
             <div className="flex justify-between mt-1">
               <p className="text-xs text-txt-tertiary">{charCount} caracteres</p>
@@ -299,3 +299,4 @@ export default function Campaigns() {
     </div>
   );
 }
+

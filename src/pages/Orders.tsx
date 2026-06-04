@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getOrders, updateOrderStatus, createManualOrder, getCustomers } from '../services/api';
 
@@ -555,7 +555,7 @@ export default function Orders() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por cliente, ID, dirección..."
-                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-72"
+                className="pl-9 pr-4 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-72"
               />
             </div>
             </div>
@@ -730,3 +730,4 @@ export default function Orders() {
     </div>
   );
 }
+

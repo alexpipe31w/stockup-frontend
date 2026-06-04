@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getStoreTheme, updateStoreTheme } from '../services/api';
 
@@ -169,7 +169,7 @@ export default function Settings() {
                     if (/^#([0-9A-Fa-f]{0,6})$/.test(v)) handleColorChange(key, v);
                   }}
                   maxLength={7}
-                  className="flex-1 border border-border-default rounded-xl px-3 py-2 text-sm font-mono text-txt-primary focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  className="flex-1 border border-border-default bg-surface-elevated text-txt-primary rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-300"
                   placeholder="#000000"
                 />
               </div>
@@ -234,3 +234,4 @@ export default function Settings() {
     </div>
   );
 }
+
