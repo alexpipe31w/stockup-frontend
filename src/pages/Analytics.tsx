@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api, { getRevenueTrends, getConversationInsights, getDailyReports, generateReport } from '../services/api';
+import { CheckCircle2, XCircle, Ghost } from 'lucide-react';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SparkIcon   = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>);
@@ -581,9 +582,9 @@ PRODUCTOS:
                           </span>
                         </div>
                         <div className="flex gap-4 text-xs text-txt-secondary">
-                          <span>✅ {d.completed ?? 0} completadas</span>
-                          <span>❌ {d.cancelled ?? 0} canceladas</span>
-                          <span>👻 {d.noShow ?? 0} no-show</span>
+                          <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-success" /> {d.completed ?? 0} completadas</span>
+                          <span className="flex items-center gap-1"><XCircle size={11} className="text-error" /> {d.cancelled ?? 0} canceladas</span>
+                          <span className="flex items-center gap-1"><Ghost size={11} className="text-txt-tertiary" /> {d.noShow ?? 0} no-show</span>
                         </div>
                       </div>
                     );

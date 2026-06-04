@@ -625,7 +625,7 @@ function ServiceModal({ service, onClose, onSaved }: {
               {form.priceType === 'VARIABLE' && (
                 <div className="space-y-2">
                   <p className="text-xs text-txt-secondary flex items-center gap-1">
-                    💬 Rango de referencia (opcional — orienta al admin al cotizar)
+                    Rango de referencia (opcional — orienta al admin al cotizar)
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>

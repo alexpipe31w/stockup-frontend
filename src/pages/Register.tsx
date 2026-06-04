@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createCheckout } from '../services/api';
 import api from '../services/api';
+import { Bot, Package, CalendarDays, BarChart3 } from 'lucide-react';
 
 type Step = 'form' | 'verify' | 'payment';
 
@@ -69,13 +70,13 @@ function LeftPanel() {
         </p>
         <div className="mt-10 space-y-4">
           {[
-            { icon: '🤖', text: 'IA responde a tus clientes 24/7' },
-            { icon: '📦', text: 'Gestión de productos, servicios y órdenes' },
-            { icon: '📅', text: 'Agendamiento automático de citas' },
-            { icon: '📊', text: 'Analíticas y campañas de WhatsApp' },
+            { Icon: Bot,         text: 'IA responde a tus clientes 24/7' },
+            { Icon: Package,     text: 'Gestión de productos, servicios y órdenes' },
+            { Icon: CalendarDays,text: 'Agendamiento automático de citas' },
+            { Icon: BarChart3,   text: 'Analíticas y campañas de WhatsApp' },
           ].map(f => (
             <div key={f.text} className="flex items-center gap-3 bg-surface/10 rounded-xl px-4 py-3">
-              <span className="text-xl">{f.icon}</span>
+              <f.Icon size={20} className="text-lime flex-shrink-0" strokeWidth={1.5} />
               <span className="text-white/90 text-sm">{f.text}</span>
             </div>
           ))}

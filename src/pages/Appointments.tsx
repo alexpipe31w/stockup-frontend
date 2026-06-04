@@ -5,6 +5,12 @@ import {
   createAppointment, getCustomers, getServices,
 } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import {
+  Bot, User, MessageSquare, Plug, Sparkles, CheckCircle, Loader,
+  PartyPopper, XCircle, Ghost, RefreshCw, FileText, PenLine,
+  CalendarDays, DollarSign, CreditCard,
+  AlertTriangle, Check, X, Clock,
+} from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,8 +74,11 @@ const PC: Record<AppointmentPriority, { label: string; dot: string }> = {
   URGENT: { label: 'Urgente', dot: '#ef4444' },
 };
 
-const SRC: Record<AppointmentSource, string> = {
-  AI: '🤖 IA', MANUAL: '👤 Manual', WHATSAPP: '💬 WhatsApp', API: '🔌 API',
+const SRC_ICON: Record<AppointmentSource, React.ElementType> = {
+  AI: Bot, MANUAL: User, WHATSAPP: MessageSquare, API: Plug,
+};
+const SRC_LABEL: Record<AppointmentSource, string> = {
+  AI: 'IA', MANUAL: 'Manual', WHATSAPP: 'WhatsApp', API: 'API',
 };
 
 const TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
@@ -129,9 +138,15 @@ const Avatar = ({ name, phone }: { name: string | null; phone: string }) => (
 
 // ─── Timeline ────────────────────────────────────────────────────────────────
 
-const TICONS: Record<string, string> = {
-  CREATED:'✨', CONFIRMED:'✅', IN_PROGRESS:'⚙️', COMPLETED:'🎉',
-  CANCELLED:'❌', NO_SHOW:'👻', RESCHEDULED:'🔄', NOTE_ADDED:'📝', UPDATED:'✏️',
+const TICONS: Record<string, React.ElementType> = {
+  CREATED: Sparkles, CONFIRMED: CheckCircle, IN_PROGRESS: Loader,
+  COMPLETED: PartyPopper, CANCELLED: XCircle, NO_SHOW: Ghost,
+  RESCHEDULED: RefreshCw, NOTE_ADDED: FileText, UPDATED: PenLine,
+};
+const TICON_COLOR: Record<string, string> = {
+  CREATED: 'text-lime', CONFIRMED: 'text-info', IN_PROGRESS: 'text-warning',
+  COMPLETED: 'text-success', CANCELLED: 'text-error', NO_SHOW: 'text-txt-tertiary',
+  RESCHEDULED: 'text-info', NOTE_ADDED: 'text-txt-secondary', UPDATED: 'text-txt-secondary',
 };
 
 function TimelinePanel({ id, onClose }: { id: string; onClose: () => void }) {
@@ -149,7 +164,7 @@ function TimelinePanel({ id, onClose }: { id: string; onClose: () => void }) {
       : entries.map((e, i) => (
         <div key={e.timelineId} className="flex gap-2 mb-2">
           <div className="flex flex-col items-center">
-            <span className="text-sm leading-none">{TICONS[e.action] ?? '•'}</span>
+            {(() => { const Icon = TICONS[e.action]; return Icon ? <Icon size={14} className={TICON_COLOR[e.action] ?? 'text-txt-tertiary'} /> : <span className="w-1.5 h-1.5 rounded-full bg-txt-tertiary" />; })()}
             {i < entries.length - 1 && <div className="w-px flex-1 bg-surface-overlay mt-1" />}
           </div>
           <div className="flex-1 pb-1">
@@ -351,7 +366,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
             {/* datetime */}
             <div className="bg-surface-elevated rounded-xl px-3 py-2.5">
-              <p className="text-xs text-txt-tertiary mb-0.5">📅 Fecha y hora</p>
+              <p className="text-xs text-txt-tertiary mb-0.5 flex items-center gap-1"><CalendarDays size={11} /> Fecha y hora</p>
               <p className="font-semibold text-txt-primary">{fmtDateFull(appt.scheduledAt)}</p>
               <p className="text-txt-secondary text-sm">
                 {fmtTime(appt.scheduledAt)}{appt.endsAt ? ` → ${fmtTime(appt.endsAt)}` : ''}
@@ -370,10 +385,10 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
             {/* detalles */}
             {[
-              appt.description && ['📝 Descripción', appt.description],
-              appt.address     && ['📍 Dirección',   appt.address],
-              appt.notes       && ['🗒️ Notas',       appt.notes],
-              appt.agreedPrice && ['💰 Precio acordado', fmtCOP(appt.agreedPrice)],
+              appt.description && ['Descripción', appt.description],
+              appt.address && ['Dirección', appt.address],
+              appt.notes && ['Notas', appt.notes],
+              appt.agreedPrice && ['Precio acordado', fmtCOP(appt.agreedPrice)],
             ].filter(Boolean).map(([k, v]: any) => (
               <div key={k}>
                 <p className="text-[10px] font-bold text-txt-tertiary uppercase tracking-wider mb-0.5">{k}</p>
@@ -397,7 +412,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
             {/* fuente */}
             <div className="flex items-center justify-between text-xs text-txt-tertiary">
-              <span>{SRC[appt.source] ?? appt.source}</span>
+              <span><span className="inline-flex items-center gap-1">{(() => { const Icon = SRC_ICON[appt.source]; return Icon ? <Icon size={11} /> : null; })()}{SRC_LABEL[appt.source] ?? appt.source}</span></span>
               <span>{fmtDT(appt.createdAt)}</span>
             </div>
 
@@ -405,7 +420,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
             {appt.pendingAction && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <p className="text-sm font-semibold text-amber-800 mb-1">
-                  ⚠️ Solicitud de {appt.pendingAction === 'CANCEL_REQUESTED' ? 'cancelación' : 'reprogramación'}
+                  <AlertTriangle size={14} className="text-warning inline mr-1" /> Solicitud de {appt.pendingAction === 'CANCEL_REQUESTED' ? 'cancelación' : 'reprogramación'}
                 </p>
                 {appt.pendingActionReason && (
                   <p className="text-xs text-amber-700 mb-2">
@@ -427,14 +442,14 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                     disabled={resolvingAction}
                     className="flex-1 py-1.5 rounded-lg bg-green-500 text-white text-xs font-semibold hover:bg-green-600 disabled:opacity-50 transition"
                   >
-                    ✅ Aprobar
+                    <Check size={13} className="inline mr-1" />Aprobar
                   </button>
                   <button
                     onClick={() => handleResolveAction('rejected')}
                     disabled={resolvingAction}
                     className="flex-1 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 disabled:opacity-50 transition"
                   >
-                    ❌ Rechazar
+                    <X size={13} className="inline mr-1" />Rechazar
                   </button>
                 </div>
               </div>
@@ -480,8 +495,8 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                 appt.paymentStatus === 'REFUNDED' ? 'bg-blue-100 text-blue-700' :
                                                      'bg-surface-overlay text-txt-secondary'
               }`}>
-                {appt.paymentStatus === 'PAID'     ? '✅ Pagado' :
-                 appt.paymentStatus === 'PARTIAL'  ? '⚠️ Parcial' :
+                {appt.paymentStatus === 'PAID'     ? 'Pagado' :
+                 appt.paymentStatus === 'PARTIAL'  ? 'Parcial' :
                  appt.paymentStatus === 'REFUNDED' ? '↩️ Reembolsado' : '⏳ Pendiente'}
               </span>
               {appt.paymentConfirmedAt && (
@@ -528,7 +543,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                 </div>
                 {appt.paymentProofUrl && (
                   <div className="px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
-                    💳 Comprobante detectado por IA: "{String(appt.paymentProofUrl).slice(0, 100)}"
+                    <CreditCard size={12} className="inline mr-1" /> Comprobante detectado por IA: "{String(appt.paymentProofUrl).slice(0, 100)}"
                   </div>
                 )}
                 <button
@@ -899,7 +914,7 @@ function ListView({ appointments, selected, onSelect }: {
 }) {
   if (appointments.length === 0) return (
     <div className="flex-1 bg-surface border border-border-subtle rounded-2xl flex flex-col items-center justify-center gap-3 text-txt-tertiary py-24">
-      <span className="text-5xl">📅</span>
+      <CalendarDays size={48} className="text-txt-disabled mx-auto" strokeWidth={1} />
       <p className="text-sm font-medium">Sin agendamientos</p>
       <p className="text-xs max-w-xs text-center">La IA los crea automáticamente cuando un cliente agenda por WhatsApp.</p>
     </div>
@@ -923,7 +938,7 @@ function ListView({ appointments, selected, onSelect }: {
           <div key={dateLabel}>
             <div className="flex items-center gap-3 mb-2">
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${today ? 'bg-blue-600 text-white' : 'bg-surface-overlay text-txt-secondary'}`}>
-                {today ? '🔵 Hoy' : dateLabel}
+                {today ? <span className="text-info font-semibold">Hoy</span> : dateLabel}
               </span>
               <div className="flex-1 h-px bg-surface-overlay" />
               <span className="text-xs text-txt-tertiary">{appts.length} cita{appts.length !== 1 ? 's' : ''}</span>
@@ -966,8 +981,8 @@ function ListView({ appointments, selected, onSelect }: {
                         </p>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           {appt.address    && <span className="text-[10px] text-txt-tertiary">📍 {appt.address.slice(0,30)}{appt.address.length>30?'…':''}</span>}
-                          {appt.agreedPrice && <span className="text-[10px] text-txt-tertiary">💰 {fmtCOP(appt.agreedPrice)}</span>}
-                          <span className="text-[10px] text-txt-disabled">{SRC[appt.source]}</span>
+                          {appt.agreedPrice && <span className="text-[10px] text-txt-tertiary flex items-center gap-0.5"><DollarSign size={9} />{fmtCOP(appt.agreedPrice)}</span>}
+                          <span className="text-[10px] text-txt-disabled">{SRC_LABEL[appt.source] ?? appt.source}</span>
                           {appt.priority !== 'NORMAL' && (
                             <span className="text-[10px] font-semibold" style={{ color: PC[appt.priority].dot }}>
                               ● {PC[appt.priority].label}
@@ -1165,13 +1180,13 @@ export default function Appointments() {
     );
   });
 
-  const STATS_CARDS = [
-    { icon:'📋', label:'Total',        value: stats.total,        accent:'#1e293b' },
-    { icon:'⏳', label:'Pendientes',   value: stats.pending,      accent:'#d97706' },
-    { icon:'✅', label:'Confirmadas',  value: stats.confirmed,    accent:'#2563eb' },
-    { icon:'⚙️', label:'En curso',     value: stats.inProgress,   accent:'#7c3aed' },
-    { icon:'📅', label:'Hoy',          value: stats.todayCount,   accent:'#4f46e5' },
-    { icon:'🔜', label:'Esta semana',  value: stats.upcomingWeek, accent:'#16a34a' },
+  const STATS_CARDS: { Icon: React.ElementType; label: string; value: number; color: string }[] = [
+    { Icon: FileText,    label:'Total',       value: stats.total,        color: 'text-txt-secondary' },
+    { Icon: Clock,       label:'Pendientes',  value: stats.pending,      color: 'text-warning' },
+    { Icon: CheckCircle, label:'Confirmadas', value: stats.confirmed,    color: 'text-info' },
+    { Icon: Loader,      label:'En curso',    value: stats.inProgress,   color: 'text-lime' },
+    { Icon: CalendarDays,label:'Hoy',         value: stats.todayCount,   color: 'text-success' },
+    { Icon: RefreshCw,   label:'Esta semana', value: stats.upcomingWeek, color: 'text-txt-secondary' },
   ];
 
   return (
@@ -1225,11 +1240,11 @@ export default function Appointments() {
 
           {/* stats */}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
-            {STATS_CARDS.map(({ icon, label, value, accent }) => (
-              <div key={label} className="bg-surface-elevated border border-border-subtle rounded-xl px-3 py-2.5 shadow-none">
+            {STATS_CARDS.map(({ Icon, label, value, color }) => (
+              <div key={label} className="bg-surface-elevated border border-border-subtle rounded-xl px-3 py-2.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">{icon}</span>
-                  <span className="text-lg font-bold leading-none" style={{ color: accent }}>{value}</span>
+                  <Icon size={14} className={color} strokeWidth={1.5} />
+                  <span className={`text-lg font-bold leading-none ${color}`}>{value}</span>
                 </div>
                 <p className="text-[10px] text-txt-tertiary mt-0.5 font-medium">{label}</p>
               </div>
