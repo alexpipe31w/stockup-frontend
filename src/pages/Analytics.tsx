@@ -419,8 +419,8 @@ PRODUCTOS:
     <div className="min-h-screen bg-canvas">
 
       {/* Header */}
-      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="bg-surface border-b border-border-subtle px-4 md:px-6 py-4 md:py-5 shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-txt-primary">Analíticas</h1>
             <p className="text-sm text-txt-tertiary mt-0.5">Resumen del negocio + satisfacción + asesor IA</p>
@@ -432,7 +432,7 @@ PRODUCTOS:
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <svg className="animate-spin text-blue-600" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -528,7 +528,7 @@ PRODUCTOS:
             </div>
 
             {/* ── Daily Report Section ── */}
-            <div className="bg-surface rounded-2xl p-6 shadow-sm border border-border-subtle">
+            <div className="bg-surface rounded-2xl p-4 md:p-6 shadow-sm border border-border-subtle">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
@@ -581,7 +581,7 @@ PRODUCTOS:
                             {fmtMoney(p.confirmed ?? 0)}
                           </span>
                         </div>
-                        <div className="flex gap-4 text-xs text-txt-secondary">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-txt-secondary">
                           <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-success" /> {d.completed ?? 0} completadas</span>
                           <span className="flex items-center gap-1"><XCircle size={11} className="text-error" /> {d.cancelled ?? 0} canceladas</span>
                           <span className="flex items-center gap-1"><Ghost size={11} className="text-txt-tertiary" /> {d.noShow ?? 0} no-show</span>
@@ -595,7 +595,7 @@ PRODUCTOS:
 
             {/* ── AI Advisor ── */}
             <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-3"
+              <div className="px-4 md:px-6 py-4 border-b border-border-subtle flex items-center gap-3"
                 style={{ background: 'rgba(212,255,0,0.06)' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[#0A0A0F]"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
@@ -610,7 +610,7 @@ PRODUCTOS:
                 </div>
               </div>
 
-              <div className="h-80 overflow-y-auto px-6 py-4 bg-surface-elevated">
+              <div className="h-80 overflow-y-auto px-4 md:px-6 py-4 bg-surface-elevated">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full gap-4">
                     <p className="text-sm text-txt-tertiary text-center">
@@ -647,7 +647,7 @@ PRODUCTOS:
                 )}
               </div>
 
-              <div className="px-6 py-4 border-t border-border-subtle bg-surface">
+              <div className="px-4 md:px-6 py-4 border-t border-border-subtle bg-surface">
                 <div className="flex gap-3">
                   <input value={input} onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && input.trim()) { e.preventDefault(); askGroq(input); } }}
