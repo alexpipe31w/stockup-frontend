@@ -430,7 +430,7 @@ export default function Conversations() {
                         isClient
                           ? 'bg-surface text-txt-primary border border-border-subtle rounded-tl-sm'
                           : msg.isAiResponse
-                            ? 'text-white rounded-tr-sm'
+                            ? 'text-[#0A0A0F] rounded-tr-sm'
                             : 'bg-blue-600 text-white rounded-tr-sm'
                       }`}
                       style={!isClient && msg.isAiResponse ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
