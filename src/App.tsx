@@ -24,6 +24,7 @@ import Register from './pages/Register';
 import Subscription from './pages/Subscription';
 import PaymentStatus from './pages/PaymentStatus';
 import More from './pages/More';
+import ServiceOrders from './pages/ServiceOrders';
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -121,6 +122,7 @@ function App() {
             <Route path="/analytics"        element={<SubscribedRoute><Layout><Analytics /></Layout></SubscribedRoute>} />
             <Route path="/config"           element={<SubscribedRoute><Layout><Config /></Layout></SubscribedRoute>} />
             <Route path="/more"             element={<SubscribedRoute><Layout><More /></Layout></SubscribedRoute>} />
+            <Route path="/service-orders"  element={<SubscribedRoute><Layout><ServiceOrders /></Layout></SubscribedRoute>} />
             <Route path="/users"            element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
             <Route path="/superadmin/login" element={<SuperAdminLogin />} />
             <Route path="/superadmin"       element={<SuperAdmin />} />

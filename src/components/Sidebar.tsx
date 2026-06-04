@@ -1,10 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, MessageSquare, CalendarDays, Zap, ShoppingBag,
   Scissors, Users, BarChart3, Settings, ChevronLeft, ChevronRight,
-  LogOut, Smartphone, ShoppingCart, UserCog,
+  LogOut, Smartphone, ShoppingCart, UserCog, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import Logo from './Logo';
@@ -17,7 +17,8 @@ const navItems = [
   { to: '/campaigns',     label: 'Campañas',         icon: Zap },
   { to: '/products',      label: 'Productos',        icon: ShoppingBag },
   { to: '/services',      label: 'Servicios',        icon: Scissors },
-  { to: '/orders',        label: 'Órdenes',          icon: ShoppingCart },
+  { to: '/orders',         label: 'Ventas Productos',  icon: ShoppingCart },
+  { to: '/service-orders', label: 'Ventas Servicios',  icon: ClipboardList },
   { to: '/customers',     label: 'Clientes',         icon: Users },
   { to: '/analytics',     label: 'Analíticas',       icon: BarChart3 },
   { to: '/config',        label: 'Configuración',    icon: Settings },

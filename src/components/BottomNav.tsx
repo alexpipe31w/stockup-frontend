@@ -10,7 +10,7 @@ const tabs = [
   { to: '/more',          label: 'Más',        icon: MoreHorizontal },
 ];
 
-const moreRoutes = ['/products', '/services', '/customers', '/analytics', '/config', '/orders', '/whatsapp', '/users'];
+const moreRoutes = ['/products', '/services', '/customers', '/analytics', '/config', '/orders', '/service-orders', '/whatsapp', '/users'];
 
 export default function BottomNav() {
   const location = useLocation();

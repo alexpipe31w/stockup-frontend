@@ -226,6 +226,9 @@ export const deleteServiceVariant = (variantId: string) =>
 export const getOrders = (storeId: string) =>
   api.get(`/orders/store/${storeId}`);
 
+export const getServiceOrders = (storeId: string) =>
+  api.get(`/orders/store/${storeId}?type=service`);
+
 export const updateOrderStatus = (id: string, status: string) =>
   api.patch(`/orders/${id}/status`, { status });
 
