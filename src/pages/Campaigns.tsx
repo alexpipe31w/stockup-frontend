@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getCampaigns, createCampaign, sendCampaign } from '../services/api';
 

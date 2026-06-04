@@ -9,14 +9,6 @@ const fmtDate = (iso: string) => {
   return d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
-const fmtDateTime = (iso: string) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleString('es-CO', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-};
 
 const STATUS_ORDER: Record<string, string> = {
   pending: 'Pendiente', confirmed: 'Confirmado', preparing: 'Preparando',
