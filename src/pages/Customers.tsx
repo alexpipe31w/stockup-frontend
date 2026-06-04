@@ -53,7 +53,7 @@ function Avatar({ customer }: { customer: Customer }) {
   const letter = customer.name?.[0]?.toUpperCase() ?? customer.phone[1];
   return (
     <div
-      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+      className="w-9 h-9 rounded-full flex items-center justify-center text-[#0A0A0F] font-bold text-sm flex-shrink-0"
       style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
     >
       {letter}
@@ -362,7 +362,7 @@ export default function Customers() {
                             onClick={() => saveEdit(c.customerId)}
                             disabled={saving}
                             title="Guardar"
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white disabled:opacity-50 transition"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#0A0A0F] disabled:opacity-50 transition"
                             style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                           >
                             {saving

@@ -130,7 +130,7 @@ const PriorityDot = ({ priority }: { priority: AppointmentPriority }) =>
   );
 
 const Avatar = ({ name, phone }: { name: string | null; phone: string }) => (
-  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#0A0A0F] text-xs font-bold flex-shrink-0"
     style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
     {name?.[0]?.toUpperCase() ?? phone[1]}
   </div>

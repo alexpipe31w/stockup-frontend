@@ -131,7 +131,7 @@ export default function PaymentStatus() {
           </div>
           <button
             onClick={() => { logout(); navigate('/login', { replace: true }); }}
-            className="w-full py-3.5 rounded-xl text-white font-semibold text-sm"
+            className="w-full py-3.5 rounded-xl text-[#0A0A0F] font-semibold text-sm"
             style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
           >
             Ir al inicio de sesión ahora

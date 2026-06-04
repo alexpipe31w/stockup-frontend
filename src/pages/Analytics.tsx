@@ -70,11 +70,11 @@ function TrendChart({ data }: { data: { labels: string[]; revenue: number[]; ord
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-semibold text-txt-primary flex items-center gap-2"><TrendIcon /> Tendencia de {view === 'revenue' ? 'ingresos' : 'pedidos'}</p>
         <div className="flex rounded-lg border border-border-default overflow-hidden text-xs">
-          <button onClick={() => setView('revenue')} className={`px-3 py-1 transition ${view === 'revenue' ? 'text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
+          <button onClick={() => setView('revenue')} className={`px-3 py-1 transition ${view === 'revenue' ? 'text-[#0A0A0F]' : 'text-txt-secondary hover:bg-surface-elevated'}`}
             style={view === 'revenue' ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
             Ingresos
           </button>
-          <button onClick={() => setView('orders')} className={`px-3 py-1 transition ${view === 'orders' ? 'text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
+          <button onClick={() => setView('orders')} className={`px-3 py-1 transition ${view === 'orders' ? 'text-[#0A0A0F]' : 'text-txt-secondary hover:bg-surface-elevated'}`}
             style={view === 'orders' ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
             Pedidos
           </button>
@@ -134,7 +134,7 @@ function SentimentPanel({ insights, loading, onAnalyze }: {
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-semibold text-txt-primary flex items-center gap-2"><HeartIcon /> Satisfacción de clientes</p>
         <button onClick={onAnalyze} disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-white disabled:opacity-50 transition"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-[#0A0A0F] disabled:opacity-50 transition"
           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
           {loading
             ? <><svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Analizando...</>
@@ -230,7 +230,7 @@ function Bubble({ role, content }: { role: 'user' | 'assistant'; content: string
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0 mt-0.5"
+        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[#0A0A0F] text-xs font-bold mr-2 flex-shrink-0 mt-0.5"
           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> IA</div>
       )}
       <div className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
@@ -597,7 +597,7 @@ PRODUCTOS:
             <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-3"
                 style={{ background: 'rgba(212,255,0,0.06)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white"
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[#0A0A0F]"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   <SparkIcon />
                 </div>
@@ -631,7 +631,7 @@ PRODUCTOS:
                     {messages.map((m, i) => <Bubble key={i} role={m.role} content={m.content} />)}
                     {thinking && (
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-0"
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[#0A0A0F] text-xs font-bold mr-0"
                           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> IA</div>
                         <div className="flex gap-1 px-4 py-3 rounded-2xl rounded-tl-sm"
                           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 

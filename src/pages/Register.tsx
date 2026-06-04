@@ -271,7 +271,7 @@ export default function Register() {
                   </div>
                 </div>
                 <button type="submit" disabled={loading}
-                  className="w-full py-3 rounded-xl text-white font-semibold text-sm transition disabled:opacity-60 mt-2"
+                  className="w-full py-3 rounded-xl text-[#0A0A0F] font-semibold text-sm transition disabled:opacity-60 mt-2"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   {loading ? 'Enviando código...' : 'Continuar — verificar email'}
                 </button>
@@ -318,7 +318,7 @@ export default function Register() {
                 </div>
 
                 <button type="submit" disabled={loading || code.join('').length < 6}
-                  className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition disabled:opacity-50 mb-4"
+                  className="w-full py-3.5 rounded-xl text-[#0A0A0F] font-semibold text-sm transition disabled:opacity-50 mb-4"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">

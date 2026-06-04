@@ -194,7 +194,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                   <button key={m.value} type="button"
                     onClick={() => setPayMethod(m.value)}
                     className={`py-2 rounded-lg text-xs font-medium transition ${
-                      payMethod === m.value ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
+                      payMethod === m.value ? 'text-[#0A0A0F]' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
                     }`}
                     style={payMethod === m.value ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
                     {m.label}
@@ -245,7 +245,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
           {/* Botones */}
           <div className="flex gap-2 pt-1">
             <button onClick={submit} disabled={submitting || !selectedCustomer}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
               style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
               {submitting ? 'Registrando...' : 'Registrar venta'}
             </button>
@@ -456,7 +456,7 @@ function OrderDetail({
                 <button
                   onClick={advance}
                   disabled={updating}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                 >
                   {updating ? 'Actualizando...' : `Marcar como ${STATUS_CONFIG[cfg.next]?.label}`}
@@ -540,7 +540,7 @@ export default function Orders() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowManual(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] transition"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 <PlusIcon /> Nueva venta manual
@@ -651,7 +651,7 @@ export default function Orders() {
                   {/* Cliente */}
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[#0A0A0F] font-bold text-sm flex-shrink-0"
                       style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                     >
                       {(order.customer.name ?? order.customer.phone)[0]?.toUpperCase()}

@@ -318,7 +318,7 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
       )}
       <div className="flex gap-1">
         <button onClick={save} disabled={saving || !form.name.trim() || bothPrices}
-          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50 transition"
+          className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium text-[#0A0A0F] disabled:opacity-50 transition"
           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
           {saving ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> : <><SaveIcon /> Guardar</>}
         </button>
@@ -727,7 +727,7 @@ function ServiceModal({ service, onClose, onSaved }: {
               {error && <p className="text-sm text-red-500">{error}</p>}
 
               <button onClick={handleSubmit} disabled={saving}
-                className="w-full py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
+                className="w-full py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                 {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear servicio'}
               </button>
@@ -793,7 +793,7 @@ function ServiceModal({ service, onClose, onSaved }: {
 
                 <button onClick={handleAddVariant}
                   disabled={addingVar || !newVariant.name.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40 transition"
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-40 transition"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   {addingVar ? 'Agregando...' : <><PlusIcon /> Agregar variante</>}
                 </button>
@@ -903,7 +903,7 @@ export default function Services() {
               Plantillas
             </button>
             <button onClick={() => setModalService('new')}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F]"
               style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
               <PlusIcon /> Nuevo servicio
             </button>
@@ -957,7 +957,7 @@ export default function Services() {
             </p>
             {!search && filterType === 'all' && !filterCat && (
               <button onClick={() => setModalService('new')}
-                className="mt-1 px-5 py-2.5 rounded-xl text-white text-sm font-semibold"
+                className="mt-1 px-5 py-2.5 rounded-xl text-[#0A0A0F] text-sm font-semibold"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                 Crear primer servicio
               </button>

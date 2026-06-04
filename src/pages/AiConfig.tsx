@@ -248,7 +248,7 @@ export default function AiConfig() {
                       {m.name}
                     </span>
                     <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-white"
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-md text-[#0A0A0F]"
                       style={{ backgroundColor: m.tagColor }}
                     >
                       {m.tag}
@@ -363,7 +363,7 @@ export default function AiConfig() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-4 rounded-xl text-white font-semibold text-base transition-all disabled:opacity-60"
+          className="w-full py-4 rounded-xl text-[#0A0A0F] font-semibold text-base transition-all disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
         >
           {saving ? (

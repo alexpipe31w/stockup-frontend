@@ -88,7 +88,7 @@ export default function Users() {
         </div>
         <button
           onClick={() => { setForm(emptyForm); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[#0A0A0F] text-sm font-semibold"
           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
@@ -134,7 +134,7 @@ export default function Users() {
                   <tr key={u.userId} className={`${i < users.length - 1 ? 'border-b border-slate-50' : ''} hover:bg-surface-elevated transition`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-[#0A0A0F] text-sm font-bold"
                           style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                           {u.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
@@ -286,7 +286,7 @@ export default function Users() {
               <button
                 onClick={handleCreate}
                 disabled={saving || !isFormValid}
-                className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl text-[#0A0A0F] text-sm font-semibold transition disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {saving ? 'Creando...' : 'Crear usuario'}

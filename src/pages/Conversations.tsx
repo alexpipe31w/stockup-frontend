@@ -244,7 +244,7 @@ export default function Conversations() {
             <button
               onClick={() => setShowFilters(f => !f)}
               className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition ${
-                showFilters ? 'text-white' : 'text-txt-tertiary hover:bg-surface-overlay'
+                showFilters ? 'text-[#0A0A0F]' : 'text-txt-tertiary hover:bg-surface-overlay'
               }`}
               style={showFilters ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
             >
@@ -297,7 +297,7 @@ export default function Conversations() {
                 key={tab.key}
                 onClick={() => setFilter(tab.key)}
                 className={`px-2.5 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${
-                  filter === tab.key ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
+                  filter === tab.key ? 'text-[#0A0A0F]' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
                 }`}
                 style={filter === tab.key ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
               >
@@ -322,7 +322,7 @@ export default function Conversations() {
               onClick={() => setSelected(conv)}
             >
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 mt-0.5"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[#0A0A0F] font-bold text-sm flex-shrink-0 mt-0.5"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {conv.customer?.name?.[0]?.toUpperCase() ?? '?'}
@@ -367,7 +367,7 @@ export default function Conversations() {
                 <BackIcon />
               </button>
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[#0A0A0F] font-bold flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {selected.customer?.name?.[0]?.toUpperCase() ?? '?'}
@@ -382,7 +382,7 @@ export default function Conversations() {
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {(selected.status === 'active' || selected.status === 'pending_human') && (
                 <button onClick={handleTakeover}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium text-white"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium text-[#0A0A0F]"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   <UserIcon />
                   <span className="hidden sm:inline">tomar control</span>
@@ -453,7 +453,7 @@ export default function Conversations() {
             {showScrollBtn && (
               <button
                 onClick={() => scrollToBottom('smooth')}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg transition-all animate-bounce"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#0A0A0F] shadow-lg transition-all animate-bounce"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 <ChevronDownIcon />
@@ -483,7 +483,7 @@ export default function Conversations() {
                   <button
                     onClick={handleSend}
                     disabled={sending || !text.trim()}
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition flex-shrink-0"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-[#0A0A0F] disabled:opacity-40 transition flex-shrink-0"
                     style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                   >
                     {sending
