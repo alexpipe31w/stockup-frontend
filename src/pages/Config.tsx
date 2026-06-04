@@ -76,7 +76,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
@@ -146,7 +146,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2.5 rounded-xl text-white font-medium text-sm shadow-sm transition-all disabled:opacity-60 btn-gradient"
+            className="px-6 py-2.5 rounded-xl text-txt-inverse gradient-brand"
           >
             {saving ? 'Guardando...' : 'Guardar cambios'}
           </button>
@@ -242,7 +242,7 @@ function ExcluidosSection() {
         </div>
         <button
           onClick={() => { setForm(emptyBlockedForm); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold btn-gradient"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-txt-inverse gradient-brand"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -386,7 +386,7 @@ function ExcluidosSection() {
               <button
                 onClick={handleBlock}
                 disabled={saving || !form.phone}
-                className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50 btn-gradient"
+                className="flex-1 py-3 rounded-xl text-txt-inverse gradient-brand"
               >
                 {saving ? 'Guardando...' : 'Excluir número'}
               </button>

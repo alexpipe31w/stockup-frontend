@@ -54,7 +54,7 @@ function Avatar({ customer }: { customer: Customer }) {
   return (
     <div
       className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-      style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+      style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
     >
       {letter}
     </div>
@@ -363,7 +363,7 @@ export default function Customers() {
                             disabled={saving}
                             title="Guardar"
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-white disabled:opacity-50 transition"
-                            style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                            style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                           >
                             {saving
                               ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>

@@ -132,7 +132,7 @@ export default function PaymentStatus() {
           <button
             onClick={() => { logout(); navigate('/login', { replace: true }); }}
             className="w-full py-3.5 rounded-xl text-white font-semibold text-sm"
-            style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+            style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
           >
             Ir al inicio de sesión ahora
           </button>

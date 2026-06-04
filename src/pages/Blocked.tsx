@@ -90,7 +90,7 @@ export default function Blocked() {
         <button
           onClick={() => { setForm(emptyForm); setError(''); setShowModal(true); }}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold"
-          style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -249,7 +249,7 @@ export default function Blocked() {
                 onClick={handleBlock}
                 disabled={saving || !form.phone}
                 className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {saving ? 'Guardando...' : 'Excluir número'}
               </button>

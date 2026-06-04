@@ -121,7 +121,7 @@ function CampaignModal({
             onClick={handleSubmit}
             disabled={saving}
             className="w-full py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
-            style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+            style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
           >
             {saving ? 'Creando...' : 'Crear campaña'}
           </button>
@@ -177,7 +177,7 @@ export default function Campaigns() {
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
-            style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+            style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
           >
             <PlusIcon /> Nueva campaña
           </button>
@@ -236,7 +236,7 @@ export default function Campaigns() {
                       onClick={() => setConfirmSend(c)}
                       disabled={isSending}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
-                      style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                      style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                     >
                       {isSending ? (
                         <>
@@ -288,7 +288,7 @@ export default function Campaigns() {
                 onClick={() => handleSend(confirmSend)}
                 disabled={!!sending}
                 className="flex-1 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {sending ? 'Enviando...' : 'Confirmar envío'}
               </button>

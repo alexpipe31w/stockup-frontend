@@ -159,7 +159,7 @@ export default function WhatsAppPage() {
                   onClick={handleConnect}
                   disabled={connecting}
                   className="px-6 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                 >
                   {connecting ? (
                     <span className="flex items-center gap-2">

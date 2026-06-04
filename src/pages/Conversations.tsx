@@ -246,7 +246,7 @@ export default function Conversations() {
               className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition ${
                 showFilters ? 'text-white' : 'text-txt-tertiary hover:bg-surface-overlay'
               }`}
-              style={showFilters ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}
+              style={showFilters ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
             >
               <FilterIcon />
               {activeFilterCount > 0 && (
@@ -299,7 +299,7 @@ export default function Conversations() {
                 className={`px-2.5 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${
                   filter === tab.key ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
                 }`}
-                style={filter === tab.key ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}
+                style={filter === tab.key ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
               >
                 {tab.label}
                 <span className={`text-[10px] px-1 rounded-full ${filter === tab.key ? 'bg-surface/20' : 'bg-border-default text-txt-tertiary'}`}>
@@ -323,7 +323,7 @@ export default function Conversations() {
             >
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 mt-0.5"
-                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {conv.customer?.name?.[0]?.toUpperCase() ?? '?'}
               </div>
@@ -368,7 +368,7 @@ export default function Conversations() {
               </button>
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {selected.customer?.name?.[0]?.toUpperCase() ?? '?'}
               </div>
@@ -383,7 +383,7 @@ export default function Conversations() {
               {(selected.status === 'active' || selected.status === 'pending_human') && (
                 <button onClick={handleTakeover}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium text-white"
-                  style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   <UserIcon />
                   <span className="hidden sm:inline">tomar control</span>
                 </button>
@@ -433,7 +433,7 @@ export default function Conversations() {
                             ? 'text-white rounded-tr-sm'
                             : 'bg-blue-600 text-white rounded-tr-sm'
                       }`}
-                      style={!isClient && msg.isAiResponse ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}
+                      style={!isClient && msg.isAiResponse ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
                     >
                       {!isClient && (
                         <p className="text-xs opacity-70 mb-1">{msg.isAiResponse ? 'IA' : 'Tú'}</p>
@@ -454,7 +454,7 @@ export default function Conversations() {
               <button
                 onClick={() => scrollToBottom('smooth')}
                 className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg transition-all animate-bounce"
-                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 <ChevronDownIcon />
                 Nuevos mensajes
@@ -484,7 +484,7 @@ export default function Conversations() {
                     onClick={handleSend}
                     disabled={sending || !text.trim()}
                     className="w-11 h-11 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}
+                    style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                   >
                     {sending
                       ? <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>

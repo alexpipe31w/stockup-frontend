@@ -272,7 +272,7 @@ export default function Register() {
                 </div>
                 <button type="submit" disabled={loading}
                   className="w-full py-3 rounded-xl text-white font-semibold text-sm transition disabled:opacity-60 mt-2"
-                  style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   {loading ? 'Enviando código...' : 'Continuar — verificar email'}
                 </button>
               </form>
@@ -284,7 +284,7 @@ export default function Register() {
             <>
               <div className="text-center mb-6">
                 <div className="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
@@ -319,7 +319,7 @@ export default function Register() {
 
                 <button type="submit" disabled={loading || code.join('').length < 6}
                   className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition disabled:opacity-50 mb-4"
-                  style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -350,7 +350,7 @@ export default function Register() {
           {step === 'payment' && (
             <div className="text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                   <path d="M22 11.08V12a10 10 0 11-5.93-9.14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                   <polyline points="22 4 12 14.01 9 11.01" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>

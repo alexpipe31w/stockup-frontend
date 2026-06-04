@@ -131,7 +131,7 @@ const PriorityDot = ({ priority }: { priority: AppointmentPriority }) =>
 
 const Avatar = ({ name, phone }: { name: string | null; phone: string }) => (
   <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-    style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+    style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
     {name?.[0]?.toUpperCase() ?? phone[1]}
   </div>
 );
@@ -645,7 +645,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
             <button
               onClick={handleEditSave}
               disabled={editSaving}
-              className="w-full py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition btn-gradient"
+              className="w-full py-2.5 rounded-xl text-txt-inverse gradient-brand"
             >
               {editSaving ? 'Guardando...' : 'Guardar cambios'}
             </button>
@@ -895,7 +895,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
               <button
                 type="submit"
                 disabled={saving || !form.customerId || !form.scheduledAt}
-                className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition btn-gradient"
+                className="flex-1 py-2.5 rounded-xl text-txt-inverse gradient-brand"
               >
                 {saving ? 'Creando...' : 'Crear cita'}
               </button>
@@ -1207,7 +1207,7 @@ export default function Appointments() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowNewAppt(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold btn-gradient"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-txt-inverse gradient-brand"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>

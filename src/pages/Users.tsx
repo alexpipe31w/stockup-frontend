@@ -89,7 +89,7 @@ export default function Users() {
         <button
           onClick={() => { setForm(emptyForm); setError(''); setShowModal(true); }}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold"
-          style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -135,7 +135,7 @@ export default function Users() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                          style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+                          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                           {u.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                         <div>
@@ -287,7 +287,7 @@ export default function Users() {
                 onClick={handleCreate}
                 disabled={saving || !isFormValid}
                 className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {saving ? 'Creando...' : 'Crear usuario'}
               </button>

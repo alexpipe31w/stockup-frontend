@@ -196,7 +196,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                     className={`py-2 rounded-lg text-xs font-medium transition ${
                       payMethod === m.value ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
                     }`}
-                    style={payMethod === m.value ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}}>
+                    style={payMethod === m.value ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
                     {m.label}
                   </button>
                 ))}
@@ -246,7 +246,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
           <div className="flex gap-2 pt-1">
             <button onClick={submit} disabled={submitting || !selectedCustomer}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
-              style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}>
+              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
               {submitting ? 'Registrando...' : 'Registrar venta'}
             </button>
             <button onClick={onClose}
@@ -457,7 +457,7 @@ function OrderDetail({
                   onClick={advance}
                   disabled={updating}
                   className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
-                  style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                 >
                   {updating ? 'Actualizando...' : `Marcar como ${STATUS_CONFIG[cfg.next]?.label}`}
                 </button>
@@ -541,7 +541,7 @@ export default function Orders() {
               <button
                 onClick={() => setShowManual(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 <PlusIcon /> Nueva venta manual
               </button>
@@ -568,7 +568,7 @@ export default function Orders() {
               className={`px-3 py-1 rounded-full text-xs font-medium transition ${
                 !filterStatus ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
               }`}
-              style={!filterStatus ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}}
+              style={!filterStatus ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
             >
               Todas ({orders.length})
             </button>
@@ -580,7 +580,7 @@ export default function Orders() {
                   className={`px-3 py-1 rounded-full text-xs font-medium transition ${
                     filterStatus === key ? 'text-white' : `${cfg.cls} opacity-80 hover:opacity-100`
                   }`}
-                  style={filterStatus === key ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}}
+                  style={filterStatus === key ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}
                 >
                   {cfg.label} ({counts[key]})
                 </button>
@@ -652,7 +652,7 @@ export default function Orders() {
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+                      style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
                     >
                       {(order.customer.name ?? order.customer.phone)[0]?.toUpperCase()}
                     </div>

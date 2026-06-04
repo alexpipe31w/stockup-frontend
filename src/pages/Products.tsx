@@ -366,7 +366,7 @@ function VariantRow({ variant, onUpdate, onRemove }: {
       <div className="flex gap-1 pt-1">
         <button onClick={save} disabled={saving || !form.name.trim()}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50 transition"
-          style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
           {saving
             ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
             : <><SaveIcon /> Guardar</>}
@@ -792,7 +792,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
               <button onClick={handleSubmit} disabled={saving}
                 className="w-full py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition"
-                style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                 {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear producto'}
               </button>
             </>
@@ -886,7 +886,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 <button onClick={handleAddVariant}
                   disabled={addingVariant || !newVariant.name.trim()}
                   className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40 transition"
-                  style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   {addingVariant ? 'Agregando...' : <><PlusIcon /> Agregar variante</>}
                 </button>
 
@@ -894,7 +894,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 {!isEdit && (
                   <button onClick={handleSubmit} disabled={saving}
                     className="w-full py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition mt-2"
-                    style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                    style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                     {saving ? 'Guardando...' : `Crear producto${variants.length > 0 ? ` con ${variants.length} variante${variants.length !== 1 ? 's' : ''}` : ''}`}
                   </button>
                 )}
@@ -1000,7 +1000,7 @@ export default function Products() {
             </div>
             <button onClick={() => setModalProduct('new')}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white"
-              style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
               <PlusIcon /> Nuevo producto
             </button>
           </div>

@@ -19,7 +19,7 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     docsUrl: 'console.groq.com',
     keyHint: 'gsk_xxxxxxxxxxxxxxxxxxxx',
     models: [
-      { value: 'llama-3.3-70b-versatile',             name: 'Llama 3.3 70B',  tag: 'BALANCEADO',     tagColor: '#2563eb', speed: '280 t/s',  desc: 'Modelo probado. Buen equilibrio calidad/velocidad.' },
+      { value: 'llama-3.3-70b-versatile',             name: 'Llama 3.3 70B',  tag: 'BALANCEADO',     tagColor: '#D4FF00', speed: '280 t/s',  desc: 'Modelo probado. Buen equilibrio calidad/velocidad.' },
       { value: 'llama-3.1-8b-instant',                name: 'Llama 3.1 8B',   tag: 'ECONÓMICO',      tagColor: '#64748b', speed: '560 t/s',  desc: 'Ultra rápido y de bajo costo. Alto volumen.' },
       { value: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout', tag: 'NUEVO',       tagColor: '#ea580c', speed: '750 t/s',  desc: 'Llama 4 multimodal. Muy rápido.' },
       { value: 'qwen/qwen3-32b',                      name: 'Qwen3 32B',       tag: 'PREVIEW',        tagColor: '#0891b2', speed: '400 t/s',  desc: 'Excelente en idiomas y razonamiento.' },
@@ -31,7 +31,7 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     docsUrl: 'platform.openai.com',
     keyHint: 'sk-xxxxxxxxxxxxxxxxxxxx',
     models: [
-      { value: 'gpt-4o',        name: 'GPT-4o',       tag: 'RECOMENDADO',   tagColor: '#2563eb', desc: 'El más capaz. Entiende contexto complejo.' },
+      { value: 'gpt-4o',        name: 'GPT-4o',       tag: 'RECOMENDADO',   tagColor: '#D4FF00', desc: 'El más capaz. Entiende contexto complejo.' },
       { value: 'gpt-4o-mini',   name: 'GPT-4o mini',  tag: 'ECONÓMICO',     tagColor: '#64748b', desc: 'Rápido y barato. Ideal para alto volumen.' },
       { value: 'gpt-4.1',       name: 'GPT-4.1',      tag: 'NUEVO',         tagColor: '#ea580c', desc: 'Mayor ventana de contexto que GPT-4o.' },
       { value: 'o4-mini',       name: 'o4-mini',      tag: 'RAZONAMIENTO',  tagColor: '#7c3aed', desc: 'Razonamiento paso a paso. Respuestas más precisas.' },
@@ -43,7 +43,7 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     docsUrl: 'api.together.xyz',
     keyHint: 'xxxxxxxxxxxxxxxxxxxx',
     models: [
-      { value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', name: 'Llama 3.3 70B Turbo', tag: 'RECOMENDADO', tagColor: '#2563eb', desc: 'El mejor equilibrio en Together.' },
+      { value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', name: 'Llama 3.3 70B Turbo', tag: 'RECOMENDADO', tagColor: '#D4FF00', desc: 'El mejor equilibrio en Together.' },
       { value: 'meta-llama/Llama-3.1-8B-Instruct-Turbo',  name: 'Llama 3.1 8B Turbo',  tag: 'ECONÓMICO',   tagColor: '#64748b', desc: 'Muy rápido y barato.' },
       { value: 'Qwen/Qwen2.5-72B-Instruct-Turbo',         name: 'Qwen 2.5 72B',         tag: 'ALTERNATIVA', tagColor: '#0891b2', desc: 'Fuerte en matemáticas e idiomas.' },
       { value: 'deepseek-ai/DeepSeek-V3',                  name: 'DeepSeek V3',           tag: 'NUEVO',       tagColor: '#ea580c', desc: 'Modelo chino de alto rendimiento.' },
@@ -55,7 +55,7 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     docsUrl: 'console.mistral.ai',
     keyHint: 'xxxxxxxxxxxxxxxxxxxx',
     models: [
-      { value: 'mistral-large-latest',  name: 'Mistral Large',  tag: 'MÁS CAPAZ',  tagColor: '#2563eb', desc: 'El modelo más potente de Mistral.' },
+      { value: 'mistral-large-latest',  name: 'Mistral Large',  tag: 'MÁS CAPAZ',  tagColor: '#D4FF00', desc: 'El modelo más potente de Mistral.' },
       { value: 'mistral-small-latest',  name: 'Mistral Small',  tag: 'ECONÓMICO',  tagColor: '#64748b', desc: 'Rápido y eficiente para producción.' },
       { value: 'open-mixtral-8x22b',    name: 'Mixtral 8x22B',  tag: 'OPEN SOURCE', tagColor: '#7c3aed', desc: 'MoE de alto rendimiento, open source.' },
       { value: 'codestral-latest',      name: 'Codestral',      tag: 'CÓDIGO',     tagColor: '#059669', desc: 'Especializado en código y técnico.' },
@@ -68,7 +68,7 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     keyHint: 'sk-ant-xxxxxxxxxxxxxxxxxxxx',
     models: [
       { value: 'claude-opus-4-8',           name: 'Claude Opus 4',   tag: 'MÁS INTELIGENTE', tagColor: '#7c3aed', desc: 'El más capaz de Claude. Para casos complejos.' },
-      { value: 'claude-sonnet-4-6',         name: 'Claude Sonnet 4', tag: 'RECOMENDADO',     tagColor: '#2563eb', desc: 'Mejor equilibrio inteligencia/velocidad.' },
+      { value: 'claude-sonnet-4-6',         name: 'Claude Sonnet 4', tag: 'RECOMENDADO',     tagColor: '#D4FF00', desc: 'Mejor equilibrio inteligencia/velocidad.' },
       { value: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4',  tag: 'ECONÓMICO',       tagColor: '#64748b', desc: 'El más rápido de Claude. Ideal para volumen.' },
       { value: 'claude-sonnet-3-5',         name: 'Claude Sonnet 3.5', tag: 'ANTERIOR',      tagColor: '#94a3b8', desc: 'Versión anterior. Altamente confiable.' },
     ],
@@ -219,7 +219,7 @@ export default function AiConfig() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9333ea" strokeWidth="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="2">
                 <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 010 2h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 010-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/>
               </svg>
             </div>
@@ -276,7 +276,7 @@ export default function AiConfig() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="2">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
               </svg>
             </div>
@@ -364,7 +364,7 @@ export default function AiConfig() {
           type="submit"
           disabled={saving}
           className="w-full py-4 rounded-xl text-white font-semibold text-base transition-all disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #2563eb, #9333ea)' }}
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
         >
           {saving ? (
             <span className="flex items-center justify-center gap-2">

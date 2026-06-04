@@ -45,7 +45,7 @@ function BarChart({ data, label }: { data: { name: string; value: number }[]; la
             <p className="text-xs text-txt-secondary w-24 truncate flex-shrink-0">{d.name}</p>
             <div className="flex-1 bg-surface-overlay rounded-full h-2 overflow-hidden">
               <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${(d.value / max) * 100}%`, background: 'linear-gradient(90deg,#2563eb,#9333ea)' }} />
+                style={{ width: `${(d.value / max) * 100}%`, background: 'linear-gradient(90deg, #D4FF00, #A3CC00)' }} />
             </div>
             <p className="text-xs font-semibold text-txt-primary w-16 text-right flex-shrink-0">{d.value}</p>
           </div>
@@ -71,11 +71,11 @@ function TrendChart({ data }: { data: { labels: string[]; revenue: number[]; ord
         <p className="text-sm font-semibold text-txt-primary flex items-center gap-2"><TrendIcon /> Tendencia de {view === 'revenue' ? 'ingresos' : 'pedidos'}</p>
         <div className="flex rounded-lg border border-border-default overflow-hidden text-xs">
           <button onClick={() => setView('revenue')} className={`px-3 py-1 transition ${view === 'revenue' ? 'text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
-            style={view === 'revenue' ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}>
+            style={view === 'revenue' ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
             Ingresos
           </button>
           <button onClick={() => setView('orders')} className={`px-3 py-1 transition ${view === 'orders' ? 'text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
-            style={view === 'orders' ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}>
+            style={view === 'orders' ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
             Pedidos
           </button>
         </div>
@@ -90,8 +90,8 @@ function TrendChart({ data }: { data: { labels: string[]; revenue: number[]; ord
               <g key={i}>
                 <defs>
                   <linearGradient id={`bar-${i}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563eb" stopOpacity="0.9"/>
-                    <stop offset="100%" stopColor="#9333ea" stopOpacity="0.7"/>
+                    <stop offset="0%" stopColor="#D4FF00" stopOpacity="0.9"/>
+                    <stop offset="100%" stopColor="#A3CC00" stopOpacity="0.7"/>
                   </linearGradient>
                 </defs>
                 <rect x={x} y={y} width={barW} height={barH} rx="3" fill={`url(#bar-${i})`} />
@@ -135,7 +135,7 @@ function SentimentPanel({ insights, loading, onAnalyze }: {
         <p className="text-sm font-semibold text-txt-primary flex items-center gap-2"><HeartIcon /> Satisfacción de clientes</p>
         <button onClick={onAnalyze} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-white disabled:opacity-50 transition"
-          style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
           {loading
             ? <><svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Analizando...</>
             : <><SparkIcon /> Analizar conversaciones</>}
@@ -231,11 +231,11 @@ function Bubble({ role, content }: { role: 'user' | 'assistant'; content: string
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
       {!isUser && (
         <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0 mt-0.5"
-          style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>IA</div>
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> IA</div>
       )}
       <div className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
         isUser ? 'bg-surface-overlay text-txt-primary rounded-tr-sm' : 'text-white rounded-tl-sm'
-      }`} style={!isUser ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}>
+      }`} style={!isUser ? { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' } : {}}>
         {content}
       </div>
     </div>
@@ -596,9 +596,9 @@ PRODUCTOS:
             {/* ── AI Advisor ── */}
             <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-3"
-                style={{ background: 'linear-gradient(135deg,#2563eb10,#9333ea10)' }}>
+                style={{ background: 'rgba(212,255,0,0.06)' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white"
-                  style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   <SparkIcon />
                 </div>
                 <div className="flex-1">
@@ -632,9 +632,9 @@ PRODUCTOS:
                     {thinking && (
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold mr-0"
-                          style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>IA</div>
+                          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> IA</div>
                         <div className="flex gap-1 px-4 py-3 rounded-2xl rounded-tl-sm"
-                          style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                           {[0,1,2].map(i => (
                             <span key={i} className="w-2 h-2 bg-surface/70 rounded-full animate-bounce"
                               style={{ animationDelay: `${i * 150}ms` }} />
@@ -658,7 +658,7 @@ PRODUCTOS:
                   <button onClick={() => input.trim() && askGroq(input)}
                     disabled={thinking || !input.trim()}
                     className="w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-40 transition flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
+                    style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                     <SendIcon />
                   </button>
                 </div>
