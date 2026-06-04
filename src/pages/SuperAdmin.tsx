@@ -109,7 +109,7 @@ function ActionBadge({ action }: { action: string }) {
     STORE_UNBLOCKED: 'bg-emerald-100 text-emerald-700',
   };
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[action] ?? 'bg-slate-100 text-slate-600'}`}>
+    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[action] ?? 'bg-surface-overlay text-txt-secondary'}`}>
       {action}
     </span>
   );
@@ -250,14 +250,14 @@ export default function SuperAdmin() {
           </div>
           <div>
             <span className="font-bold text-white">Superadmin</span>
-            <span className="text-slate-500 text-sm ml-2">Stockup Messages</span>
+            <span className="text-txt-secondary text-sm ml-2">Stockup Messages</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-slate-400 text-sm hidden sm:block">{adminEmail}</span>
+          <span className="text-txt-tertiary text-sm hidden sm:block">{adminEmail}</span>
           <button
             onClick={logout}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition text-sm"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-txt-tertiary hover:text-red-400 hover:bg-red-500/10 transition text-sm"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
@@ -279,7 +279,7 @@ export default function SuperAdmin() {
               className={`px-4 py-3 text-sm font-medium border-b-2 transition ${
                 tab === t.key
                   ? 'border-violet-500 text-violet-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+                  : 'border-transparent text-txt-tertiary hover:text-slate-200'
               }`}
             >
               {t.label}
@@ -300,7 +300,7 @@ export default function SuperAdmin() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-slate-500">
+          <div className="flex items-center justify-center py-20 text-txt-secondary">
             <svg className="animate-spin w-8 h-8" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -324,7 +324,7 @@ export default function SuperAdmin() {
                       <div className={`text-3xl font-bold bg-gradient-to-r ${card.color} bg-clip-text text-transparent`}>
                         {card.value}
                       </div>
-                      <div className="text-slate-400 text-sm mt-1">{card.label}</div>
+                      <div className="text-txt-tertiary text-sm mt-1">{card.label}</div>
                     </div>
                   ))}
                 </div>
@@ -341,7 +341,7 @@ export default function SuperAdmin() {
                       <thead>
                         <tr className="border-b border-slate-700">
                           {['Tienda', 'Teléfono', 'Dueño', 'Usuarios', 'Conversaciones', 'Órdenes', 'Estado', 'Creada', 'Acción'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-txt-tertiary font-medium whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -349,17 +349,17 @@ export default function SuperAdmin() {
                         {stores.map(store => (
                           <tr key={store.storeId} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
                             <td className="px-4 py-3 font-medium text-white">{store.name}</td>
-                            <td className="px-4 py-3 text-slate-400 font-mono text-xs">{store.phone}</td>
-                            <td className="px-4 py-3 text-slate-300">{store.ownerName ?? '—'}</td>
-                            <td className="px-4 py-3 text-slate-300 text-center">{store._count.users}</td>
-                            <td className="px-4 py-3 text-slate-300 text-center">{store._count.conversations}</td>
-                            <td className="px-4 py-3 text-slate-300 text-center">{store._count.orders}</td>
+                            <td className="px-4 py-3 text-txt-tertiary font-mono text-xs">{store.phone}</td>
+                            <td className="px-4 py-3 text-txt-disabled">{store.ownerName ?? '—'}</td>
+                            <td className="px-4 py-3 text-txt-disabled text-center">{store._count.users}</td>
+                            <td className="px-4 py-3 text-txt-disabled text-center">{store._count.conversations}</td>
+                            <td className="px-4 py-3 text-txt-disabled text-center">{store._count.orders}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${store.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                                 {store.isActive ? 'Activa' : 'Bloqueada'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{fmtDate(store.createdAt)}</td>
+                            <td className="px-4 py-3 text-txt-tertiary text-xs whitespace-nowrap">{fmtDate(store.createdAt)}</td>
                             <td className="px-4 py-3">
                               <button
                                 onClick={() => handleToggleStore(store.storeId)}
@@ -376,7 +376,7 @@ export default function SuperAdmin() {
                         ))}
                         {stores.length === 0 && (
                           <tr>
-                            <td colSpan={9} className="px-4 py-10 text-center text-slate-500">No hay tiendas registradas</td>
+                            <td colSpan={9} className="px-4 py-10 text-center text-txt-secondary">No hay tiendas registradas</td>
                           </tr>
                         )}
                       </tbody>
@@ -396,7 +396,7 @@ export default function SuperAdmin() {
                       <thead>
                         <tr className="border-b border-slate-700">
                           {['Nombre', 'Email', 'Rol', 'Tienda', 'Estado', 'Registrado', 'Acciones'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-txt-tertiary font-medium whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -404,19 +404,19 @@ export default function SuperAdmin() {
                         {users.map(user => (
                           <tr key={user.userId} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
                             <td className="px-4 py-3 font-medium text-white">{user.name}</td>
-                            <td className="px-4 py-3 text-slate-300 text-xs">{user.email}</td>
+                            <td className="px-4 py-3 text-txt-disabled text-xs">{user.email}</td>
                             <td className="px-4 py-3">
                               <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/20 text-violet-400">
                                 {user.role}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-slate-300 text-xs">{user.store?.name ?? '—'}</td>
+                            <td className="px-4 py-3 text-txt-disabled text-xs">{user.store?.name ?? '—'}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${user.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                                 {user.isActive ? 'Activo' : 'Bloqueado'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{fmtDate(user.createdAt)}</td>
+                            <td className="px-4 py-3 text-txt-tertiary text-xs whitespace-nowrap">{fmtDate(user.createdAt)}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <button
@@ -431,7 +431,7 @@ export default function SuperAdmin() {
                                 </button>
                                 <button
                                   onClick={() => setConfirmDelete(user.userId)}
-                                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition"
+                                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 text-txt-tertiary hover:bg-red-500/20 hover:text-red-400 transition"
                                 >
                                   Eliminar
                                 </button>
@@ -441,7 +441,7 @@ export default function SuperAdmin() {
                         ))}
                         {users.length === 0 && (
                           <tr>
-                            <td colSpan={7} className="px-4 py-10 text-center text-slate-500">No hay usuarios registrados</td>
+                            <td colSpan={7} className="px-4 py-10 text-center text-txt-secondary">No hay usuarios registrados</td>
                           </tr>
                         )}
                       </tbody>
@@ -460,18 +460,18 @@ export default function SuperAdmin() {
                 <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 mb-6">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Precio del plan mensual</p>
-                      <p className="text-slate-500 text-xs mt-0.5">Se aplica a todos los nuevos pagos de la plataforma</p>
+                      <p className="text-xs font-semibold text-txt-tertiary uppercase tracking-wide">Precio del plan mensual</p>
+                      <p className="text-txt-secondary text-xs mt-0.5">Se aplica a todos los nuevos pagos de la plataforma</p>
                     </div>
                     {subConfig?.updatedBy && (
-                      <p className="text-slate-500 text-xs">Editado por {subConfig.updatedBy}</p>
+                      <p className="text-txt-secondary text-xs">Editado por {subConfig.updatedBy}</p>
                     )}
                   </div>
 
                   {editingPrice ? (
                     <div className="flex items-center gap-3 mt-4">
                       <div className="flex items-center gap-2 bg-slate-900 rounded-xl border border-slate-600 px-4 py-2 flex-1 max-w-xs">
-                        <span className="text-slate-400 text-sm font-medium">COP $</span>
+                        <span className="text-txt-tertiary text-sm font-medium">COP $</span>
                         <input
                           type="number"
                           value={editPrice}
@@ -490,7 +490,7 @@ export default function SuperAdmin() {
                       </button>
                       <button
                         onClick={() => { setEditingPrice(false); setEditPrice(String(subConfig?.priceAmount ?? 24000)); }}
-                        className="px-4 py-2.5 rounded-xl bg-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-600 transition"
+                        className="px-4 py-2.5 rounded-xl bg-slate-700 text-txt-disabled text-sm font-medium hover:bg-slate-600 transition"
                       >
                         Cancelar
                       </button>
@@ -500,10 +500,10 @@ export default function SuperAdmin() {
                       <span className="text-4xl font-bold text-white">
                         ${Number(subConfig?.priceAmount ?? 24000).toLocaleString('es-CO')}
                       </span>
-                      <span className="text-slate-400 text-sm">COP / mes</span>
+                      <span className="text-txt-tertiary text-sm">COP / mes</span>
                       <button
                         onClick={() => setEditingPrice(true)}
-                        className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 text-slate-300 text-sm font-medium hover:bg-slate-600 transition"
+                        className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 text-txt-disabled text-sm font-medium hover:bg-slate-600 transition"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -525,7 +525,7 @@ export default function SuperAdmin() {
                       <thead>
                         <tr className="border-b border-slate-700">
                           {['Tienda', 'Teléfono', 'Estado', 'Inicio', 'Vence', 'Monto', 'Último pago'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-txt-tertiary font-medium whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -535,7 +535,7 @@ export default function SuperAdmin() {
                           return (
                             <tr key={sub.subscriptionId} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
                               <td className="px-4 py-3 font-medium text-white">{sub.store.name}</td>
-                              <td className="px-4 py-3 text-slate-400 font-mono text-xs">{sub.store.phone}</td>
+                              <td className="px-4 py-3 text-txt-tertiary font-mono text-xs">{sub.store.phone}</td>
                               <td className="px-4 py-3">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                   sub.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -545,13 +545,13 @@ export default function SuperAdmin() {
                                   {sub.status === 'active' ? 'Activa' : sub.status === 'pending' ? 'Pendiente' : 'Vencida'}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-slate-400 text-xs">
+                              <td className="px-4 py-3 text-txt-tertiary text-xs">
                                 {sub.currentPeriodStart ? fmtDate(sub.currentPeriodStart) : '—'}
                               </td>
-                              <td className="px-4 py-3 text-slate-300 text-xs">
+                              <td className="px-4 py-3 text-txt-disabled text-xs">
                                 {sub.currentPeriodEnd ? fmtDate(sub.currentPeriodEnd) : '—'}
                               </td>
-                              <td className="px-4 py-3 text-slate-300 text-xs">
+                              <td className="px-4 py-3 text-txt-disabled text-xs">
                                 ${Number(sub.priceAmount).toLocaleString('es-CO')}
                               </td>
                               <td className="px-4 py-3">
@@ -563,14 +563,14 @@ export default function SuperAdmin() {
                                   }`}>
                                     {lastPay.status === 'approved' ? 'Aprobado' : lastPay.status === 'pending' ? 'Pendiente' : 'Rechazado'}
                                   </span>
-                                ) : <span className="text-slate-500 text-xs">Sin pagos</span>}
+                                ) : <span className="text-txt-secondary text-xs">Sin pagos</span>}
                               </td>
                             </tr>
                           );
                         })}
                         {subs.length === 0 && (
                           <tr>
-                            <td colSpan={7} className="px-4 py-10 text-center text-slate-500">No hay suscripciones registradas</td>
+                            <td colSpan={7} className="px-4 py-10 text-center text-txt-secondary">No hay suscripciones registradas</td>
                           </tr>
                         )}
                       </tbody>
@@ -590,25 +590,25 @@ export default function SuperAdmin() {
                       <thead>
                         <tr className="border-b border-slate-700">
                           {['Fecha', 'Acción', 'Tipo', 'Target', 'Detalles'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-txt-tertiary font-medium whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {audit.map(log => (
                           <tr key={log.logId} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
-                            <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{fmtDateTime(log.createdAt)}</td>
+                            <td className="px-4 py-3 text-txt-tertiary text-xs whitespace-nowrap">{fmtDateTime(log.createdAt)}</td>
                             <td className="px-4 py-3"><ActionBadge action={log.action} /></td>
-                            <td className="px-4 py-3 text-slate-400 text-xs">{log.targetType}</td>
-                            <td className="px-4 py-3 text-slate-300 font-mono text-xs">{log.targetId.slice(0, 8)}…</td>
-                            <td className="px-4 py-3 text-slate-400 text-xs max-w-xs truncate">
+                            <td className="px-4 py-3 text-txt-tertiary text-xs">{log.targetType}</td>
+                            <td className="px-4 py-3 text-txt-disabled font-mono text-xs">{log.targetId.slice(0, 8)}…</td>
+                            <td className="px-4 py-3 text-txt-tertiary text-xs max-w-xs truncate">
                               {JSON.stringify(log.details)}
                             </td>
                           </tr>
                         ))}
                         {audit.length === 0 && (
                           <tr>
-                            <td colSpan={5} className="px-4 py-10 text-center text-slate-500">Sin registros de auditoría</td>
+                            <td colSpan={5} className="px-4 py-10 text-center text-txt-secondary">Sin registros de auditoría</td>
                           </tr>
                         )}
                       </tbody>
@@ -626,13 +626,13 @@ export default function SuperAdmin() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-sm shadow-2xl">
             <h3 className="text-white font-semibold text-lg mb-2">Confirmar eliminación</h3>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-txt-tertiary text-sm mb-6">
               Esta acción es irreversible. El usuario y todos sus datos serán eliminados permanentemente.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 transition text-sm font-medium"
+                className="flex-1 py-2.5 rounded-xl bg-slate-700 text-txt-disabled hover:bg-slate-600 transition text-sm font-medium"
               >
                 Cancelar
               </button>

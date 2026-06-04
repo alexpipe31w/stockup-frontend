@@ -125,22 +125,22 @@ function ServiceCard({ service, onEdit, onDelete }: {
       return (
         <div>
           <span className="text-base font-bold text-orange-500">Cotización</span>
-          {rango && <p className="text-xs text-slate-400 mt-0.5">{rango}</p>}
+          {rango && <p className="text-xs text-txt-tertiary mt-0.5">{rango}</p>}
         </div>
       );
     }
-    if (!service.basePrice) return <span className="text-slate-400 text-sm">Sin precio</span>;
+    if (!service.basePrice) return <span className="text-txt-tertiary text-sm">Sin precio</span>;
     const unidad = service.unitLabel ? `/${service.unitLabel}` : '';
     return (
       <div>
-        <span className="text-xl font-bold text-slate-800">{fmt(service.basePrice)}</span>
-        <span className="text-xs text-slate-400 ml-1">{unidad}</span>
+        <span className="text-xl font-bold text-txt-primary">{fmt(service.basePrice)}</span>
+        <span className="text-xs text-txt-tertiary ml-1">{unidad}</span>
       </div>
     );
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
+    <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
       {/* Imagen o placeholder */}
       {service.imageUrl ? (
         <div className="h-36 overflow-hidden">
@@ -150,7 +150,7 @@ function ServiceCard({ service, onEdit, onDelete }: {
         </div>
       ) : (
         <div className="h-20 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-          <span className="text-slate-300"><WrenchIcon /></span>
+          <span className="text-txt-disabled"><WrenchIcon /></span>
         </div>
       )}
 
@@ -158,9 +158,9 @@ function ServiceCard({ service, onEdit, onDelete }: {
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-800 leading-tight truncate">{service.name}</p>
+            <p className="font-semibold text-txt-primary leading-tight truncate">{service.name}</p>
             {service.category && (
-              <span className="inline-flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+              <span className="inline-flex items-center gap-1 text-xs text-txt-secondary mt-0.5">
                 <TagIcon /> {service.category}
               </span>
             )}
@@ -172,7 +172,7 @@ function ServiceCard({ service, onEdit, onDelete }: {
 
         {/* Descripción */}
         {service.description && (
-          <p className="text-xs text-slate-500 line-clamp-2"
+          <p className="text-xs text-txt-secondary line-clamp-2"
             dangerouslySetInnerHTML={{ __html: service.description.replace(/<[^>]+>/g, ' ') }} />
         )}
 
@@ -183,7 +183,7 @@ function ServiceCard({ service, onEdit, onDelete }: {
 
         {/* Duración */}
         {service.estimatedMinutes && (
-          <div className="flex items-center gap-1 text-xs text-slate-500">
+          <div className="flex items-center gap-1 text-xs text-txt-secondary">
             <ClockIcon /> {fmtMinutes(service.estimatedMinutes)}
           </div>
         )}
@@ -198,7 +198,7 @@ function ServiceCard({ service, onEdit, onDelete }: {
               </span>
             ))}
             {activeVariants.length > 3 && (
-              <span className="text-xs bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-surface-overlay text-txt-tertiary px-2 py-0.5 rounded-full">
                 +{activeVariants.length - 3}
               </span>
             )}
@@ -208,7 +208,7 @@ function ServiceCard({ service, onEdit, onDelete }: {
         {/* Acciones */}
         <div className="flex gap-2 mt-1">
           <button onClick={() => onEdit(service)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-txt-secondary bg-surface-overlay hover:bg-border-default transition">
             <EditIcon /> Editar
           </button>
           <button onClick={() => onDelete(service)}
@@ -255,29 +255,29 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 transition">
+      <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-surface-elevated transition">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-700 truncate">{variant.name}</p>
+          <p className="text-sm font-medium text-txt-primary truncate">{variant.name}</p>
           {variant.description && (
-            <p className="text-xs text-slate-400 truncate">{variant.description}</p>
+            <p className="text-xs text-txt-tertiary truncate">{variant.description}</p>
           )}
         </div>
         <div className="flex items-center gap-3 ml-2 flex-shrink-0">
-          <span className="text-sm font-semibold text-slate-700">
+          <span className="text-sm font-semibold text-txt-primary">
             {resolveVariantPrice(service, variant)}
           </span>
           {variant.estimatedMinutes && (
-            <span className="flex items-center gap-0.5 text-xs text-slate-400">
+            <span className="flex items-center gap-0.5 text-xs text-txt-tertiary">
               <ClockIcon /> {fmtMinutes(variant.estimatedMinutes)}
             </span>
           )}
           <div className="flex gap-1">
             <button onClick={() => setEditing(true)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition">
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-blue-600 hover:bg-blue-50 transition">
               <EditIcon />
             </button>
             <button onClick={() => onRemove(variant.variantId)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-red-500 hover:bg-red-50 transition">
               <TrashIcon />
             </button>
           </div>
@@ -293,25 +293,25 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Nombre *"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
           placeholder="Descripción (opcional)"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <div>
-          <label className="text-xs text-slate-500 block mb-0.5">Precio fijo (override)</label>
+          <label className="text-xs text-txt-secondary block mb-0.5">Precio fijo (override)</label>
           <input value={form.priceOverride} onChange={e => setForm(f => ({ ...f, priceOverride: e.target.value, priceModifier: '' }))}
             type="number" placeholder="Ej: 80000"
-            className={`w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 ${bothPrices ? 'border-red-300' : 'border-blue-300'}`} />
+            className={`w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30 ${bothPrices ? 'border-red-300' : 'border-blue-300'}`} />
         </div>
         <div>
-          <label className="text-xs text-slate-500 block mb-0.5">% sobre precio base</label>
+          <label className="text-xs text-txt-secondary block mb-0.5">% sobre precio base</label>
           <input value={form.priceModifier} onChange={e => setForm(f => ({ ...f, priceModifier: e.target.value, priceOverride: '' }))}
             type="number" placeholder="Ej: 30 (+30%)"
-            className={`w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 ${bothPrices ? 'border-red-300' : 'border-blue-300'}`} />
+            className={`w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30 ${bothPrices ? 'border-red-300' : 'border-blue-300'}`} />
         </div>
         <input value={form.estimatedMinutes} onChange={e => setForm(f => ({ ...f, estimatedMinutes: e.target.value }))}
           type="number" placeholder="Duración (minutos)"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
       </div>
       {bothPrices && (
         <p className="text-xs text-red-500">Solo usa precio fijo O porcentaje, no ambos.</p>
@@ -323,7 +323,7 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
           {saving ? <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> : <><SaveIcon /> Guardar</>}
         </button>
         <button onClick={() => setEditing(false)}
-          className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:bg-slate-200 transition">
+          className="px-3 py-1.5 rounded-lg text-xs text-txt-secondary hover:bg-border-default transition">
           Cancelar
         </button>
       </div>
@@ -495,22 +495,22 @@ function ServiceModal({ service, onClose, onSaved }: {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-          <h2 className="font-bold text-slate-800">{isEdit ? 'Editar servicio' : 'Nuevo servicio'}</h2>
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
+          <h2 className="font-bold text-txt-primary">{isEdit ? 'Editar servicio' : 'Nuevo servicio'}</h2>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition">
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-tertiary hover:bg-surface-overlay transition">
             <CloseIcon />
           </button>
         </div>
 
         {/* Tabs */}
         {isEdit && (
-          <div className="flex border-b border-slate-100 px-6">
+          <div className="flex border-b border-border-subtle px-6">
             {(['info', 'variants'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition ${tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition ${tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-txt-tertiary hover:text-txt-secondary'}`}>
                 {t === 'info' ? 'Información' : `Variantes (${variants.filter(v => v.isActive).length})`}
               </button>
             ))}
@@ -524,65 +524,65 @@ function ServiceModal({ service, onClose, onSaved }: {
             <>
               {/* Preview imagen */}
               {form.imageUrl && (
-                <div className="h-36 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
+                <div className="h-36 rounded-xl overflow-hidden bg-surface-elevated border border-border-subtle">
                   <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
                 </div>
               )}
 
               {/* Nombre */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Nombre *</label>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Nombre *</label>
                 <input ref={nameRef} type="text" value={form.name}
                   onChange={e => set('name', e.target.value)}
                   placeholder="Ej: Corte de cabello, Instalación de paneles, Bartender"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               {/* Categoría + URL imagen */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1 flex items-center gap-1">
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1 flex items-center gap-1">
                     <TagIcon /> Categoría
                   </label>
                   <input type="text" value={form.category}
                     onChange={e => set('category', e.target.value)}
                     placeholder="Ej: Cortes, Reparaciones, Eventos"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">URL imagen</label>
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">URL imagen</label>
                   <input type="text" value={form.imageUrl}
                     onChange={e => set('imageUrl', e.target.value)}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
               </div>
 
               {/* Descripción */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Descripción</label>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Descripción</label>
                 <textarea value={form.description}
                   onChange={e => set('description', e.target.value)}
                   rows={3} maxLength={50000}
                   placeholder="Describe el servicio para que la IA lo pueda explicar a los clientes..."
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none" />
-                <p className="text-xs text-slate-400 text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none" />
+                <p className="text-xs text-txt-tertiary text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
               </div>
 
               {/* Tipo de precio */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-2">Modelo de precio *</label>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-2">Modelo de precio *</label>
                 <div className="grid grid-cols-1 gap-1.5">
                   {PRICE_TYPE_OPTIONS.map(opt => (
                     <label key={opt.value}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition ${form.priceType === opt.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition ${form.priceType === opt.value ? 'border-blue-500 bg-blue-50' : 'border-border-default hover:border-slate-300'}`}>
                       <input type="radio" name="priceType" value={opt.value}
                         checked={form.priceType === opt.value}
                         onChange={() => set('priceType', opt.value)}
                         className="text-blue-600" />
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-slate-700">{opt.label}</span>
-                        <p className="text-xs text-slate-400">{opt.hint}</p>
+                        <span className="text-sm font-medium text-txt-primary">{opt.label}</span>
+                        <p className="text-xs text-txt-tertiary">{opt.hint}</p>
                       </div>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PRICE_TYPE_COLORS[opt.value]}`}>
                         {opt.label}
@@ -596,7 +596,7 @@ function ServiceModal({ service, onClose, onSaved }: {
               {form.priceType !== 'VARIABLE' && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">
+                    <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
                       Precio base *
                       {form.priceType !== 'FIXED' && form.unitLabel && (
                         <span className="ml-1 font-normal normal-case text-blue-600">/{form.unitLabel}</span>
@@ -605,17 +605,17 @@ function ServiceModal({ service, onClose, onSaved }: {
                     <input type="number" value={form.basePrice}
                       onChange={e => set('basePrice', e.target.value)}
                       placeholder="0"
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                      className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   </div>
                   {form.priceType !== 'FIXED' && (
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
                         Etiqueta de unidad
                       </label>
                       <input type="text" value={form.unitLabel}
                         onChange={e => set('unitLabel', e.target.value)}
                         placeholder="hora, día, m², panel, persona"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                   )}
                 </div>
@@ -624,23 +624,23 @@ function ServiceModal({ service, onClose, onSaved }: {
               {/* Rango de referencia (VARIABLE) */}
               {form.priceType === 'VARIABLE' && (
                 <div className="space-y-2">
-                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <p className="text-xs text-txt-secondary flex items-center gap-1">
                     💬 Rango de referencia (opcional — orienta al admin al cotizar)
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Precio mínimo</label>
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio mínimo</label>
                       <input type="number" value={form.minPrice}
                         onChange={e => set('minPrice', e.target.value)}
                         placeholder="50000"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Precio máximo</label>
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio máximo</label>
                       <input type="number" value={form.maxPrice}
                         onChange={e => set('maxPrice', e.target.value)}
                         placeholder="200000"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                   </div>
                 </div>
@@ -648,13 +648,13 @@ function ServiceModal({ service, onClose, onSaved }: {
 
               {/* Costo + margen */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
                   Precio de costo <span className="font-normal normal-case">(para analytics)</span>
                 </label>
                 <input type="number" value={form.costPrice}
                   onChange={e => set('costPrice', e.target.value)}
                   placeholder="Costo interno del servicio"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 {liveMargin !== null && (
                   <p className={`text-xs font-semibold mt-1 ${liveMargin >= 40 ? 'text-green-600' : liveMargin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
                     Margen estimado: {liveMargin}%
@@ -665,13 +665,13 @@ function ServiceModal({ service, onClose, onSaved }: {
               {/* Duración estimada */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1 flex items-center gap-1">
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1 flex items-center gap-1">
                     <ClockIcon /> Duración estimada (min)
                   </label>
                   <input type="number" value={form.estimatedMinutes}
                     onChange={e => set('estimatedMinutes', e.target.value)}
                     placeholder="Ej: 60 = 1h, 90 = 1h 30min"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   {form.estimatedMinutes && Number(form.estimatedMinutes) > 0 && (
                     <p className="text-xs text-blue-600 mt-0.5">{fmtMinutes(Number(form.estimatedMinutes))}</p>
                   )}
@@ -679,32 +679,32 @@ function ServiceModal({ service, onClose, onSaved }: {
 
                 {/* Tiene variantes */}
                 <div className="flex flex-col justify-end pb-1">
-                  <div className="flex items-center justify-between py-2 px-3 rounded-xl border border-slate-200 bg-slate-50">
-                    <span className="text-xs text-slate-600 font-medium">Tiene variantes</span>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-xl border border-border-default bg-surface-elevated">
+                    <span className="text-xs text-txt-secondary font-medium">Tiene variantes</span>
                     <button type="button" onClick={() => set('hasVariants', !form.hasVariants)}
                       className="w-10 h-5 rounded-full transition relative flex-shrink-0"
                       style={form.hasVariants ? { background: 'linear-gradient(135deg,#9333ea,#2563eb)' } : { background: '#e2e8f0' }}>
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.hasVariants ? 'left-5' : 'left-0.5'}`} />
+                      <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${form.hasVariants ? 'left-5' : 'left-0.5'}`} />
                     </button>
                   </div>
                   {form.hasVariants && (
-                    <p className="text-xs text-slate-400 mt-1">Ej: Básico/Premium, 2h/4h/Full day</p>
+                    <p className="text-xs text-txt-tertiary mt-1">Ej: Básico/Premium, 2h/4h/Full day</p>
                   )}
                 </div>
               </div>
 
               {/* Campos personalizados */}
-              <div className="space-y-2 border border-slate-200 rounded-xl p-3">
+              <div className="space-y-2 border border-border-default rounded-xl p-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">
                     Campos personalizados
                   </label>
-                  <span className="text-xs text-slate-400">Para la IA y el equipo</span>
+                  <span className="text-xs text-txt-tertiary">Para la IA y el equipo</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 min-h-6">
                   {Object.entries(cfFields).map(([k, v]) => (
                     <span key={k}
-                      className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg">
+                      className="inline-flex items-center gap-1 text-xs bg-surface-overlay text-txt-secondary px-2 py-1 rounded-lg">
                       <span className="font-medium">{k}:</span> {v}
                       <button onClick={() => removeCf(k)} className="hover:text-red-500 ml-0.5">×</button>
                     </span>
@@ -713,10 +713,10 @@ function ServiceModal({ service, onClose, onSaved }: {
                 <div className="flex gap-1">
                   <input value={cfKey} onChange={e => setCfKey(e.target.value)}
                     placeholder="Campo (requiereVisita)"
-                    className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                   <input value={cfValue} onChange={e => setCfValue(e.target.value)}
                     placeholder="Valor (true)"
-                    className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                   <button onClick={addCf} type="button"
                     className="px-2 py-1.5 text-xs bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition">
                     +
@@ -737,7 +737,7 @@ function ServiceModal({ service, onClose, onSaved }: {
           {/* ── TAB VARIANTES ──────────────────────────────────────────────── */}
           {tab === 'variants' && (
             <>
-              <div className="text-xs text-slate-400 space-y-0.5">
+              <div className="text-xs text-txt-tertiary space-y-0.5">
                 <p>Cada variante puede tener su propio precio o un porcentaje sobre el precio base.</p>
                 <p className="text-blue-600">
                   {selectedPriceType?.hint}
@@ -746,7 +746,7 @@ function ServiceModal({ service, onClose, onSaved }: {
               </div>
 
               {variants.filter(v => v.isActive).length === 0 ? (
-                <p className="text-center text-slate-400 text-sm py-6">Sin variantes aún</p>
+                <p className="text-center text-txt-tertiary text-sm py-6">Sin variantes aún</p>
               ) : (
                 <div className="space-y-1">
                   {variants.filter(v => v.isActive).map(v => (
@@ -758,35 +758,35 @@ function ServiceModal({ service, onClose, onSaved }: {
               )}
 
               {/* Nueva variante */}
-              <div className="border-t border-slate-100 pt-4 space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Nueva variante</p>
+              <div className="border-t border-border-subtle pt-4 space-y-2">
+                <p className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">Nueva variante</p>
                 <div className="grid grid-cols-2 gap-2">
                   <input value={newVariant.name}
                     onChange={e => setNewVariant(v => ({ ...v, name: e.target.value }))}
                     placeholder="Nombre * (ej: Básica, Express, Premium)"
-                    className="col-span-2 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="col-span-2 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.description}
                     onChange={e => setNewVariant(v => ({ ...v, description: e.target.value }))}
                     placeholder="Descripción (opcional)"
-                    className="col-span-2 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="col-span-2 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <div>
-                    <label className="text-xs text-slate-500 block mb-1">Precio fijo</label>
+                    <label className="text-xs text-txt-secondary block mb-1">Precio fijo</label>
                     <input value={newVariant.priceOverride}
                       onChange={e => setNewVariant(v => ({ ...v, priceOverride: e.target.value, priceModifier: '' }))}
                       type="number" placeholder="Ej: 80000"
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                      className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-500 block mb-1">% sobre base</label>
+                    <label className="text-xs text-txt-secondary block mb-1">% sobre base</label>
                     <input value={newVariant.priceModifier}
                       onChange={e => setNewVariant(v => ({ ...v, priceModifier: e.target.value, priceOverride: '' }))}
                       type="number" placeholder="Ej: 30 (+30%)"
-                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                      className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   </div>
                   <input value={newVariant.estimatedMinutes}
                     onChange={e => setNewVariant(v => ({ ...v, estimatedMinutes: e.target.value }))}
                     type="number" placeholder="Duración (min)"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
 
                 {error && <p className="text-xs text-red-500">{error}</p>}
@@ -881,20 +881,20 @@ export default function Services() {
   });
 
   return (
-    <div className="min-h-screen page-bg">
+    <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Servicios</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <h1 className="text-xl font-bold text-txt-primary">Servicios</h1>
+              <p className="text-sm text-txt-tertiary mt-0.5">
                 {loading ? '...' : `${services.length} servicio${services.length !== 1 ? 's' : ''} activo${services.length !== 1 ? 's' : ''}`}
               </p>
             </div>
             <button
               onClick={() => setShowTemplates(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default text-txt-secondary text-sm font-semibold hover:bg-surface-elevated transition"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -912,19 +912,19 @@ export default function Services() {
           {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre o descripción..."
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-64" />
+                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-64" />
             </div>
             <select value={filterType} onChange={e => setFilterType(e.target.value as any)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">
               <option value="all">Todos los tipos</option>
               {PRICE_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             {categories.length > 0 && (
               <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+                className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">
                 <option value="">Todas las categorías</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -948,7 +948,7 @@ export default function Services() {
             </svg>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
+          <div className="flex flex-col items-center justify-center h-64 gap-3 text-txt-tertiary">
             <WrenchIcon />
             <p className="text-sm">
               {search || filterType !== 'all' || filterCat
@@ -986,14 +986,14 @@ export default function Services() {
       {/* Confirm eliminar */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="font-bold text-slate-800 mb-2">¿Eliminar servicio?</h3>
-            <p className="text-sm text-slate-500 mb-5">
+          <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">¿Eliminar servicio?</h3>
+            <p className="text-sm text-txt-secondary mb-5">
               <span className="font-semibold">{deleteTarget.name}</span> será desactivado junto con todas sus variantes.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
                 Cancelar
               </button>
               <button onClick={handleDelete} disabled={deleting}
@@ -1007,15 +1007,15 @@ export default function Services() {
 
       {showTemplates && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div>
-                <h2 className="text-base font-bold text-slate-800">Plantillas de servicios</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Barbería, salón de belleza y estética — un clic para agregar</p>
+                <h2 className="text-base font-bold text-txt-primary">Plantillas de servicios</h2>
+                <p className="text-xs text-txt-tertiary mt-0.5">Barbería, salón de belleza y estética — un clic para agregar</p>
               </div>
               <button
                 onClick={() => setShowTemplates(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-txt-tertiary hover:bg-surface-overlay"
               >
                 <CloseIcon />
               </button>
@@ -1028,18 +1028,18 @@ export default function Services() {
                     key={tpl.name}
                     onClick={() => handleApplyTemplate(tpl)}
                     disabled={isApplying}
-                    className="text-left p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/40 transition group disabled:opacity-50"
+                    className="text-left p-4 rounded-xl border border-border-default hover:border-blue-300 hover:bg-blue-50/40 transition group disabled:opacity-50"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-700">{tpl.name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5 truncate">{tpl.description}</p>
+                        <p className="text-sm font-semibold text-txt-primary group-hover:text-blue-700">{tpl.name}</p>
+                        <p className="text-xs text-txt-secondary mt-0.5 truncate">{tpl.description}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{tpl.category}</span>
+                          <span className="text-xs text-txt-tertiary bg-surface-overlay px-2 py-0.5 rounded-full">{tpl.category}</span>
                           <span className="text-xs font-medium text-emerald-600">
                             {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(tpl.basePrice)}
                           </span>
-                          <span className="text-xs text-slate-400">{tpl.estimatedMinutes} min</span>
+                          <span className="text-xs text-txt-tertiary">{tpl.estimatedMinutes} min</span>
                         </div>
                       </div>
                       <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100">
@@ -1058,8 +1058,8 @@ export default function Services() {
                 );
               })}
             </div>
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50">
-              <p className="text-xs text-slate-400 text-center">
+            <div className="px-6 py-4 border-t border-border-subtle bg-surface-elevated">
+              <p className="text-xs text-txt-tertiary text-center">
                 Cada plantilla crea un nuevo servicio. Puedes editarlo después desde el panel de servicios.
               </p>
             </div>

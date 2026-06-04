@@ -29,14 +29,14 @@ function StepBar({ step }: { step: Step }) {
         const active = i === activeIdx;
         return (
           <div key={s.key} className="flex items-center gap-2 flex-1 last:flex-none">
-            <div className={`flex items-center gap-2 text-sm font-medium whitespace-nowrap ${active ? 'text-blue-600' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${active ? 'bg-blue-600 text-white' : done ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
+            <div className={`flex items-center gap-2 text-sm font-medium whitespace-nowrap ${active ? 'text-blue-600' : done ? 'text-emerald-600' : 'text-txt-tertiary'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${active ? 'bg-blue-600 text-white' : done ? 'bg-emerald-500 text-white' : 'bg-border-default text-txt-secondary'}`}>
                 {done ? '✓' : i + 1}
               </div>
               <span className="hidden sm:inline">{s.label}</span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 ${i < activeIdx ? 'bg-blue-600' : 'bg-slate-200'}`} />
+              <div className={`flex-1 h-0.5 mx-1 ${i < activeIdx ? 'bg-blue-600' : 'bg-border-default'}`} />
             )}
           </div>
         );
@@ -53,7 +53,7 @@ function LeftPanel() {
       style={{ background: 'linear-gradient(135deg, #2563eb 0%, #9333ea 100%)' }}
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-surface/20 rounded-xl flex items-center justify-center">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="white"/>
           </svg>
@@ -74,7 +74,7 @@ function LeftPanel() {
             { icon: '📅', text: 'Agendamiento automático de citas' },
             { icon: '📊', text: 'Analíticas y campañas de WhatsApp' },
           ].map(f => (
-            <div key={f.text} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+            <div key={f.text} className="flex items-center gap-3 bg-surface/10 rounded-xl px-4 py-3">
               <span className="text-xl">{f.icon}</span>
               <span className="text-white/90 text-sm">{f.text}</span>
             </div>
@@ -214,15 +214,15 @@ export default function Register() {
       <LeftPanel />
 
       {/* Panel derecho */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-surface-elevated">
         <div className="w-full max-w-md">
           <StepBar step={step} />
 
           {/* ── PASO 1: Formulario ── */}
           {step === 'form' && (
             <>
-              <h1 className="text-2xl font-bold text-slate-800 mb-1">Crear cuenta</h1>
-              <p className="text-slate-500 text-sm mb-6">
+              <h1 className="text-2xl font-bold text-txt-primary mb-1">Crear cuenta</h1>
+              <p className="text-txt-secondary text-sm mb-6">
                 ¿Ya tienes cuenta?{' '}
                 <Link to="/login" className="text-blue-600 hover:underline font-medium">Inicia sesión</Link>
               </p>
@@ -232,40 +232,40 @@ export default function Register() {
               <form onSubmit={handleSendCode} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Tu nombre</label>
+                    <label className="block text-xs font-medium text-txt-secondary mb-1.5">Tu nombre</label>
                     <input name="name" value={form.name} onChange={handleChange} required placeholder="Alex Gómez"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition" />
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-default bg-surface text-txt-primary text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime/30/30 focus:border-lime transition" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Email</label>
+                    <label className="block text-xs font-medium text-txt-secondary mb-1.5">Email</label>
                     <input name="email" type="email" value={form.email} onChange={handleChange} required placeholder="tu@email.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition" />
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-default bg-surface text-txt-primary text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime/30/30 focus:border-lime transition" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Contraseña</label>
+                    <label className="block text-xs font-medium text-txt-secondary mb-1.5">Contraseña</label>
                     <input name="password" type="password" value={form.password} onChange={handleChange} required placeholder="Mín. 8 caracteres"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition" />
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-default bg-surface text-txt-primary text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime/30/30 focus:border-lime transition" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Confirmar</label>
+                    <label className="block text-xs font-medium text-txt-secondary mb-1.5">Confirmar</label>
                     <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required placeholder="Repetir"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition" />
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-default bg-surface text-txt-primary text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime/30/30 focus:border-lime transition" />
                   </div>
                 </div>
-                <div className="border-t border-slate-100 pt-4">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Tu negocio</p>
+                <div className="border-t border-border-subtle pt-4">
+                  <p className="text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-3">Tu negocio</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Nombre del negocio</label>
+                      <label className="block text-xs font-medium text-txt-secondary mb-1.5">Nombre del negocio</label>
                       <input name="storeName" value={form.storeName} onChange={handleChange} required placeholder="Mi Tienda"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition" />
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border-default bg-surface text-txt-primary text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime/30/30 focus:border-lime transition" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">WhatsApp del negocio</label>
+                      <label className="block text-xs font-medium text-txt-secondary mb-1.5">WhatsApp del negocio</label>
                       <input name="storePhone" value={form.storePhone} onChange={handleChange} required placeholder="573001234567"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition" />
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-border-default bg-surface text-txt-primary text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-lime/30/30 focus:border-lime transition" />
                     </div>
                   </div>
                 </div>
@@ -288,10 +288,10 @@ export default function Register() {
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
                 </div>
-                <h1 className="text-2xl font-bold text-slate-800 mb-1">Verifica tu email</h1>
-                <p className="text-slate-500 text-sm">
+                <h1 className="text-2xl font-bold text-txt-primary mb-1">Verifica tu email</h1>
+                <p className="text-txt-secondary text-sm">
                   Enviamos un código de 6 dígitos a<br/>
-                  <strong className="text-slate-700">{form.email}</strong>
+                  <strong className="text-txt-primary">{form.email}</strong>
                 </p>
               </div>
 
@@ -310,7 +310,7 @@ export default function Register() {
                       value={digit}
                       onChange={e => handleCodeInput(idx, e.target.value)}
                       onKeyDown={e => handleCodeKeyDown(idx, e)}
-                      className="w-11 h-14 text-center text-xl font-bold border-2 rounded-xl bg-white text-slate-800 focus:outline-none focus:border-blue-500 transition"
+                      className="w-11 h-14 text-center text-xl font-bold border-2 rounded-xl bg-surface text-txt-primary focus:outline-none focus:border-lime transition"
                       style={{ borderColor: digit ? '#2563eb' : '#e2e8f0' }}
                     />
                   ))}
@@ -333,12 +333,12 @@ export default function Register() {
 
               <div className="text-center space-y-2">
                 <button onClick={handleResend} disabled={resendCooldown > 0}
-                  className="text-sm text-blue-600 hover:underline disabled:text-slate-400 disabled:no-underline transition">
+                  className="text-sm text-blue-600 hover:underline disabled:text-txt-tertiary disabled:no-underline transition">
                   {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
                 </button>
                 <br/>
                 <button onClick={() => { setStep('form'); setCode(['','','','','','']); setError(''); }}
-                  className="text-sm text-slate-400 hover:text-slate-600 transition">
+                  className="text-sm text-txt-tertiary hover:text-txt-secondary transition">
                   Cambiar email
                 </button>
               </div>
@@ -356,25 +356,25 @@ export default function Register() {
                 </svg>
               </div>
 
-              <h1 className="text-2xl font-bold text-slate-800 mb-1">¡Email verificado!</h1>
-              <p className="text-slate-500 text-sm mb-8">
+              <h1 className="text-2xl font-bold text-txt-primary mb-1">¡Email verificado!</h1>
+              <p className="text-txt-secondary text-sm mb-8">
                 Tu cuenta fue creada. Activa tu suscripción para empezar.
               </p>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6 text-left shadow-sm">
+              <div className="bg-surface rounded-2xl border border-border-default p-6 mb-6 text-left shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide bg-blue-50 px-2.5 py-1 rounded-full">Plan mensual</span>
-                    <h3 className="text-lg font-bold text-slate-800 mt-2">Stockup Messages</h3>
+                    <h3 className="text-lg font-bold text-txt-primary mt-2">Stockup Messages</h3>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-slate-800">$24.000</div>
-                    <div className="text-xs text-slate-400">COP / mes</div>
+                    <div className="text-3xl font-bold text-txt-primary">$24.000</div>
+                    <div className="text-xs text-txt-tertiary">COP / mes</div>
                   </div>
                 </div>
-                <div className="space-y-2 border-t border-slate-100 pt-4">
+                <div className="space-y-2 border-t border-border-subtle pt-4">
                   {['IA responde a tus clientes en WhatsApp', 'Gestión de productos, servicios y órdenes', 'Agendamiento automático de citas', 'Campañas masivas de WhatsApp', 'Panel de analíticas'].map(f => (
-                    <div key={f} className="flex items-center gap-2.5 text-sm text-slate-600">
+                    <div key={f} className="flex items-center gap-2.5 text-sm text-txt-secondary">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-emerald-500 flex-shrink-0">
                         <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
@@ -408,7 +408,7 @@ export default function Register() {
                 )}
               </button>
               <button onClick={() => window.location.href = '/subscription'}
-                className="w-full py-2.5 rounded-xl text-slate-500 text-sm hover:text-slate-700 transition">
+                className="w-full py-2.5 rounded-xl text-txt-secondary text-sm hover:text-txt-primary transition">
                 Pagar después
               </button>
             </div>

@@ -95,15 +95,15 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
           <div>
-            <h2 className="font-bold text-slate-800">Nueva venta manual</h2>
-            <p className="text-xs text-slate-400">Registra una venta en efectivo o transferencia</p>
+            <h2 className="font-bold text-txt-primary">Nueva venta manual</h2>
+            <p className="text-xs text-txt-tertiary">Registra una venta en efectivo o transferencia</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100">
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-tertiary hover:bg-surface-overlay">
             <CloseIcon />
           </button>
         </div>
@@ -112,12 +112,12 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
           {/* Cliente */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Cliente</label>
+            <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Cliente</label>
             {selectedCustomer ? (
               <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
                 <div>
-                  <p className="font-medium text-slate-800 text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
-                  <p className="text-xs text-slate-500 font-mono">{selectedCustomer.phone}</p>
+                  <p className="font-medium text-txt-primary text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
+                  <p className="text-xs text-txt-secondary font-mono">{selectedCustomer.phone}</p>
                 </div>
                 <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-blue-600 hover:underline">Cambiar</button>
               </div>
@@ -127,21 +127,21 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                   value={customerSearch}
                   onChange={(e) => setCSearch(e.target.value)}
                   placeholder="Buscar por nombre o teléfono..."
-                  className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
                 />
                 {customerSearch && filteredCustomers.length > 0 && (
-                  <div className="absolute w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden z-10">
+                  <div className="absolute w-full bg-surface border border-border-default rounded-xl shadow-lg mt-1 overflow-hidden z-10">
                     {filteredCustomers.map((c) => (
                       <button key={c.customerId} onClick={() => { setSelCust(c); setCSearch(''); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition">
-                        <p className="text-sm font-medium text-slate-800">{c.name ?? 'Sin nombre'}</p>
-                        <p className="text-xs text-slate-400 font-mono">{c.phone}</p>
+                        className="w-full text-left px-4 py-2.5 hover:bg-surface-elevated transition">
+                        <p className="text-sm font-medium text-txt-primary">{c.name ?? 'Sin nombre'}</p>
+                        <p className="text-xs text-txt-tertiary font-mono">{c.phone}</p>
                       </button>
                     ))}
                   </div>
                 )}
                 {customerSearch && filteredCustomers.length === 0 && (
-                  <p className="mt-2 text-xs text-slate-400">Sin coincidencias</p>
+                  <p className="mt-2 text-xs text-txt-tertiary">Sin coincidencias</p>
                 )}
               </div>
             )}
@@ -149,7 +149,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
           {/* Ítems */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Productos / Servicios</label>
+            <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Productos / Servicios</label>
             <div className="space-y-2">
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-[1fr_80px_100px_32px] gap-2 items-center">
@@ -157,18 +157,18 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                     value={item.description}
                     onChange={(e) => updateItem(i, 'description', e.target.value)}
                     placeholder="Descripción del ítem"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                   />
                   <input
                     type="number" min={1} value={item.quantity}
                     onChange={(e) => updateItem(i, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                    className="px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 text-center"
                     placeholder="Cant."
                   />
                   <input
                     type="number" min={0} value={item.unitPrice || ''}
                     onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                     placeholder="Precio"
                   />
                   <button onClick={() => items.length > 1 && removeItem(i)}
@@ -188,13 +188,13 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
           {/* Método de pago + descuento */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Método de pago</label>
+              <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Método de pago</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {PAY_METHODS.map((m) => (
                   <button key={m.value} type="button"
                     onClick={() => setPayMethod(m.value)}
                     className={`py-2 rounded-lg text-xs font-medium transition ${
-                      payMethod === m.value ? 'text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      payMethod === m.value ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
                     }`}
                     style={payMethod === m.value ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}}>
                     {m.label}
@@ -203,11 +203,11 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Descuento (%)</label>
+              <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Descuento (%)</label>
               <input
                 type="number" min={0} max={100} value={discountPct || ''}
                 onChange={(e) => setDiscountPct(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                 placeholder="0%"
               />
             </div>
@@ -215,17 +215,17 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
           {/* Notas */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Notas (opcional)</label>
+            <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Notas (opcional)</label>
             <textarea
               value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
               placeholder="Notas adicionales del pedido..."
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 resize-none"
             />
           </div>
 
           {/* Resumen */}
-          <div className="bg-slate-50 rounded-xl px-4 py-3 space-y-1">
-            <div className="flex justify-between text-sm text-slate-600">
+          <div className="bg-surface-elevated rounded-xl px-4 py-3 space-y-1">
+            <div className="flex justify-between text-sm text-txt-secondary">
               <span>Subtotal</span><span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(subtotal)}</span>
             </div>
             {discountAmt > 0 && (
@@ -234,7 +234,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                 <span>-{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(discountAmt)}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-slate-800 border-t border-slate-200 pt-1 mt-1">
+            <div className="flex justify-between font-bold text-txt-primary border-t border-border-default pt-1 mt-1">
               <span>Total</span>
               <span>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(total)}</span>
             </div>
@@ -250,7 +250,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
               {submitting ? 'Registrando...' : 'Registrar venta'}
             </button>
             <button onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
               Cancelar
             </button>
           </div>
@@ -315,7 +315,7 @@ const fmtDate = (d: string) =>
   });
 
 function StatusBadge({ status }: { status: string }) {
-  const c = STATUS_CONFIG[status] ?? { label: status, cls: 'bg-slate-100 text-slate-500' };
+  const c = STATUS_CONFIG[status] ?? { label: status, cls: 'bg-surface-overlay text-txt-secondary' };
   return (
     <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${c.cls}`}>{c.label}</span>
   );
@@ -347,17 +347,17 @@ function OrderDetail({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
           <div>
-            <p className="text-xs text-slate-400 font-mono">#{order.orderId.slice(0, 8).toUpperCase()}</p>
-            <p className="font-bold text-slate-800">
+            <p className="text-xs text-txt-tertiary font-mono">#{order.orderId.slice(0, 8).toUpperCase()}</p>
+            <p className="font-bold text-txt-primary">
               {order.customer.name ?? order.customer.phone}
             </p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition">
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-tertiary hover:bg-surface-overlay transition">
             <CloseIcon />
           </button>
         </div>
@@ -367,7 +367,7 @@ function OrderDetail({
           {/* Status + tipo */}
           <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={order.status} />
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-surface-overlay text-txt-secondary font-medium">
               {TYPE_CONFIG[order.type] ?? order.type}
             </span>
             {order.isManual && (
@@ -378,46 +378,46 @@ function OrderDetail({
                 }
               </span>
             )}
-            <span className="text-xs text-slate-400">{fmtDate(order.createdAt)}</span>
+            <span className="text-xs text-txt-tertiary">{fmtDate(order.createdAt)}</span>
           </div>
 
           {/* Info rápida */}
           <div className="grid grid-cols-2 gap-3">
             {order.estimatedTime && (
-              <div className="bg-slate-50 rounded-xl px-4 py-3">
-                <p className="text-xs text-slate-400 mb-0.5">Tiempo estimado</p>
-                <p className="font-semibold text-slate-800">{order.estimatedTime} min</p>
+              <div className="bg-surface-elevated rounded-xl px-4 py-3">
+                <p className="text-xs text-txt-tertiary mb-0.5">Tiempo estimado</p>
+                <p className="font-semibold text-txt-primary">{order.estimatedTime} min</p>
               </div>
             )}
             {order.deliveryAddress && (
-              <div className="bg-slate-50 rounded-xl px-4 py-3">
-                <p className="text-xs text-slate-400 mb-0.5">Dirección</p>
-                <p className="font-semibold text-slate-800 text-sm">{order.deliveryAddress}</p>
+              <div className="bg-surface-elevated rounded-xl px-4 py-3">
+                <p className="text-xs text-txt-tertiary mb-0.5">Dirección</p>
+                <p className="font-semibold text-txt-primary text-sm">{order.deliveryAddress}</p>
               </div>
             )}
-            <div className="bg-slate-50 rounded-xl px-4 py-3">
-              <p className="text-xs text-slate-400 mb-0.5">Teléfono</p>
-              <p className="font-semibold text-slate-800 font-mono text-sm">{order.customer.phone}</p>
+            <div className="bg-surface-elevated rounded-xl px-4 py-3">
+              <p className="text-xs text-txt-tertiary mb-0.5">Teléfono</p>
+              <p className="font-semibold text-txt-primary font-mono text-sm">{order.customer.phone}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl px-4 py-3">
-              <p className="text-xs text-slate-400 mb-0.5">Total</p>
-              <p className="font-bold text-slate-800">{fmt(order.total)}</p>
+            <div className="bg-surface-elevated rounded-xl px-4 py-3">
+              <p className="text-xs text-txt-tertiary mb-0.5">Total</p>
+              <p className="font-bold text-txt-primary">{fmt(order.total)}</p>
             </div>
           </div>
 
           {/* Ítems */}
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Ítems del pedido</p>
-            <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-50">
+            <p className="text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Ítems del pedido</p>
+            <div className="border border-border-subtle rounded-xl overflow-hidden divide-y divide-border-subtle">
               {order.orderItems.map((item) => {
                 const name = item.product?.name ?? item.service?.name ?? item.description ?? '—';
                 return (
                   <div key={item.itemId} className="px-4 py-3 flex items-center justify-between text-sm">
                     <div>
-                      <p className="font-medium text-slate-800">{name}</p>
-                      <p className="text-xs text-slate-400">x{item.quantity} · {fmt(item.unitPrice)} c/u</p>
+                      <p className="font-medium text-txt-primary">{name}</p>
+                      <p className="text-xs text-txt-tertiary">x{item.quantity} · {fmt(item.unitPrice)} c/u</p>
                     </div>
-                    <p className="font-semibold text-slate-700">
+                    <p className="font-semibold text-txt-primary">
                       {fmt(Number(item.unitPrice) * item.quantity)}
                     </p>
                   </div>
@@ -425,18 +425,18 @@ function OrderDetail({
               })}
               {Number(order.discountAmount) > 0 && (
                 <>
-                  <div className="px-4 py-2 flex justify-between bg-slate-50 text-sm text-slate-500">
+                  <div className="px-4 py-2 flex justify-between bg-surface-elevated text-sm text-txt-secondary">
                     <span>Subtotal</span><span>{fmt(order.subtotal)}</span>
                   </div>
-                  <div className="px-4 py-2 flex justify-between bg-slate-50 text-sm text-green-600">
+                  <div className="px-4 py-2 flex justify-between bg-surface-elevated text-sm text-green-600">
                     <span>Descuento ({order.discountPercent}%)</span>
                     <span>-{fmt(order.discountAmount)}</span>
                   </div>
                 </>
               )}
-              <div className="px-4 py-3 flex justify-between bg-slate-50">
-                <p className="text-sm font-semibold text-slate-600">Total</p>
-                <p className="font-bold text-slate-800">{fmt(order.total)}</p>
+              <div className="px-4 py-3 flex justify-between bg-surface-elevated">
+                <p className="text-sm font-semibold text-txt-secondary">Total</p>
+                <p className="font-bold text-txt-primary">{fmt(order.total)}</p>
               </div>
             </div>
           </div>
@@ -524,15 +524,15 @@ export default function Orders() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="min-h-screen page-bg">
+    <div className="min-h-screen bg-canvas">
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Órdenes</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <h1 className="text-xl font-bold text-txt-primary">Órdenes</h1>
+              <p className="text-sm text-txt-tertiary mt-0.5">
                 {loading ? '...' : `${orders.length} pedidos en total`}
               </p>
             </div>
@@ -548,14 +548,14 @@ export default function Orders() {
 
               {/* Búsqueda */}
               <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary">
                 <SearchIcon />
               </span>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por cliente, ID, dirección..."
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-72"
+                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-72"
               />
             </div>
             </div>
@@ -566,7 +566,7 @@ export default function Orders() {
             <button
               onClick={() => setFilterStatus('')}
               className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                !filterStatus ? 'text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                !filterStatus ? 'text-white' : 'bg-surface-overlay text-txt-secondary hover:bg-border-default'
               }`}
               style={!filterStatus ? { background: 'linear-gradient(135deg, #2563eb, #9333ea)' } : {}}
             >
@@ -591,7 +591,7 @@ export default function Orders() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="ml-auto px-3 py-1 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600"
+              className="ml-auto px-3 py-1 text-xs border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary"
             >
               <option value="">Todos los tipos</option>
               <option value="product">Producto</option>
@@ -612,7 +612,7 @@ export default function Orders() {
           </div>
 
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
+          <div className="flex flex-col items-center justify-center h-64 gap-3 text-txt-tertiary">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>
@@ -630,10 +630,10 @@ export default function Orders() {
           </div>
 
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle overflow-hidden">
 
             {/* Tabla header */}
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-3 bg-surface-elevated border-b border-border-subtle text-xs font-semibold text-txt-secondary uppercase tracking-wide">
               <span>Cliente</span>
               <span>Tipo</span>
               <span>Estado</span>
@@ -642,11 +642,11 @@ export default function Orders() {
               <span>Detalle</span>
             </div>
 
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-border-subtle">
               {filtered.map((order) => (
                 <div
                   key={order.orderId}
-                  className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-4 items-center gap-2 hover:bg-slate-50 transition"
+                  className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-4 items-center gap-2 hover:bg-surface-elevated transition"
                 >
                   {/* Cliente */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -657,17 +657,17 @@ export default function Orders() {
                       {(order.customer.name ?? order.customer.phone)[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-800 text-sm truncate">
+                      <p className="font-medium text-txt-primary text-sm truncate">
                         {order.customer.name ?? order.customer.phone}
                       </p>
-                      <p className="text-xs text-slate-400 font-mono">
+                      <p className="text-xs text-txt-tertiary font-mono">
                         #{order.orderId.slice(0, 8).toUpperCase()}
                       </p>
                     </div>
                   </div>
 
                   {/* Tipo */}
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium w-fit">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-overlay text-txt-secondary font-medium w-fit">
                     {TYPE_CONFIG[order.type] ?? order.type}
                   </span>
 
@@ -675,10 +675,10 @@ export default function Orders() {
                   <StatusBadge status={order.status} />
 
                   {/* Total */}
-                  <p className="font-semibold text-slate-800 text-sm">{fmt(order.total)}</p>
+                  <p className="font-semibold text-txt-primary text-sm">{fmt(order.total)}</p>
 
                   {/* Fecha */}
-                  <p className="text-xs text-slate-400">{fmtDate(order.createdAt)}</p>
+                  <p className="text-xs text-txt-tertiary">{fmtDate(order.createdAt)}</p>
 
                   {/* Botón detalle */}
                   <button
@@ -692,10 +692,10 @@ export default function Orders() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-              <p className="text-xs text-slate-400">
-                Mostrando <span className="font-semibold text-slate-600">{filtered.length}</span> de{' '}
-                <span className="font-semibold text-slate-600">{orders.length}</span> órdenes
+            <div className="px-6 py-3 bg-surface-elevated border-t border-border-subtle flex items-center justify-between">
+              <p className="text-xs text-txt-tertiary">
+                Mostrando <span className="font-semibold text-txt-secondary">{filtered.length}</span> de{' '}
+                <span className="font-semibold text-txt-secondary">{orders.length}</span> órdenes
               </p>
               {(search || filterStatus || filterType) && (
                 <button

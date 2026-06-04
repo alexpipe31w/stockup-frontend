@@ -61,7 +61,7 @@ function Avatar({ customer }: { customer: Customer }) {
   );
 }
 
-const Empty = () => <span className="text-slate-300 italic text-xs">—</span>;
+const Empty = () => <span className="text-txt-disabled italic text-xs">—</span>;
 
 const fmt = (date: string | null) =>
   date ? new Date(date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
@@ -72,10 +72,10 @@ const fmtMoney = (val: number | string) =>
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-100 shadow-sm px-5 py-4 flex flex-col gap-1">
-      <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">{label}</p>
+    <div className="bg-surface rounded-xl border border-border-subtle shadow-sm px-5 py-4 flex flex-col gap-1">
+      <p className="text-xs text-txt-tertiary font-medium uppercase tracking-wide">{label}</p>
       <p className="text-2xl font-bold" style={{ color: color ?? '#1e293b' }}>{value}</p>
-      {sub && <p className="text-xs text-slate-400">{sub}</p>}
+      {sub && <p className="text-xs text-txt-tertiary">{sub}</p>}
     </div>
   );
 }
@@ -163,15 +163,15 @@ export default function Customers() {
   const avgSpent      = customers.length ? totalRevenue / customers.filter(c => Number(c.totalSpent) > 0).length : 0;
 
   return (
-    <div className="min-h-screen page-bg">
+    <div className="min-h-screen bg-canvas">
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-5">
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Clientes</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <h1 className="text-xl font-bold text-txt-primary">Clientes</h1>
+              <p className="text-sm text-txt-tertiary mt-0.5">
                 {loading ? '...' : `${customers.length} registrados`}
               </p>
             </div>
@@ -195,23 +195,23 @@ export default function Customers() {
           {/* Filtros */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><SearchIcon /></span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary"><SearchIcon /></span>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, teléfono, cédula o ciudad..."
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
+                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 w-80"
               />
             </div>
             {cities.length > 0 && (
               <select value={filterCity} onChange={(e) => setFilterCity(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700">
+                className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-primary">
                 <option value="">Todas las ciudades</option>
                 {cities.map((city) => <option key={city} value={city}>{city}</option>)}
               </select>
             )}
             <select value={filterMkt} onChange={(e) => setFilterMkt(e.target.value as any)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-primary">
               <option value="all">Todos</option>
               <option value="yes">Acepta marketing</option>
               <option value="no">No acepta marketing</option>
@@ -236,7 +236,7 @@ export default function Customers() {
           </div>
 
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
+          <div className="flex flex-col items-center justify-center h-64 gap-3 text-txt-tertiary">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
@@ -245,10 +245,10 @@ export default function Customers() {
           </div>
 
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle overflow-hidden">
 
             {/* Header tabla */}
-            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_1fr_auto] px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_1fr_auto] px-6 py-3 bg-surface-elevated border-b border-border-subtle text-xs font-semibold text-txt-secondary uppercase tracking-wide">
               <span>Cliente</span>
               <span>Teléfono</span>
               <span>Pedidos / Gasto</span>
@@ -258,7 +258,7 @@ export default function Customers() {
               <span>Acciones</span>
             </div>
 
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-border-subtle">
               {filtered.map((c) => {
                 const isEditing = editingId === c.customerId;
                 const spent     = Number(c.totalSpent);
@@ -266,7 +266,7 @@ export default function Customers() {
                   <div
                     key={c.customerId}
                     className={`grid grid-cols-[2fr_1.2fr_1.2fr_1fr_1fr_1fr_auto] px-6 py-4 items-center gap-3 transition ${
-                      isEditing ? 'bg-blue-50/40' : 'hover:bg-slate-50'
+                      isEditing ? 'bg-blue-50/40' : 'hover:bg-surface-elevated'
                     }`}
                   >
                     {/* Cliente */}
@@ -279,29 +279,29 @@ export default function Customers() {
                           onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
                           placeholder="Nombre del cliente"
                           onKeyDown={(e) => handleKey(e, c.customerId)}
-                          className="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                         />
                       ) : (
                         <div className="min-w-0">
-                          <p className="font-medium text-slate-800 truncate text-sm">
-                            {c.name ?? <span className="text-slate-400 font-normal italic">Sin nombre</span>}
+                          <p className="font-medium text-txt-primary truncate text-sm">
+                            {c.name ?? <span className="text-txt-tertiary font-normal italic">Sin nombre</span>}
                           </p>
                           {c.lastOrderDate && (
-                            <p className="text-xs text-slate-400">Último pedido: {fmt(c.lastOrderDate)}</p>
+                            <p className="text-xs text-txt-tertiary">Último pedido: {fmt(c.lastOrderDate)}</p>
                           )}
                         </div>
                       )}
                     </div>
 
                     {/* Teléfono */}
-                    <p className="text-sm text-slate-600 font-mono">{c.phone}</p>
+                    <p className="text-sm text-txt-secondary font-mono">{c.phone}</p>
 
                     {/* Pedidos / Gasto */}
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">
+                      <p className="text-sm font-semibold text-txt-primary">
                         {spent > 0 ? fmtMoney(spent) : <Empty />}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-txt-tertiary">
                         {c.totalOrders > 0 ? `${c.totalOrders} pedido${c.totalOrders !== 1 ? 's' : ''}` : 'Sin pedidos'}
                       </p>
                     </div>
@@ -313,10 +313,10 @@ export default function Customers() {
                         onChange={(e) => setEditState((s) => ({ ...s, cedula: e.target.value }))}
                         placeholder="N° cédula"
                         onKeyDown={(e) => handleKey(e, c.customerId)}
-                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 font-mono"
                       />
                     ) : (
-                      <p className="text-sm text-slate-600 font-mono">{c.cedula ?? <Empty />}</p>
+                      <p className="text-sm text-txt-secondary font-mono">{c.cedula ?? <Empty />}</p>
                     )}
 
                     {/* Ciudad */}
@@ -326,10 +326,10 @@ export default function Customers() {
                         onChange={(e) => setEditState((s) => ({ ...s, city: e.target.value }))}
                         placeholder="Ciudad"
                         onKeyDown={(e) => handleKey(e, c.customerId)}
-                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                       />
                     ) : (
-                      <p className="text-sm text-slate-600">{c.city ?? <Empty />}</p>
+                      <p className="text-sm text-txt-secondary">{c.city ?? <Empty />}</p>
                     )}
 
                     {/* Marketing */}
@@ -338,16 +338,16 @@ export default function Customers() {
                         type="button"
                         onClick={() => setEditState((s) => ({ ...s, acceptsMarketing: !s.acceptsMarketing }))}
                         className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${
-                          editState.acceptsMarketing ? 'bg-blue-500' : 'bg-slate-200'
+                          editState.acceptsMarketing ? 'bg-blue-500' : 'bg-border-default'
                         }`}
                       >
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                        <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-transform ${
                           editState.acceptsMarketing ? 'translate-x-5' : 'translate-x-0.5'
                         }`} />
                       </button>
                     ) : (
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        c.acceptsMarketing ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                        c.acceptsMarketing ? 'bg-green-100 text-green-700' : 'bg-surface-overlay text-txt-secondary'
                       }`}>
                         {c.acceptsMarketing ? 'Activo' : 'No'}
                       </span>
@@ -370,13 +370,13 @@ export default function Customers() {
                               : <SaveIcon />}
                           </button>
                           <button onClick={cancelEdit} title="Cancelar"
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 bg-slate-100 hover:bg-slate-200 transition">
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-secondary bg-surface-overlay hover:bg-border-default transition">
                             <CancelIcon />
                           </button>
                         </>
                       ) : (
                         <button onClick={() => startEdit(c)} title="Editar"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition">
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-secondary hover:text-blue-600 hover:bg-blue-50 transition">
                           <EditIcon />
                         </button>
                       )}
@@ -386,10 +386,10 @@ export default function Customers() {
               })}
             </div>
 
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-              <p className="text-xs text-slate-400">
-                Mostrando <span className="font-semibold text-slate-600">{filtered.length}</span> de{' '}
-                <span className="font-semibold text-slate-600">{customers.length}</span> clientes
+            <div className="px-6 py-3 bg-surface-elevated border-t border-border-subtle flex items-center justify-between">
+              <p className="text-xs text-txt-tertiary">
+                Mostrando <span className="font-semibold text-txt-secondary">{filtered.length}</span> de{' '}
+                <span className="font-semibold text-txt-secondary">{customers.length}</span> clientes
               </p>
               {(search || filterCity || filterMkt !== 'all') && (
                 <button onClick={() => { setSearch(''); setFilterCity(''); setFilterMkt('all'); }}

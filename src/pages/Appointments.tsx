@@ -57,7 +57,7 @@ const SC: Record<AppointmentStatus, { label: string; color: string; bg: string; 
   IN_PROGRESS: { label: 'En curso',       color: '#5b21b6', bg: '#ede9fe', bar: '#8b5cf6', tw: 'bg-purple-50 text-purple-700' },
   COMPLETED:   { label: 'Completada',     color: '#14532d', bg: '#dcfce7', bar: '#22c55e', tw: 'bg-green-50 text-green-700' },
   CANCELLED:   { label: 'Cancelada',      color: '#991b1b', bg: '#fee2e2', bar: '#ef4444', tw: 'bg-red-50 text-red-700' },
-  NO_SHOW:     { label: 'No se presentó', color: '#374151', bg: '#f3f4f6', bar: '#9ca3af', tw: 'bg-slate-100 text-slate-500' },
+  NO_SHOW:     { label: 'No se presentó', color: '#374151', bg: '#f3f4f6', bar: '#9ca3af', tw: 'bg-surface-overlay text-txt-secondary' },
   RESCHEDULED: { label: 'Reagendada',     color: '#164e63', bg: '#ecfeff', bar: '#06b6d4', tw: 'bg-cyan-50 text-cyan-700' },
 };
 
@@ -139,26 +139,26 @@ function TimelinePanel({ id, onClose }: { id: string; onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   useEffect(() => { getAppointmentTimeline(id).then(r => setEntries(r.data)).finally(() => setLoading(false)); }, [id]);
   return (
-    <div className="mt-3 pt-3 border-t border-slate-100">
+    <div className="mt-3 pt-3 border-t border-border-subtle">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Historial</p>
-        <button onClick={onClose} className="text-xs text-slate-400 hover:text-slate-600">Cerrar</button>
+        <p className="text-[10px] font-bold text-txt-tertiary uppercase tracking-wider">Historial</p>
+        <button onClick={onClose} className="text-xs text-txt-tertiary hover:text-txt-secondary">Cerrar</button>
       </div>
-      {loading ? <p className="text-xs text-slate-400 text-center py-2">Cargando...</p>
-      : entries.length === 0 ? <p className="text-xs text-slate-400 text-center py-2">Sin historial</p>
+      {loading ? <p className="text-xs text-txt-tertiary text-center py-2">Cargando...</p>
+      : entries.length === 0 ? <p className="text-xs text-txt-tertiary text-center py-2">Sin historial</p>
       : entries.map((e, i) => (
         <div key={e.timelineId} className="flex gap-2 mb-2">
           <div className="flex flex-col items-center">
             <span className="text-sm leading-none">{TICONS[e.action] ?? '•'}</span>
-            {i < entries.length - 1 && <div className="w-px flex-1 bg-slate-100 mt-1" />}
+            {i < entries.length - 1 && <div className="w-px flex-1 bg-surface-overlay mt-1" />}
           </div>
           <div className="flex-1 pb-1">
-            <p className="text-xs font-medium text-slate-700">
+            <p className="text-xs font-medium text-txt-primary">
               {e.newStatus ? SC[e.newStatus]?.label : e.action}
-              {!e.isPublic && <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">Admin</span>}
+              {!e.isPublic && <span className="ml-1.5 text-[10px] bg-surface-overlay text-txt-tertiary px-1.5 py-0.5 rounded">Admin</span>}
             </p>
-            {e.note && <p className="text-xs text-slate-500">{e.note}</p>}
-            <p className="text-[10px] text-slate-400">{fmtDT(e.createdAt)}</p>
+            {e.note && <p className="text-xs text-txt-secondary">{e.note}</p>}
+            <p className="text-[10px] text-txt-tertiary">{fmtDT(e.createdAt)}</p>
           </div>
         </div>
       ))}
@@ -172,14 +172,14 @@ function CancelModal({ onConfirm, onClose, saving }: { onConfirm:(r:string)=>voi
   const [r, setR] = useState('');
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
-        <h3 className="font-bold text-slate-800 mb-1">Cancelar cita</h3>
-        <p className="text-sm text-slate-500 mb-3">Motivo de cancelación (requerido)</p>
+      <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+        <h3 className="font-bold text-txt-primary mb-1">Cancelar cita</h3>
+        <p className="text-sm text-txt-secondary mb-3">Motivo de cancelación (requerido)</p>
         <textarea value={r} onChange={e => setR(e.target.value)} rows={3}
           placeholder="Ej: Cliente canceló, sin disponibilidad..."
-          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
+          className="w-full px-3 py-2 text-sm border border-border-default rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-4" />
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Volver</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">Volver</button>
           <button onClick={() => onConfirm(r)} disabled={!r.trim() || saving}
             className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition">
             {saving ? 'Guardando...' : 'Confirmar'}
@@ -299,19 +299,19 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
   return (
     <>
-      <div className="w-72 xl:w-80 bg-white border border-slate-100 rounded-2xl shadow-lg flex-shrink-0 overflow-hidden flex flex-col">
+      <div className="w-72 xl:w-80 bg-surface border border-border-subtle rounded-2xl shadow-lg flex-shrink-0 overflow-hidden flex flex-col">
         {/* status bar */}
         <div className="h-1.5" style={{ background: cfg.bar }} />
 
         {/* header */}
-        <div className="px-4 pt-3 pb-2.5 border-b border-slate-100 flex items-start gap-2">
+        <div className="px-4 pt-3 pb-2.5 border-b border-border-subtle flex items-start gap-2">
           <Avatar name={appt.customer.name} phone={appt.customer.phone} />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-800 truncate leading-tight">{label}</p>
-            <p className="text-xs text-slate-400 truncate">{appt.customer.name ?? appt.customer.phone}</p>
+            <p className="text-sm font-bold text-txt-primary truncate leading-tight">{label}</p>
+            <p className="text-xs text-txt-tertiary truncate">{appt.customer.name ?? appt.customer.phone}</p>
           </div>
           <button onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 flex-shrink-0">
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-txt-tertiary hover:bg-surface-overlay flex-shrink-0">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -319,7 +319,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
         </div>
 
         {/* Detail tab selector */}
-        <div className="flex border-b border-slate-100 px-4">
+        <div className="flex border-b border-border-subtle px-4">
           {(['detalle', 'pago', 'editar'] as const).map(tab => (
             <button
               key={tab}
@@ -327,7 +327,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition capitalize ${
                 activeDetailTab === tab
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  : 'border-transparent text-txt-secondary hover:text-txt-primary'
               }`}
             >
               {tab === 'detalle' ? 'Detalle' : tab === 'pago' ? 'Pago' : 'Editar'}
@@ -350,22 +350,22 @@ function DetailPanel({ appt, onUpdate, onClose }: {
             </div>
 
             {/* datetime */}
-            <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-              <p className="text-xs text-slate-400 mb-0.5">📅 Fecha y hora</p>
-              <p className="font-semibold text-slate-800">{fmtDateFull(appt.scheduledAt)}</p>
-              <p className="text-slate-600 text-sm">
+            <div className="bg-surface-elevated rounded-xl px-3 py-2.5">
+              <p className="text-xs text-txt-tertiary mb-0.5">📅 Fecha y hora</p>
+              <p className="font-semibold text-txt-primary">{fmtDateFull(appt.scheduledAt)}</p>
+              <p className="text-txt-secondary text-sm">
                 {fmtTime(appt.scheduledAt)}{appt.endsAt ? ` → ${fmtTime(appt.endsAt)}` : ''}
-                {appt.durationMinutes && <span className="text-slate-400 ml-1.5">({fmtMins(appt.durationMinutes)})</span>}
+                {appt.durationMinutes && <span className="text-txt-tertiary ml-1.5">({fmtMins(appt.durationMinutes)})</span>}
               </p>
             </div>
 
             {/* cliente */}
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Cliente</p>
-              <p className="font-medium text-slate-800">{appt.customer.name ?? 'Sin nombre'}</p>
-              <p className="text-xs text-slate-500">{appt.customer.phone}</p>
-              {appt.customer.cedula && <p className="text-xs text-slate-400">CC {appt.customer.cedula}</p>}
-              {appt.customer.city   && <p className="text-xs text-slate-400">{appt.customer.city}</p>}
+              <p className="text-[10px] font-bold text-txt-tertiary uppercase tracking-wider mb-1.5">Cliente</p>
+              <p className="font-medium text-txt-primary">{appt.customer.name ?? 'Sin nombre'}</p>
+              <p className="text-xs text-txt-secondary">{appt.customer.phone}</p>
+              {appt.customer.cedula && <p className="text-xs text-txt-tertiary">CC {appt.customer.cedula}</p>}
+              {appt.customer.city   && <p className="text-xs text-txt-tertiary">{appt.customer.city}</p>}
             </div>
 
             {/* detalles */}
@@ -376,8 +376,8 @@ function DetailPanel({ appt, onUpdate, onClose }: {
               appt.agreedPrice && ['💰 Precio acordado', fmtCOP(appt.agreedPrice)],
             ].filter(Boolean).map(([k, v]: any) => (
               <div key={k}>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{k}</p>
-                <p className="text-slate-700 text-sm">{v}</p>
+                <p className="text-[10px] font-bold text-txt-tertiary uppercase tracking-wider mb-0.5">{k}</p>
+                <p className="text-txt-primary text-sm">{v}</p>
               </div>
             ))}
 
@@ -396,7 +396,7 @@ function DetailPanel({ appt, onUpdate, onClose }: {
             )}
 
             {/* fuente */}
-            <div className="flex items-center justify-between text-xs text-slate-400">
+            <div className="flex items-center justify-between text-xs text-txt-tertiary">
               <span>{SRC[appt.source] ?? appt.source}</span>
               <span>{fmtDT(appt.createdAt)}</span>
             </div>
@@ -442,8 +442,8 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
             {/* transiciones */}
             {transitions.length > 0 && (
-              <div className="border-t border-slate-100 pt-3">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Cambiar estado</p>
+              <div className="border-t border-border-subtle pt-3">
+                <p className="text-[10px] font-bold text-txt-tertiary uppercase tracking-wider mb-2">Cambiar estado</p>
                 <div className="flex flex-col gap-1.5">
                   {transitions.map(s => (
                     <button key={s} onClick={() => doStatus(s)} disabled={saving}
@@ -478,14 +478,14 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                 appt.paymentStatus === 'PAID'     ? 'bg-green-100 text-green-700' :
                 appt.paymentStatus === 'PARTIAL'  ? 'bg-yellow-100 text-yellow-700' :
                 appt.paymentStatus === 'REFUNDED' ? 'bg-blue-100 text-blue-700' :
-                                                     'bg-slate-100 text-slate-600'
+                                                     'bg-surface-overlay text-txt-secondary'
               }`}>
                 {appt.paymentStatus === 'PAID'     ? '✅ Pagado' :
                  appt.paymentStatus === 'PARTIAL'  ? '⚠️ Parcial' :
                  appt.paymentStatus === 'REFUNDED' ? '↩️ Reembolsado' : '⏳ Pendiente'}
               </span>
               {appt.paymentConfirmedAt && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-txt-tertiary">
                   Confirmado el {new Date(appt.paymentConfirmedAt).toLocaleDateString('es-CO')}
                 </span>
               )}
@@ -494,11 +494,11 @@ function DetailPanel({ appt, onUpdate, onClose }: {
             {appt.paymentStatus !== 'PAID' && (
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-slate-600 mb-1 block">Método de pago</label>
+                  <label className="text-xs font-medium text-txt-secondary mb-1 block">Método de pago</label>
                   <select
                     value={paymentForm.paymentMethod}
                     onChange={e => setPaymentForm(f => ({ ...f, paymentMethod: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
                   >
                     <option value="">Seleccionar...</option>
                     {['efectivo','transferencia','tarjeta','nequi','daviplata','otro'].map(m => (
@@ -507,23 +507,23 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600 mb-1 block">Monto pagado</label>
+                  <label className="text-xs font-medium text-txt-secondary mb-1 block">Monto pagado</label>
                   <input
                     type="number"
                     value={paymentForm.paymentAmount}
                     onChange={e => setPaymentForm(f => ({ ...f, paymentAmount: e.target.value }))}
                     placeholder="0"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600 mb-1 block">Notas</label>
+                  <label className="text-xs font-medium text-txt-secondary mb-1 block">Notas</label>
                   <textarea
                     rows={2}
                     value={paymentForm.paymentNotes}
                     onChange={e => setPaymentForm(f => ({ ...f, paymentNotes: e.target.value }))}
                     placeholder="Referencia, número de transacción..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm resize-none focus:outline-none focus:ring-2 focus:ring-lime/30"
                   />
                 </div>
                 {appt.paymentProofUrl && (
@@ -548,25 +548,25 @@ function DetailPanel({ appt, onUpdate, onClose }: {
         {activeDetailTab === 'editar' && (
           <div className="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Fecha y hora</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Fecha y hora</label>
               <input
                 type="datetime-local"
                 value={editForm.scheduledAt}
                 onChange={e => setEditForm(f => ({ ...f, scheduledAt: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Hora de fin</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Hora de fin</label>
               <input
                 type="datetime-local"
                 value={editForm.endsAt}
                 onChange={e => setEditForm(f => ({ ...f, endsAt: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Duración (minutos)</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Duración (minutos)</label>
               <input
                 type="number"
                 min={5}
@@ -574,57 +574,57 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                 value={editForm.durationMinutes}
                 onChange={e => setEditForm(f => ({ ...f, durationMinutes: e.target.value }))}
                 placeholder="60"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Descripción</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Descripción</label>
               <textarea
                 rows={2}
                 value={editForm.description}
                 onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="Tipo de servicio, detalles..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm resize-none focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Dirección</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Dirección</label>
               <input
                 value={editForm.address}
                 onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
                 placeholder="Calle 123..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Precio acordado (COP)</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Precio acordado (COP)</label>
               <input
                 type="number"
                 min={0}
                 value={editForm.agreedPrice}
                 onChange={e => setEditForm(f => ({ ...f, agreedPrice: e.target.value }))}
                 placeholder="0"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas al cliente</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Notas al cliente</label>
               <textarea
                 rows={2}
                 value={editForm.notes}
                 onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="Instrucciones, recordatorios..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm resize-none focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-1 block">Notas internas</label>
+              <label className="text-xs font-medium text-txt-secondary mb-1 block">Notas internas</label>
               <textarea
                 rows={2}
                 value={editForm.internalNotes}
                 onChange={e => setEditForm(f => ({ ...f, internalNotes: e.target.value }))}
                 placeholder="Solo visible para el admin..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm resize-none focus:outline-none focus:ring-2 focus:ring-lime/30"
               />
             </div>
             <button
@@ -723,14 +723,14 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
     }
   };
 
-  const ic = 'w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800';
+  const ic = 'w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30 text-txt-primary';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <h2 className="text-base font-bold text-slate-800">Nueva cita manual</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle sticky top-0 bg-surface z-10">
+          <h2 className="text-base font-bold text-txt-primary">Nueva cita manual</h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-txt-tertiary hover:bg-surface-overlay">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -746,7 +746,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Cliente *</label>
+              <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Cliente *</label>
               <select
                 value={form.customerId}
                 onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}
@@ -763,7 +763,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Servicio</label>
+              <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Servicio</label>
               <select
                 value={form.serviceId}
                 onChange={e => setForm(f => ({ ...f, serviceId: e.target.value }))}
@@ -778,7 +778,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Fecha y hora *</label>
+                <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Fecha y hora *</label>
                 <input
                   type="datetime-local"
                   value={form.scheduledAt}
@@ -788,7 +788,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Duración (min)</label>
+                <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Duración (min)</label>
                 <input
                   type="number"
                   min={5}
@@ -803,7 +803,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Precio acordado (COP)</label>
+                <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Precio acordado (COP)</label>
                 <input
                   type="number"
                   min={0}
@@ -814,7 +814,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Prioridad</label>
+                <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Prioridad</label>
                 <select
                   value={form.priority}
                   onChange={e => setForm(f => ({ ...f, priority: e.target.value as AppointmentPriority }))}
@@ -829,7 +829,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Descripción</label>
+              <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Descripción</label>
               <textarea
                 rows={2}
                 value={form.description}
@@ -840,7 +840,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Dirección</label>
+              <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Dirección</label>
               <input
                 value={form.address}
                 onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
@@ -850,7 +850,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Notas al cliente</label>
+              <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Notas al cliente</label>
               <textarea
                 rows={2}
                 value={form.notes}
@@ -873,7 +873,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+                className="flex-1 py-2.5 rounded-xl border border-border-default text-txt-secondary text-sm font-semibold hover:bg-surface-elevated transition"
               >
                 Cancelar
               </button>
@@ -898,7 +898,7 @@ function ListView({ appointments, selected, onSelect }: {
   appointments: Appointment[]; selected: Appointment | null; onSelect:(a:Appointment|null)=>void;
 }) {
   if (appointments.length === 0) return (
-    <div className="flex-1 bg-white border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-3 text-slate-400 py-24">
+    <div className="flex-1 bg-surface border border-border-subtle rounded-2xl flex flex-col items-center justify-center gap-3 text-txt-tertiary py-24">
       <span className="text-5xl">📅</span>
       <p className="text-sm font-medium">Sin agendamientos</p>
       <p className="text-xs max-w-xs text-center">La IA los crea automáticamente cuando un cliente agenda por WhatsApp.</p>
@@ -922,11 +922,11 @@ function ListView({ appointments, selected, onSelect }: {
         return (
           <div key={dateLabel}>
             <div className="flex items-center gap-3 mb-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold ${today ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${today ? 'bg-blue-600 text-white' : 'bg-surface-overlay text-txt-secondary'}`}>
                 {today ? '🔵 Hoy' : dateLabel}
               </span>
-              <div className="flex-1 h-px bg-slate-100" />
-              <span className="text-xs text-slate-400">{appts.length} cita{appts.length !== 1 ? 's' : ''}</span>
+              <div className="flex-1 h-px bg-surface-overlay" />
+              <span className="text-xs text-txt-tertiary">{appts.length} cita{appts.length !== 1 ? 's' : ''}</span>
             </div>
 
             <div className="space-y-2">
@@ -941,7 +941,7 @@ function ListView({ appointments, selected, onSelect }: {
                     className={`w-full text-left rounded-2xl border transition-all overflow-hidden ${
                       isSel  ? 'border-blue-400 shadow-md ring-2 ring-blue-100'
                       : past ? 'border-red-100 bg-red-50/20 hover:border-red-200'
-                             : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm'
+                             : 'border-border-subtle bg-surface hover:border-border-default hover:shadow-sm'
                     }`}>
                     {/* color bar */}
                     <div className="h-1" style={{ background: cfg.bar }} />
@@ -949,25 +949,25 @@ function ListView({ appointments, selected, onSelect }: {
                     <div className="px-4 py-3 flex items-center gap-4">
                       {/* time */}
                       <div className="flex-shrink-0 w-16 text-center">
-                        <p className="text-base font-bold text-slate-800 leading-none">{fmtTime(appt.scheduledAt)}</p>
-                        {appt.durationMinutes && <p className="text-[10px] text-slate-400 mt-0.5">{fmtMins(appt.durationMinutes)}</p>}
+                        <p className="text-base font-bold text-txt-primary leading-none">{fmtTime(appt.scheduledAt)}</p>
+                        {appt.durationMinutes && <p className="text-[10px] text-txt-tertiary mt-0.5">{fmtMins(appt.durationMinutes)}</p>}
                       </div>
-                      <div className="w-px h-10 bg-slate-100 flex-shrink-0" />
+                      <div className="w-px h-10 bg-surface-overlay flex-shrink-0" />
 
                       {/* info */}
                       <Avatar name={appt.customer.name} phone={appt.customer.phone} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 justify-between">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{label}</p>
+                          <p className="text-sm font-semibold text-txt-primary truncate">{label}</p>
                           <StatusBadge status={appt.status} />
                         </div>
-                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                        <p className="text-xs text-txt-secondary truncate mt-0.5">
                           {appt.customer.name ?? 'Sin nombre'} · {appt.customer.phone}
                         </p>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          {appt.address    && <span className="text-[10px] text-slate-400">📍 {appt.address.slice(0,30)}{appt.address.length>30?'…':''}</span>}
-                          {appt.agreedPrice && <span className="text-[10px] text-slate-400">💰 {fmtCOP(appt.agreedPrice)}</span>}
-                          <span className="text-[10px] text-slate-300">{SRC[appt.source]}</span>
+                          {appt.address    && <span className="text-[10px] text-txt-tertiary">📍 {appt.address.slice(0,30)}{appt.address.length>30?'…':''}</span>}
+                          {appt.agreedPrice && <span className="text-[10px] text-txt-tertiary">💰 {fmtCOP(appt.agreedPrice)}</span>}
+                          <span className="text-[10px] text-txt-disabled">{SRC[appt.source]}</span>
                           {appt.priority !== 'NORMAL' && (
                             <span className="text-[10px] font-semibold" style={{ color: PC[appt.priority].dot }}>
                               ● {PC[appt.priority].label}
@@ -976,7 +976,7 @@ function ListView({ appointments, selected, onSelect }: {
                         </div>
                       </div>
                       <PriorityDot priority={appt.priority} />
-                      <svg className="text-slate-300 flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg className="text-txt-disabled flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="9 18 15 12 9 6"/>
                       </svg>
                     </div>
@@ -1021,33 +1021,33 @@ function CalendarView({ appointments, selected, onSelect }: {
   const nowMin   = new Date().getMinutes();
 
   return (
-    <div className="flex-1 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-0">
+    <div className="flex-1 bg-surface border border-border-subtle rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-0">
 
       {/* nav */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2 flex-shrink-0">
+      <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-2 flex-shrink-0">
         <button onClick={() => setWeekStart(getMonday(new Date()))}
-          className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+          className="px-3 py-1.5 text-xs font-semibold border border-border-default rounded-lg hover:bg-surface-elevated transition">
           Hoy
         </button>
         {[{n:-7,icon:'‹'},{n:7,icon:'›'}].map(({n,icon}) => (
           <button key={n} onClick={() => setWeekStart(d => addDays(d, n))}
-            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-base font-bold text-slate-500 transition">
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-default hover:bg-surface-elevated text-base font-bold text-txt-secondary transition">
             {icon}
           </button>
         ))}
-        <span className="text-sm font-semibold text-slate-700 ml-1">{weekLabel}</span>
+        <span className="text-sm font-semibold text-txt-primary ml-1">{weekLabel}</span>
       </div>
 
       {/* day headers */}
-      <div className="flex-shrink-0 border-b border-slate-100"
+      <div className="flex-shrink-0 border-b border-border-subtle"
         style={{ display:'grid', gridTemplateColumns:'48px repeat(7,1fr)' }}>
-        <div className="border-r border-slate-100" />
+        <div className="border-r border-border-subtle" />
         {weekDays.map((d, i) => {
           const today = i === todayIdx;
           return (
-            <div key={i} className={`py-2 text-center border-r border-slate-100 last:border-r-0 ${today ? 'bg-blue-50' : ''}`}>
-              <p className={`text-[10px] font-bold uppercase tracking-wide ${today ? 'text-blue-500' : 'text-slate-400'}`}>{WEEKDAYS[i]}</p>
-              <p className={`text-xl font-black leading-tight ${today ? 'text-blue-600' : 'text-slate-700'}`}>
+            <div key={i} className={`py-2 text-center border-r border-border-subtle last:border-r-0 ${today ? 'bg-blue-50' : ''}`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wide ${today ? 'text-blue-500' : 'text-txt-tertiary'}`}>{WEEKDAYS[i]}</p>
+              <p className={`text-xl font-black leading-tight ${today ? 'text-blue-600' : 'text-txt-primary'}`}>
                 {d.toLocaleDateString('es-CO',{day:'numeric'})}
               </p>
             </div>
@@ -1062,8 +1062,8 @@ function CalendarView({ appointments, selected, onSelect }: {
             <div key={hour} className="border-b border-slate-50"
               style={{ display:'grid', gridTemplateColumns:'48px repeat(7,1fr)', height: CELL_H }}>
               {/* hour label */}
-              <div className="flex items-start justify-end pr-2 pt-1 border-r border-slate-100">
-                <span className="text-[10px] text-slate-400 font-medium">
+              <div className="flex items-start justify-end pr-2 pt-1 border-r border-border-subtle">
+                <span className="text-[10px] text-txt-tertiary font-medium">
                   {hour > 12 ? `${hour-12}pm` : hour === 12 ? '12pm' : `${hour}am`}
                 </span>
               </div>
@@ -1175,17 +1175,17 @@ export default function Appointments() {
   ];
 
   return (
-    <div className="min-h-screen page-bg flex flex-col">
+    <div className="min-h-screen bg-canvas flex flex-col">
 
       {/* header */}
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm flex-shrink-0">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm flex-shrink-0">
         <div className="max-w-7xl mx-auto">
 
           {/* title row */}
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Agendamientos</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <h1 className="text-xl font-bold text-txt-primary">Agendamientos</h1>
+              <p className="text-sm text-txt-tertiary mt-0.5">
                 {loading ? '...' : `${appointments.length} cita${appointments.length !== 1 ? 's' : ''}`}
               </p>
             </div>
@@ -1200,21 +1200,21 @@ export default function Appointments() {
                 Nueva cita
               </button>
               {/* view toggle */}
-              <div className="flex items-center bg-slate-100 rounded-xl p-1">
+              <div className="flex items-center bg-surface-overlay rounded-xl p-1">
                 {([
                   { k:'list'     as ViewMode, icon:'☰',  label:'Lista'       },
                   { k:'calendar' as ViewMode, icon:'🗓', label:'Calendario'  },
                 ]).map(({ k, icon, label }) => (
                   <button key={k} onClick={() => setView(k)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      view === k ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'
+                      view === k ? 'bg-surface shadow-sm text-txt-primary' : 'text-txt-secondary hover:text-txt-primary'
                     }`}>
                     {icon} {label}
                   </button>
                 ))}
               </div>
               <button onClick={load} disabled={loading}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-border-default text-txt-secondary hover:bg-surface-elevated disabled:opacity-50 transition">
                 <svg className={loading ? 'animate-spin' : ''} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 12a9 9 0 11-6.219-8.56"/>
                 </svg>
@@ -1226,12 +1226,12 @@ export default function Appointments() {
           {/* stats */}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
             {STATS_CARDS.map(({ icon, label, value, accent }) => (
-              <div key={label} className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 shadow-none">
+              <div key={label} className="bg-surface-elevated border border-border-subtle rounded-xl px-3 py-2.5 shadow-none">
                 <div className="flex items-center gap-1.5">
                   <span className="text-base">{icon}</span>
                   <span className="text-lg font-bold leading-none" style={{ color: accent }}>{value}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{label}</p>
+                <p className="text-[10px] text-txt-tertiary mt-0.5 font-medium">{label}</p>
               </div>
             ))}
           </div>
@@ -1239,23 +1239,23 @@ export default function Appointments() {
           {/* filters */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14"
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary" width="14" height="14"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar cliente, servicio..."
-                className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-56" />
+                className="pl-8 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-56" />
             </div>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl bg-surface text-txt-secondary focus:outline-none focus:ring-2 focus:ring-lime/30">
               <option value="">Todos los estados</option>
               {(Object.keys(SC) as AppointmentStatus[]).map(s => (
                 <option key={s} value={s}>{SC[s].label}</option>
               ))}
             </select>
             <select value={filterType} onChange={e => setFilterType(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl bg-surface text-txt-secondary focus:outline-none focus:ring-2 focus:ring-lime/30">
               <option value="">Todos los tipos</option>
               <option value="cita">Cita</option>
               <option value="visita_tecnica">Visita técnica</option>

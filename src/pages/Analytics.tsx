@@ -20,12 +20,12 @@ const fmt = (n: number) =>
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, sub, icon, color }: { label: string; value: string; sub?: string; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+    <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-5 flex items-center gap-4">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 ${color}`}>{icon}</div>
       <div>
-        <p className="text-xs text-slate-400 font-medium">{label}</p>
-        <p className="text-xl font-bold text-slate-800 leading-tight">{value}</p>
-        {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+        <p className="text-xs text-txt-tertiary font-medium">{label}</p>
+        <p className="text-xl font-bold text-txt-primary leading-tight">{value}</p>
+        {sub && <p className="text-xs text-txt-tertiary mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -36,17 +36,17 @@ function BarChart({ data, label }: { data: { name: string; value: number }[]; la
   if (!data.length) return null;
   const max = Math.max(...data.map(d => d.value), 1);
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-      <p className="text-sm font-semibold text-slate-700 mb-4">{label}</p>
+    <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-5">
+      <p className="text-sm font-semibold text-txt-primary mb-4">{label}</p>
       <div className="space-y-2">
         {data.slice(0, 6).map((d, i) => (
           <div key={i} className="flex items-center gap-3">
-            <p className="text-xs text-slate-500 w-24 truncate flex-shrink-0">{d.name}</p>
-            <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+            <p className="text-xs text-txt-secondary w-24 truncate flex-shrink-0">{d.name}</p>
+            <div className="flex-1 bg-surface-overlay rounded-full h-2 overflow-hidden">
               <div className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${(d.value / max) * 100}%`, background: 'linear-gradient(90deg,#2563eb,#9333ea)' }} />
             </div>
-            <p className="text-xs font-semibold text-slate-700 w-16 text-right flex-shrink-0">{d.value}</p>
+            <p className="text-xs font-semibold text-txt-primary w-16 text-right flex-shrink-0">{d.value}</p>
           </div>
         ))}
       </div>
@@ -65,15 +65,15 @@ function TrendChart({ data }: { data: { labels: string[]; revenue: number[]; ord
   const height  = 120;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-semibold text-slate-700 flex items-center gap-2"><TrendIcon /> Tendencia de {view === 'revenue' ? 'ingresos' : 'pedidos'}</p>
-        <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs">
-          <button onClick={() => setView('revenue')} className={`px-3 py-1 transition ${view === 'revenue' ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+        <p className="text-sm font-semibold text-txt-primary flex items-center gap-2"><TrendIcon /> Tendencia de {view === 'revenue' ? 'ingresos' : 'pedidos'}</p>
+        <div className="flex rounded-lg border border-border-default overflow-hidden text-xs">
+          <button onClick={() => setView('revenue')} className={`px-3 py-1 transition ${view === 'revenue' ? 'text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
             style={view === 'revenue' ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}>
             Ingresos
           </button>
-          <button onClick={() => setView('orders')} className={`px-3 py-1 transition ${view === 'orders' ? 'text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+          <button onClick={() => setView('orders')} className={`px-3 py-1 transition ${view === 'orders' ? 'text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
             style={view === 'orders' ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}>
             Pedidos
           </button>
@@ -129,9 +129,9 @@ function SentimentPanel({ insights, loading, onAnalyze }: {
   onAnalyze: () => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-semibold text-slate-700 flex items-center gap-2"><HeartIcon /> Satisfacción de clientes</p>
+        <p className="text-sm font-semibold text-txt-primary flex items-center gap-2"><HeartIcon /> Satisfacción de clientes</p>
         <button onClick={onAnalyze} disabled={loading}
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-white disabled:opacity-50 transition"
           style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
@@ -142,25 +142,25 @@ function SentimentPanel({ insights, loading, onAnalyze }: {
       </div>
 
       {!insights ? (
-        <div className="flex flex-col items-center justify-center h-32 gap-2 text-slate-400">
+        <div className="flex flex-col items-center justify-center h-32 gap-2 text-txt-tertiary">
           <HeartIcon />
           <p className="text-sm text-center">Haz click en "Analizar conversaciones" para ver el análisis de satisfacción basado en los resúmenes de WhatsApp.</p>
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400">Basado en {insights.analyzed} conversaciones archivadas</p>
+          <p className="text-xs text-txt-tertiary">Basado en {insights.analyzed} conversaciones archivadas</p>
 
           {/* Distribución de sentimiento */}
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Satisfechos', value: insights.satisfied,  color: 'bg-green-100 text-green-700',  bar: '#22c55e' },
-              { label: 'Neutros',     value: insights.neutral,    color: 'bg-slate-100 text-slate-600',  bar: '#94a3b8' },
+              { label: 'Neutros',     value: insights.neutral,    color: 'bg-surface-overlay text-txt-secondary',  bar: '#94a3b8' },
               { label: 'Frustrados',  value: insights.frustrated, color: 'bg-red-100 text-red-600',      bar: '#ef4444' },
             ].map((s) => (
               <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
                 <p className="text-2xl font-bold">{s.value}%</p>
                 <p className="text-xs font-medium">{s.label}</p>
-                <div className="mt-2 h-1.5 bg-white/50 rounded-full overflow-hidden">
+                <div className="mt-2 h-1.5 bg-surface/50 rounded-full overflow-hidden">
                   <div className="h-full rounded-full" style={{ width: `${s.value}%`, backgroundColor: s.bar }} />
                 </div>
               </div>
@@ -169,8 +169,8 @@ function SentimentPanel({ insights, loading, onAnalyze }: {
 
           {/* Resumen ejecutivo */}
           {insights.summary && (
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-xs text-slate-600 leading-relaxed">{insights.summary}</p>
+            <div className="bg-surface-elevated rounded-xl p-3">
+              <p className="text-xs text-txt-secondary leading-relaxed">{insights.summary}</p>
             </div>
           )}
 
@@ -178,10 +178,10 @@ function SentimentPanel({ insights, loading, onAnalyze }: {
             {/* Temas frecuentes */}
             {insights.topics.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Temas frecuentes</p>
+                <p className="text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Temas frecuentes</p>
                 <ul className="space-y-1">
                   {insights.topics.map((t, i) => (
-                    <li key={i} className="text-xs text-slate-600 flex items-start gap-1.5">
+                    <li key={i} className="text-xs text-txt-secondary flex items-start gap-1.5">
                       <span className="text-blue-400 mt-0.5">•</span>{t}
                     </li>
                   ))}
@@ -233,7 +233,7 @@ function Bubble({ role, content }: { role: 'user' | 'assistant'; content: string
           style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>IA</div>
       )}
       <div className={`max-w-lg px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-        isUser ? 'bg-slate-100 text-slate-800 rounded-tr-sm' : 'text-white rounded-tl-sm'
+        isUser ? 'bg-surface-overlay text-txt-primary rounded-tr-sm' : 'text-white rounded-tl-sm'
       }`} style={!isUser ? { background: 'linear-gradient(135deg,#2563eb,#9333ea)' } : {}}>
         {content}
       </div>
@@ -415,17 +415,17 @@ PRODUCTOS:
   ];
 
   return (
-    <div className="min-h-screen page-bg">
+    <div className="min-h-screen bg-canvas">
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Analíticas</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Resumen del negocio + satisfacción + asesor IA</p>
+            <h1 className="text-xl font-bold text-txt-primary">Analíticas</h1>
+            <p className="text-sm text-txt-tertiary mt-0.5">Resumen del negocio + satisfacción + asesor IA</p>
           </div>
           <button onClick={loadStats} disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition disabled:opacity-50">
             <RefreshIcon /> Actualizar
           </button>
         </div>
@@ -465,11 +465,11 @@ PRODUCTOS:
                   ready:'bg-teal-400', delivered:'bg-green-500', cancelled:'bg-red-400',
                 };
                 return (
-                  <div key={status} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+                  <div key={status} className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-4 flex items-center gap-3">
                     <div className={`w-2 h-10 rounded-full ${colors[status] ?? 'bg-slate-300'}`} />
                     <div>
-                      <p className="text-xs text-slate-400">{labels[status] ?? status}</p>
-                      <p className="text-2xl font-bold text-slate-800">{count}</p>
+                      <p className="text-xs text-txt-tertiary">{labels[status] ?? status}</p>
+                      <p className="text-2xl font-bold text-txt-primary">{count}</p>
                     </div>
                   </div>
                 );
@@ -499,8 +499,8 @@ PRODUCTOS:
             {/* ── Conversaciones + Satisfacción ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Conversaciones breakdown */}
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                <p className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+              <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-5">
+                <p className="text-sm font-semibold text-txt-primary mb-4 flex items-center gap-2">
                   <ChatIcon /> Conversaciones WhatsApp
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -508,7 +508,7 @@ PRODUCTOS:
                     { key: 'active',        label: 'IA activa',      color: 'text-green-600 bg-green-50'  },
                     { key: 'pending_human', label: 'Esperan humano', color: 'text-orange-600 bg-orange-50'},
                     { key: 'human',         label: 'Con asesor',     color: 'text-blue-600 bg-blue-50'    },
-                    { key: 'closed',        label: 'Cerradas',       color: 'text-slate-500 bg-slate-50'  },
+                    { key: 'closed',        label: 'Cerradas',       color: 'text-txt-secondary bg-surface-elevated'  },
                   ].map(s => (
                     <div key={s.key} className={`rounded-xl px-4 py-3 ${s.color}`}>
                       <p className="text-2xl font-bold">{stats.convStatus[s.key] ?? 0}</p>
@@ -527,7 +527,7 @@ PRODUCTOS:
             </div>
 
             {/* ── Daily Report Section ── */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <div className="bg-surface rounded-2xl p-6 shadow-sm border border-border-subtle">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
@@ -536,8 +536,8 @@ PRODUCTOS:
                     </svg>
                   </div>
                   <div>
-                    <h2 className="font-semibold text-slate-800">Reporte del Día</h2>
-                    <p className="text-xs text-slate-400">Enviado automáticamente a las 9pm Colombia vía WA y email</p>
+                    <h2 className="font-semibold text-txt-primary">Reporte del Día</h2>
+                    <p className="text-xs text-txt-tertiary">Enviado automáticamente a las 9pm Colombia vía WA y email</p>
                   </div>
                 </div>
                 <button
@@ -560,7 +560,7 @@ PRODUCTOS:
               </div>
 
               {dailyReports.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">
+                <p className="text-sm text-txt-tertiary text-center py-8">
                   Aún no hay reportes generados. El primero se enviará automáticamente esta noche a las 9pm.
                 </p>
               ) : (
@@ -573,14 +573,14 @@ PRODUCTOS:
                     });
                     const fmtMoney = (n: number) => `$${n.toLocaleString('es-CO')}`;
                     return (
-                      <div key={r.reportId} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div key={r.reportId} className="p-3 bg-surface-elevated rounded-xl border border-border-subtle">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-slate-700">{date}</span>
+                          <span className="text-sm font-medium text-txt-primary">{date}</span>
                           <span className="text-sm font-bold text-emerald-600">
                             {fmtMoney(p.confirmed ?? 0)}
                           </span>
                         </div>
-                        <div className="flex gap-4 text-xs text-slate-500">
+                        <div className="flex gap-4 text-xs text-txt-secondary">
                           <span>✅ {d.completed ?? 0} completadas</span>
                           <span>❌ {d.cancelled ?? 0} canceladas</span>
                           <span>👻 {d.noShow ?? 0} no-show</span>
@@ -593,33 +593,33 @@ PRODUCTOS:
             </div>
 
             {/* ── AI Advisor ── */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3"
+            <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-border-subtle flex items-center gap-3"
                 style={{ background: 'linear-gradient(135deg,#2563eb10,#9333ea10)' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white"
                   style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
                   <SparkIcon />
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-slate-800">Asesor IA</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="font-bold text-txt-primary">Asesor IA</p>
+                  <p className="text-xs text-txt-tertiary">
                     Powered by Groq · Llama 3.3 70B
                     {insights && ` · Incluye análisis de ${insights.analyzed} conversaciones`}
                   </p>
                 </div>
               </div>
 
-              <div className="h-80 overflow-y-auto px-6 py-4 bg-slate-50">
+              <div className="h-80 overflow-y-auto px-6 py-4 bg-surface-elevated">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full gap-4">
-                    <p className="text-sm text-slate-400 text-center">
+                    <p className="text-sm text-txt-tertiary text-center">
                       Pregúntale al asesor sobre tus ventas, clientes o estrategia.
                       {!insights && ' Analiza las conversaciones primero para preguntas de satisfacción.'}
                     </p>
                     <div className="flex flex-wrap gap-2 justify-center">
                       {quickQuestions.map((q, i) => (
                         <button key={i} onClick={() => askGroq(q)}
-                          className="px-3 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 transition shadow-sm">
+                          className="px-3 py-2 text-xs rounded-xl bg-surface border border-border-default text-txt-secondary hover:border-blue-300 hover:text-blue-600 transition shadow-sm">
                           {q}
                         </button>
                       ))}
@@ -635,7 +635,7 @@ PRODUCTOS:
                         <div className="flex gap-1 px-4 py-3 rounded-2xl rounded-tl-sm"
                           style={{ background: 'linear-gradient(135deg,#2563eb,#9333ea)' }}>
                           {[0,1,2].map(i => (
-                            <span key={i} className="w-2 h-2 bg-white/70 rounded-full animate-bounce"
+                            <span key={i} className="w-2 h-2 bg-surface/70 rounded-full animate-bounce"
                               style={{ animationDelay: `${i * 150}ms` }} />
                           ))}
                         </div>
@@ -646,13 +646,13 @@ PRODUCTOS:
                 )}
               </div>
 
-              <div className="px-6 py-4 border-t border-slate-100 bg-white">
+              <div className="px-6 py-4 border-t border-border-subtle bg-surface">
                 <div className="flex gap-3">
                   <input value={input} onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && input.trim()) { e.preventDefault(); askGroq(input); } }}
                     placeholder="Ej: ¿Qué problema se repite más en las conversaciones?"
                     disabled={thinking}
-                    className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition disabled:opacity-50"
                   />
                   <button onClick={() => input.trim() && askGroq(input)}
                     disabled={thinking || !input.trim()}

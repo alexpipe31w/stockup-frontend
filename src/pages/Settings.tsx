@@ -96,14 +96,14 @@ export default function Settings() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Configuración</h1>
-        <p className="text-slate-500 mt-1 text-sm">Personaliza la apariencia de tu plataforma</p>
+        <h1 className="text-2xl font-bold text-txt-primary">Configuración</h1>
+        <p className="text-txt-secondary mt-1 text-sm">Personaliza la apariencia de tu plataforma</p>
       </div>
 
       {/* Paletas predefinidas */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-        <h2 className="font-semibold text-slate-800 mb-1">Paletas predefinidas</h2>
-        <p className="text-sm text-slate-400 mb-4">Haz clic en una paleta para aplicarla al instante</p>
+      <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6 mb-6">
+        <h2 className="font-semibold text-txt-primary mb-1">Paletas predefinidas</h2>
+        <p className="text-sm text-txt-tertiary mb-4">Haz clic en una paleta para aplicarla al instante</p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {PALETTES.map((p) => {
@@ -116,7 +116,7 @@ export default function Settings() {
                 key={p.name}
                 onClick={() => applyPalette(p)}
                 className={`rounded-xl p-3 border-2 transition-all text-left ${
-                  isActive ? 'border-slate-800 shadow-md' : 'border-slate-100 hover:border-slate-300'
+                  isActive ? 'border-slate-800 shadow-md' : 'border-border-subtle hover:border-slate-300'
                 }`}
               >
                 {/* Preview de colores */}
@@ -125,9 +125,9 @@ export default function Settings() {
                   <span className="w-5 h-5 rounded-full border border-white/30 shadow-sm" style={{ background: p.secondary }} />
                   <span className="w-5 h-5 rounded-full border border-white/30 shadow-sm" style={{ background: p.accent }} />
                 </div>
-                <p className="text-xs font-medium text-slate-700">{p.name}</p>
+                <p className="text-xs font-medium text-txt-primary">{p.name}</p>
                 {isActive && (
-                  <p className="text-[10px] text-slate-400 mt-0.5">Actual</p>
+                  <p className="text-[10px] text-txt-tertiary mt-0.5">Actual</p>
                 )}
               </button>
             );
@@ -136,9 +136,9 @@ export default function Settings() {
       </div>
 
       {/* Color personalizado */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-        <h2 className="font-semibold text-slate-800 mb-1">Color personalizado</h2>
-        <p className="text-sm text-slate-400 mb-4">Define colores exactos con el selector o escribe un código hex</p>
+      <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6 mb-6">
+        <h2 className="font-semibold text-txt-primary mb-1">Color personalizado</h2>
+        <p className="text-sm text-txt-tertiary mb-4">Define colores exactos con el selector o escribe un código hex</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {([
@@ -147,7 +147,7 @@ export default function Settings() {
             { key: 'accentColor',    label: 'Color de acento' },
           ] as { key: keyof ThemeColors; label: string }[]).map(({ key, label }) => (
             <div key={key}>
-              <label className="text-sm font-medium text-slate-700 block mb-2">{label}</label>
+              <label className="text-sm font-medium text-txt-primary block mb-2">{label}</label>
               <div className="flex items-center gap-3">
                 <div className="relative w-10 h-10 flex-shrink-0">
                   <input
@@ -157,7 +157,7 @@ export default function Settings() {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <div
-                    className="w-10 h-10 rounded-xl border-2 border-slate-200 shadow-sm cursor-pointer"
+                    className="w-10 h-10 rounded-xl border-2 border-border-default shadow-sm cursor-pointer"
                     style={{ background: colors[key] }}
                   />
                 </div>
@@ -169,7 +169,7 @@ export default function Settings() {
                     if (/^#([0-9A-Fa-f]{0,6})$/.test(v)) handleColorChange(key, v);
                   }}
                   maxLength={7}
-                  className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  className="flex-1 border border-border-default rounded-xl px-3 py-2 text-sm font-mono text-txt-primary focus:outline-none focus:ring-2 focus:ring-slate-300"
                   placeholder="#000000"
                 />
               </div>
@@ -178,8 +178,8 @@ export default function Settings() {
         </div>
 
         {/* Preview live */}
-        <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100">
-          <p className="text-xs text-slate-400 mb-3 font-medium uppercase tracking-wide">Vista previa</p>
+        <div className="mt-6 p-4 rounded-xl bg-surface-elevated border border-border-subtle">
+          <p className="text-xs text-txt-tertiary mb-3 font-medium uppercase tracking-wide">Vista previa</p>
           <div className="flex flex-wrap gap-3">
             <div
               className="px-4 py-2 rounded-xl text-white text-sm font-medium shadow-sm"

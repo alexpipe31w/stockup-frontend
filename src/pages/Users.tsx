@@ -74,7 +74,7 @@ export default function Users() {
   const roleColor = (role: string) => {
     if (role === 'superadmin') return 'bg-purple-50 text-purple-600';
     if (role === 'admin') return 'bg-blue-50 text-blue-600';
-    return 'bg-slate-100 text-slate-500';
+    return 'bg-surface-overlay text-txt-secondary';
   };
 
   const isFormValid = form.name && form.email && form.password && form.storeName && form.storePhone;
@@ -83,8 +83,8 @@ export default function Users() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Usuarios</h1>
-          <p className="text-slate-500 mt-1">Cada usuario tiene su propia tienda independiente</p>
+          <h1 className="text-2xl font-bold text-txt-primary">Usuarios</h1>
+          <p className="text-txt-secondary mt-1">Cada usuario tiene su propia tienda independiente</p>
         </div>
         <button
           onClick={() => { setForm(emptyForm); setError(''); setShowModal(true); }}
@@ -99,39 +99,39 @@ export default function Users() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20 text-slate-400">
+        <div className="flex justify-center py-20 text-txt-tertiary">
           <svg className="animate-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 12a9 9 0 11-6.219-8.56"/>
           </svg>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden">
           {users.length === 0 ? (
             <div className="p-16 flex flex-col items-center gap-3 text-center">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-surface-elevated rounded-full flex items-center justify-center">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
                   <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
                   <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
                 </svg>
               </div>
-              <p className="text-slate-700 font-medium">No hay usuarios</p>
-              <p className="text-slate-400 text-sm">Crea el primer usuario para dar acceso al panel</p>
+              <p className="text-txt-primary font-medium">No hay usuarios</p>
+              <p className="text-txt-tertiary text-sm">Crea el primer usuario para dar acceso al panel</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Usuario</th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tienda</th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Rol</th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Estado</th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Creado</th>
+                <tr className="border-b border-border-subtle">
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Usuario</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Tienda</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Rol</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Estado</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Creado</th>
                   <th className="px-6 py-4"/>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u, i) => (
-                  <tr key={u.userId} className={`${i < users.length - 1 ? 'border-b border-slate-50' : ''} hover:bg-slate-50 transition`}>
+                  <tr key={u.userId} className={`${i < users.length - 1 ? 'border-b border-slate-50' : ''} hover:bg-surface-elevated transition`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
@@ -139,19 +139,19 @@ export default function Users() {
                           {u.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-800 text-sm">{u.name}</div>
-                          <div className="text-slate-400 text-xs">{u.email}</div>
+                          <div className="font-semibold text-txt-primary text-sm">{u.name}</div>
+                          <div className="text-txt-tertiary text-xs">{u.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       {u.store ? (
                         <div>
-                          <div className="text-slate-700 text-sm font-medium">{u.store.name}</div>
-                          <div className="text-slate-400 text-xs">{u.store.phone}</div>
+                          <div className="text-txt-primary text-sm font-medium">{u.store.name}</div>
+                          <div className="text-txt-tertiary text-xs">{u.store.phone}</div>
                         </div>
                       ) : (
-                        <span className="text-slate-300 text-sm">—</span>
+                        <span className="text-txt-disabled text-sm">—</span>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -160,12 +160,12 @@ export default function Users() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`flex items-center gap-1.5 text-xs font-semibold ${u.isActive ? 'text-green-600' : 'text-slate-400'}`}>
+                      <span className={`flex items-center gap-1.5 text-xs font-semibold ${u.isActive ? 'text-green-600' : 'text-txt-tertiary'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-green-500' : 'bg-slate-300'}`}/>
                         {u.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-400 text-sm">
+                    <td className="px-6 py-4 text-txt-tertiary text-sm">
                       {new Date(u.createdAt).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-6 py-4">
@@ -187,10 +187,10 @@ export default function Users() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-800">Nuevo usuario</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-lg font-bold text-txt-primary">Nuevo usuario</h2>
+              <button onClick={() => setShowModal(false)} className="text-txt-tertiary hover:text-txt-secondary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -199,42 +199,42 @@ export default function Users() {
 
             <div className="space-y-4">
               {/* Sección usuario */}
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Datos del usuario</p>
+              <p className="text-xs font-bold text-txt-tertiary uppercase tracking-wider">Datos del usuario</p>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre *</label>
+                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Nombre *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="Nombre completo"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Correo *</label>
+                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Correo *</label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="correo@ejemplo.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contraseña *</label>
+                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Contraseña *</label>
                 <input
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Rol</label>
+                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Rol</label>
                 <select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm bg-surface"
                 >
                   <option value="admin">Admin</option>
                   <option value="agent">Agente</option>
@@ -242,24 +242,24 @@ export default function Users() {
               </div>
 
               {/* Sección tienda */}
-              <div className="pt-2 border-t border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Tienda del usuario</p>
+              <div className="pt-2 border-t border-border-subtle">
+                <p className="text-xs font-bold text-txt-tertiary uppercase tracking-wider mb-4">Tienda del usuario</p>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre de la tienda *</label>
+                    <label className="block text-sm font-semibold text-txt-primary mb-1.5">Nombre de la tienda *</label>
                     <input
                       value={form.storeName}
                       onChange={(e) => setForm({ ...form, storeName: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                       placeholder="Ej: Tienda de Juan"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Teléfono WhatsApp *</label>
+                    <label className="block text-sm font-semibold text-txt-primary mb-1.5">Teléfono WhatsApp *</label>
                     <input
                       value={form.storePhone}
                       onChange={(e) => setForm({ ...form, storePhone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                       placeholder="+573001234567"
                     />
                   </div>
@@ -279,7 +279,7 @@ export default function Users() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+                className="flex-1 py-3 rounded-xl border border-border-default text-txt-secondary text-sm font-semibold hover:bg-surface-elevated transition"
               >
                 Cancelar
               </button>

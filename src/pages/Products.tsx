@@ -133,13 +133,13 @@ function ProductCard({ product, onEdit, onDelete }: {
   const profitM        = margin(product.salePrice, product.costPrice);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
-      <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden relative">
+    <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden flex flex-col hover:shadow-md transition">
+      <div className="h-44 bg-surface-elevated flex items-center justify-center overflow-hidden relative">
         {product.imageUrl ? (
           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
         ) : (
-          <span className="text-slate-300"><ImageIcon /></span>
+          <span className="text-txt-disabled"><ImageIcon /></span>
         )}
         {hasVars && (
           <span className="absolute top-2 right-2 text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">
@@ -147,7 +147,7 @@ function ProductCard({ product, onEdit, onDelete }: {
           </span>
         )}
         {product.category && (
-          <span className="absolute top-2 left-2 text-xs bg-white/90 text-slate-600 px-2 py-0.5 rounded-full font-medium border border-slate-200">
+          <span className="absolute top-2 left-2 text-xs bg-surface/90 text-txt-secondary px-2 py-0.5 rounded-full font-medium border border-border-default">
             {product.category.name}
           </span>
         )}
@@ -155,33 +155,33 @@ function ProductCard({ product, onEdit, onDelete }: {
 
       <div className="p-4 flex-1 flex flex-col gap-2">
         <div>
-          <p className="font-semibold text-slate-800 leading-tight">{product.name}</p>
-          {product.sku && <p className="text-xs text-slate-400 font-mono">SKU: {product.sku}</p>}
+          <p className="font-semibold text-txt-primary leading-tight">{product.name}</p>
+          {product.sku && <p className="text-xs text-txt-tertiary font-mono">SKU: {product.sku}</p>}
         </div>
 
         {product.description && (
-          <p className="text-xs text-slate-500 line-clamp-2"
+          <p className="text-xs text-txt-secondary line-clamp-2"
             dangerouslySetInnerHTML={{ __html: product.description.replace(/<[^>]+>/g, ' ') }} />
         )}
 
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-slate-50">
           <div>
-            <p className="text-xs text-slate-400">Venta</p>
-            <p className="font-bold text-slate-800 text-sm">
+            <p className="text-xs text-txt-tertiary">Venta</p>
+            <p className="font-bold text-txt-primary text-sm">
               {hasVars && minPrice !== maxPrice ? `${fmt(minPrice)} – ${fmt(maxPrice)}` : fmt(minPrice)}
             </p>
           </div>
           {!hasVars && (
             <div>
-              <p className="text-xs text-slate-400">Costo</p>
-              <p className="text-sm text-slate-500">{fmt(product.costPrice)}</p>
+              <p className="text-xs text-txt-tertiary">Costo</p>
+              <p className="text-sm text-txt-secondary">{fmt(product.costPrice)}</p>
             </div>
           )}
           {!hasVars && profitM !== null && (
             <ProfitBadge sale={product.salePrice} cost={product.costPrice} />
           )}
           <div className="ml-auto text-right">
-            <p className="text-xs text-slate-400">Stock</p>
+            <p className="text-xs text-txt-tertiary">Stock</p>
             <p className={`font-semibold text-sm ${totalStock === 0 ? 'text-red-500' : totalStock < 5 ? 'text-orange-500' : 'text-green-600'}`}>
               {totalStock}
             </p>
@@ -191,12 +191,12 @@ function ProductCard({ product, onEdit, onDelete }: {
         {hasVars && (
           <div className="flex flex-wrap gap-1">
             {activeVariants.slice(0, 3).map(v => (
-              <span key={v.variantId} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+              <span key={v.variantId} className="text-xs bg-surface-overlay text-txt-secondary px-2 py-0.5 rounded-full">
                 {v.name}
               </span>
             ))}
             {activeVariants.length > 3 && (
-              <span className="text-xs bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-surface-overlay text-txt-tertiary px-2 py-0.5 rounded-full">
                 +{activeVariants.length - 3}
               </span>
             )}
@@ -214,7 +214,7 @@ function ProductCard({ product, onEdit, onDelete }: {
 
         <div className="flex gap-2 mt-1">
           <button onClick={() => onEdit(product)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium text-txt-secondary bg-surface-overlay hover:bg-border-default transition">
             <EditIcon /> Editar
           </button>
           <button onClick={() => onDelete(product)}
@@ -271,10 +271,10 @@ function VariantRow({ variant, onUpdate, onRemove }: {
   if (!editing) {
     const attrKeys = Object.keys(variant.attributes ?? {});
     return (
-      <div className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition">
+      <div className="px-3 py-2.5 rounded-xl hover:bg-surface-elevated transition">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] items-center gap-2 text-sm">
           <div>
-            <p className="font-medium text-slate-700 truncate">{variant.name}</p>
+            <p className="font-medium text-txt-primary truncate">{variant.name}</p>
             {attrKeys.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-0.5">
                 {attrKeys.map(k => (
@@ -285,12 +285,12 @@ function VariantRow({ variant, onUpdate, onRemove }: {
               </div>
             )}
           </div>
-          <p className="text-slate-500 font-mono text-xs">{variant.sku ?? '—'}</p>
+          <p className="text-txt-secondary font-mono text-xs">{variant.sku ?? '—'}</p>
           <div>
-            <p className="font-semibold text-slate-800">{variant.salePrice ? fmt(variant.salePrice) : 'Base'}</p>
+            <p className="font-semibold text-txt-primary">{variant.salePrice ? fmt(variant.salePrice) : 'Base'}</p>
             {variant.costPrice && (
               <div className="flex items-center gap-1">
-                <p className="text-xs text-slate-400">{fmt(variant.costPrice)}</p>
+                <p className="text-xs text-txt-tertiary">{fmt(variant.costPrice)}</p>
                 <ProfitBadge sale={variant.salePrice ?? 0} cost={variant.costPrice} />
               </div>
             )}
@@ -300,11 +300,11 @@ function VariantRow({ variant, onUpdate, onRemove }: {
           </p>
           <div className="flex gap-1">
             <button onClick={() => setEditing(true)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition">
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-blue-600 hover:bg-blue-50 transition">
               <EditIcon />
             </button>
             <button onClick={() => onRemove(variant.variantId)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition">
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-red-500 hover:bg-red-50 transition">
               <TrashIcon />
             </button>
           </div>
@@ -318,29 +318,29 @@ function VariantRow({ variant, onUpdate, onRemove }: {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Nombre de variante *"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.sku} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
           placeholder="SKU"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))}
           type="number" placeholder="Stock"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.salePrice} onChange={e => setForm(f => ({ ...f, salePrice: e.target.value }))}
           type="number" placeholder="Precio venta"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.costPrice} onChange={e => setForm(f => ({ ...f, costPrice: e.target.value }))}
           type="number" placeholder="Precio costo"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.weight} onChange={e => setForm(f => ({ ...f, weight: e.target.value }))}
           type="number" step="0.01" placeholder="Peso (kg)"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
           placeholder="URL imagen"
-          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          className="px-2 py-1.5 text-xs border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
       </div>
 
       <div>
-        <p className="text-xs font-semibold text-slate-500 mb-1">Atributos (color, talla, etc.)</p>
+        <p className="text-xs font-semibold text-txt-secondary mb-1">Atributos (color, talla, etc.)</p>
         <div className="flex flex-wrap gap-1 mb-1.5">
           {Object.entries(form.attributes).map(([k, v]) => (
             <span key={k} className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
@@ -352,10 +352,10 @@ function VariantRow({ variant, onUpdate, onRemove }: {
         <div className="flex gap-1">
           <input value={newAttrKey} onChange={e => setNewAttrKey(e.target.value)}
             placeholder="Atributo (ej: color)"
-            className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            className="flex-1 px-2 py-1 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
           <input value={newAttrValue} onChange={e => setNewAttrValue(e.target.value)}
             placeholder="Valor (ej: Rojo)"
-            className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            className="flex-1 px-2 py-1 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
           <button onClick={addAttr} type="button"
             className="px-2 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
             +
@@ -372,7 +372,7 @@ function VariantRow({ variant, onUpdate, onRemove }: {
             : <><SaveIcon /> Guardar</>}
         </button>
         <button onClick={() => setEditing(false)}
-          className="px-3 py-1.5 rounded-lg text-xs text-slate-500 hover:bg-slate-200 transition">
+          className="px-3 py-1.5 rounded-lg text-xs text-txt-secondary hover:bg-border-default transition">
           Cancelar
         </button>
       </div>
@@ -592,22 +592,22 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-          <h2 className="font-bold text-slate-800">{isEdit ? 'Editar producto' : 'Nuevo producto'}</h2>
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
+          <h2 className="font-bold text-txt-primary">{isEdit ? 'Editar producto' : 'Nuevo producto'}</h2>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition">
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-tertiary hover:bg-surface-overlay transition">
             <CloseIcon />
           </button>
         </div>
 
         {/* CAMBIO 1: tabs visibles cuando isEdit O cuando hasVariants está activo */}
         {(isEdit || form.hasVariants) && (
-          <div className="flex border-b border-slate-100 px-6">
+          <div className="flex border-b border-border-subtle px-6">
             {(['info', 'variants'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition ${tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition ${tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-txt-tertiary hover:text-txt-secondary'}`}>
                 {t === 'info' ? 'Información' : `Variantes (${variants.length})`}
               </button>
             ))}
@@ -619,40 +619,40 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           {tab === 'info' && (
             <>
               {form.imageUrl && (
-                <div className="h-40 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
+                <div className="h-40 rounded-xl overflow-hidden bg-surface-elevated border border-border-subtle">
                   <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Nombre *</label>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Nombre *</label>
                 <input ref={nameRef} type="text" value={form.name}
                   onChange={e => set('name', e.target.value)}
                   placeholder="Ej: Camiseta básica"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">SKU</label>
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">SKU</label>
                   <input type="text" value={form.sku}
                     onChange={e => set('sku', e.target.value)}
                     placeholder="Ej: CAM-001"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1 flex items-center gap-1">
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1 flex items-center gap-1">
                     <TagIcon /> Categoría
                   </label>
                   <div className="flex gap-1">
                     <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700">
+                      className="flex-1 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-primary">
                       <option value="">Sin categoría</option>
                       {categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}
                     </select>
                     <button type="button" onClick={() => setShowCatInput(s => !s)}
                       title="Nueva categoría"
-                      className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-300 transition">
+                      className="w-9 h-9 flex items-center justify-center rounded-xl border border-border-default text-txt-tertiary hover:text-blue-600 hover:border-blue-300 transition">
                       <PlusIcon />
                     </button>
                   </div>
@@ -660,7 +660,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                     <div className="flex gap-1 mt-1.5">
                       <input value={newCatName} onChange={e => setNewCatName(e.target.value)}
                         placeholder="Nueva categoría"
-                        className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                       <button onClick={handleCreateCategory} disabled={creatingCat || !newCatName.trim()}
                         className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
                         {creatingCat ? '...' : 'Crear'}
@@ -671,19 +671,19 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">URL de imagen</label>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">URL de imagen</label>
                 <input type="text" value={form.imageUrl}
                   onChange={e => set('imageUrl', e.target.value)}
                   placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               {/* CAMBIO 2: al activar hasVariants → ir automáticamente al tab variantes */}
-              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50">
-                <div className="flex items-center gap-2 text-sm text-slate-700">
+              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl border border-border-default bg-surface-elevated">
+                <div className="flex items-center gap-2 text-sm text-txt-primary">
                   <BoxIcon />
                   <span>Este producto tiene variantes</span>
-                  <span className="text-xs text-slate-400">(tallas, colores, etc.)</span>
+                  <span className="text-xs text-txt-tertiary">(tallas, colores, etc.)</span>
                 </div>
                 <button onClick={() => {
                   const next = !form.hasVariants;
@@ -692,7 +692,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 }}
                   className="w-11 h-6 rounded-full transition relative flex-shrink-0"
                   style={form.hasVariants ? { background: 'linear-gradient(135deg,#9333ea,#2563eb)' } : { background: '#e2e8f0' }}>
-                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.hasVariants ? 'left-5' : 'left-0.5'}`} />
+                  <span className={`absolute top-0.5 w-5 h-5 bg-surface rounded-full shadow transition-all ${form.hasVariants ? 'left-5' : 'left-0.5'}`} />
                 </button>
               </div>
 
@@ -700,25 +700,25 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Precio venta *</label>
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio venta *</label>
                       <input type="number" value={form.salePrice}
                         onChange={e => set('salePrice', e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Precio costo</label>
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio costo</label>
                       <input type="number" value={form.costPrice}
                         onChange={e => set('costPrice', e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Stock</label>
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Stock</label>
                       <input type="number" value={form.stock}
                         onChange={e => set('stock', e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
                   </div>
                   {liveMargin !== null && (
@@ -731,58 +731,58 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
               {form.hasVariants && (
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Precio base de referencia *</label>
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio base de referencia *</label>
                   <input type="number" value={form.salePrice}
                     onChange={e => set('salePrice', e.target.value)}
                     placeholder="Precio de referencia"
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-                  <p className="text-xs text-slate-400 mt-1">Cada variante puede tener su propio precio en la pestaña Variantes.</p>
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                  <p className="text-xs text-txt-tertiary mt-1">Cada variante puede tener su propio precio en la pestaña Variantes.</p>
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Descripción</label>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Descripción</label>
                 <textarea value={form.description}
                   onChange={e => set('description', e.target.value)}
                   placeholder="Describe el producto para que la IA pueda informar a clientes..."
                   rows={3} maxLength={50000}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none" />
-                <p className="text-xs text-slate-400 text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
+                  className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none" />
+                <p className="text-xs text-txt-tertiary text-right mt-0.5">{form.description.length.toLocaleString()} / 50.000</p>
               </div>
 
-              <div className="space-y-3 border border-slate-200 rounded-xl p-3">
+              <div className="space-y-3 border border-border-default rounded-xl p-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                  <div className="flex items-center gap-2 text-sm text-txt-primary">
                     <TruckIcon /> <span>Configuración de envío</span>
                   </div>
                   <button onClick={() => set('hasShipping', !form.hasShipping)}
                     className="w-11 h-6 rounded-full transition relative flex-shrink-0"
                     style={form.hasShipping ? { background: 'linear-gradient(135deg,#2563eb,#0ea5e9)' } : { background: '#e2e8f0' }}>
-                    <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.hasShipping ? 'left-5' : 'left-0.5'}`} />
+                    <span className={`absolute top-0.5 w-5 h-5 bg-surface rounded-full shadow transition-all ${form.hasShipping ? 'left-5' : 'left-0.5'}`} />
                   </button>
                 </div>
                 {form.hasShipping && (
                   <div className="grid grid-cols-3 gap-2 pt-1">
                     <div>
-                      <label className="text-xs text-slate-500 block mb-1">Peso (kg)</label>
+                      <label className="text-xs text-txt-secondary block mb-1">Peso (kg)</label>
                       <input type="number" step="0.01" value={form.weight}
                         onChange={e => set('weight', e.target.value)}
                         placeholder="1.5"
-                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        className="w-full px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-500 block mb-1">Envío estándar</label>
+                      <label className="text-xs text-txt-secondary block mb-1">Envío estándar</label>
                       <input type="number" value={form.shippingStandard}
                         onChange={e => set('shippingStandard', e.target.value)}
                         placeholder="5000"
-                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        className="w-full px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-500 block mb-1">Envío express</label>
+                      <label className="text-xs text-txt-secondary block mb-1">Envío express</label>
                       <input type="number" value={form.shippingExpress}
                         onChange={e => set('shippingExpress', e.target.value)}
                         placeholder="12000"
-                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        className="w-full px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     </div>
                   </div>
                 )}
@@ -807,13 +807,13 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               )}
 
-              <p className="text-xs text-slate-400">Cada variante tiene su propio precio, stock y atributos.</p>
+              <p className="text-xs text-txt-tertiary">Cada variante tiene su propio precio, stock y atributos.</p>
 
               {variants.length === 0 ? (
-                <p className="text-center text-slate-400 text-sm py-6">Sin variantes aún — agrega la primera abajo</p>
+                <p className="text-center text-txt-tertiary text-sm py-6">Sin variantes aún — agrega la primera abajo</p>
               ) : (
                 <div className="space-y-1">
-                  <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                  <div className="grid grid-cols-[2fr_1fr_1fr_1fr_auto] px-3 py-1 text-xs font-semibold text-txt-tertiary uppercase tracking-wide">
                     <span>Nombre</span><span>SKU</span><span>Precio</span><span>Stock</span><span />
                   </div>
                   {variants.map(v => (
@@ -824,41 +824,41 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               )}
 
-              <div className="border-t border-slate-100 pt-4 space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Nueva variante</p>
+              <div className="border-t border-border-subtle pt-4 space-y-2">
+                <p className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">Nueva variante</p>
                 <div className="grid grid-cols-2 gap-2">
                   <input value={newVariant.name}
                     onChange={e => setNewVariant(v => ({ ...v, name: e.target.value }))}
                     placeholder="Nombre * (ej: Talla M / Rojo)"
-                    className="col-span-2 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="col-span-2 px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.sku}
                     onChange={e => setNewVariant(v => ({ ...v, sku: e.target.value }))}
                     placeholder="SKU (opcional)"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.stock}
                     onChange={e => setNewVariant(v => ({ ...v, stock: e.target.value }))}
                     placeholder="Stock" type="number"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.salePrice}
                     onChange={e => setNewVariant(v => ({ ...v, salePrice: e.target.value }))}
                     placeholder="Precio venta" type="number"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.costPrice}
                     onChange={e => setNewVariant(v => ({ ...v, costPrice: e.target.value }))}
                     placeholder="Precio costo" type="number"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.weight}
                     onChange={e => setNewVariant(v => ({ ...v, weight: e.target.value }))}
                     placeholder="Peso kg" type="number" step="0.01"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                   <input value={newVariant.imageUrl}
                     onChange={e => setNewVariant(v => ({ ...v, imageUrl: e.target.value }))}
                     placeholder="URL imagen"
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                 </div>
 
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">Atributos</p>
+                  <p className="text-xs text-txt-secondary mb-1">Atributos</p>
                   <div className="flex flex-wrap gap-1 mb-1.5">
                     {Object.entries(newVariant.attributes).map(([k, v]) => (
                       <span key={k} className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
@@ -874,10 +874,10 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   <div className="flex gap-1">
                     <input value={newAttrKey} onChange={e => setNewAttrKey(e.target.value)}
                       placeholder="Atributo (color, talla…)"
-                      className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     <input value={newAttrValue} onChange={e => setNewAttrValue(e.target.value)}
                       placeholder="Valor (Rojo, M…)"
-                      className="flex-1 px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      className="flex-1 px-2 py-1.5 text-xs border border-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
                     <button onClick={addNewVariantAttr} type="button"
                       className="px-2 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">+</button>
                   </div>
@@ -988,13 +988,13 @@ export default function Products() {
   }).length;
 
   return (
-    <div className="min-h-screen page-bg">
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+    <div className="min-h-screen bg-canvas">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Productos</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <h1 className="text-xl font-bold text-txt-primary">Productos</h1>
+              <p className="text-sm text-txt-tertiary mt-0.5">
                 {loading ? '...' : `${statsTotal} producto${statsTotal !== 1 ? 's' : ''} activo${statsTotal !== 1 ? 's' : ''}`}
               </p>
             </div>
@@ -1007,8 +1007,8 @@ export default function Products() {
 
           {!loading && (
             <div className="flex gap-4 mb-4">
-              <div className="text-xs text-slate-500">
-                <span className="font-semibold text-slate-700">{statsTotal}</span> total
+              <div className="text-xs text-txt-secondary">
+                <span className="font-semibold text-txt-primary">{statsTotal}</span> total
               </div>
               {statsLowStock > 0 && (
                 <div className="text-xs text-orange-600">
@@ -1025,24 +1025,24 @@ export default function Products() {
 
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><SearchIcon /></span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-tertiary"><SearchIcon /></span>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre, SKU, atributo..."
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-64" />
+                className="pl-9 pr-4 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition w-64" />
             </div>
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">
               <option value="">Todas las categorías</option>
               {categories.map(c => <option key={c.categoryId} value={c.categoryId}>{c.name}</option>)}
             </select>
             <select value={filterShipping} onChange={e => setFilterShipping(e.target.value as any)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">
               <option value="all">Todos</option>
               <option value="yes">Con envío</option>
               <option value="no">Sin envío</option>
             </select>
             <select value={filterStock} onChange={e => setFilterStock(e.target.value as any)}
-              className="px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-600">
+              className="px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-secondary">
               <option value="all">Todo stock</option>
               <option value="low">Stock bajo (&lt;5)</option>
               <option value="out">Sin stock</option>
@@ -1065,7 +1065,7 @@ export default function Products() {
             </svg>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
+          <div className="flex flex-col items-center justify-center h-64 gap-3 text-txt-tertiary">
             <BoxIcon />
             <p className="text-sm">
               {search || filterCat || filterShipping !== 'all' || filterStock !== 'all'
@@ -1096,14 +1096,14 @@ export default function Products() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="font-bold text-slate-800 mb-2">¿Eliminar producto?</h3>
-            <p className="text-sm text-slate-500 mb-5">
+          <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">¿Eliminar producto?</h3>
+            <p className="text-sm text-txt-secondary mb-5">
               <span className="font-semibold">{deleteTarget.name}</span> será desactivado junto con todas sus variantes.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
                 Cancelar
               </button>
               <button onClick={handleDelete} disabled={deleting}

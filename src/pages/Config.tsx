@@ -113,9 +113,9 @@ function AparienciaSection({ storeId }: { storeId: string }) {
   return (
     <div className="space-y-5">
       {/* Paletas predefinidas */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h2 className="font-semibold text-slate-800 mb-1">Paletas predefinidas</h2>
-        <p className="text-sm text-slate-400 mb-4">Haz clic en una paleta para aplicarla al instante</p>
+      <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6">
+        <h2 className="font-semibold text-txt-primary mb-1">Paletas predefinidas</h2>
+        <p className="text-sm text-txt-tertiary mb-4">Haz clic en una paleta para aplicarla al instante</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {PALETTES.map((p) => {
             const isActive =
@@ -127,7 +127,7 @@ function AparienciaSection({ storeId }: { storeId: string }) {
                 key={p.name}
                 onClick={() => applyPalette(p)}
                 className={`rounded-xl p-3 border-2 transition-all text-left ${
-                  isActive ? 'border-slate-800 shadow-md' : 'border-slate-100 hover:border-slate-300'
+                  isActive ? 'border-slate-800 shadow-md' : 'border-border-subtle hover:border-slate-300'
                 }`}
               >
                 <div className="flex gap-1.5 mb-2">
@@ -135,8 +135,8 @@ function AparienciaSection({ storeId }: { storeId: string }) {
                   <span className="w-5 h-5 rounded-full border border-white/30 shadow-sm" style={{ background: p.secondary }} />
                   <span className="w-5 h-5 rounded-full border border-white/30 shadow-sm" style={{ background: p.accent }} />
                 </div>
-                <p className="text-xs font-medium text-slate-700">{p.name}</p>
-                {isActive && <p className="text-[10px] text-slate-400 mt-0.5">Actual</p>}
+                <p className="text-xs font-medium text-txt-primary">{p.name}</p>
+                {isActive && <p className="text-[10px] text-txt-tertiary mt-0.5">Actual</p>}
               </button>
             );
           })}
@@ -144,9 +144,9 @@ function AparienciaSection({ storeId }: { storeId: string }) {
       </div>
 
       {/* Color personalizado */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-        <h2 className="font-semibold text-slate-800 mb-1">Color personalizado</h2>
-        <p className="text-sm text-slate-400 mb-4">Define colores exactos con el selector o escribe un código hex</p>
+      <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6">
+        <h2 className="font-semibold text-txt-primary mb-1">Color personalizado</h2>
+        <p className="text-sm text-txt-tertiary mb-4">Define colores exactos con el selector o escribe un código hex</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {([
@@ -155,7 +155,7 @@ function AparienciaSection({ storeId }: { storeId: string }) {
             { key: 'accentColor',    label: 'Color de acento' },
           ] as { key: keyof ThemeColors; label: string }[]).map(({ key, label }) => (
             <div key={key}>
-              <label className="text-sm font-medium text-slate-700 block mb-2">{label}</label>
+              <label className="text-sm font-medium text-txt-primary block mb-2">{label}</label>
               <div className="flex items-center gap-3">
                 <div className="relative w-10 h-10 flex-shrink-0">
                   <input
@@ -165,7 +165,7 @@ function AparienciaSection({ storeId }: { storeId: string }) {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <div
-                    className="w-10 h-10 rounded-xl border-2 border-slate-200 shadow-sm cursor-pointer"
+                    className="w-10 h-10 rounded-xl border-2 border-border-default shadow-sm cursor-pointer"
                     style={{ background: colors[key] }}
                   />
                 </div>
@@ -177,7 +177,7 @@ function AparienciaSection({ storeId }: { storeId: string }) {
                     if (/^#([0-9A-Fa-f]{0,6})$/.test(v)) handleColorChange(key, v);
                   }}
                   maxLength={7}
-                  className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  className="flex-1 border border-border-default rounded-xl px-3 py-2 text-sm font-mono text-txt-primary focus:outline-none focus:ring-2 focus:ring-slate-300"
                   placeholder="#000000"
                 />
               </div>
@@ -186,8 +186,8 @@ function AparienciaSection({ storeId }: { storeId: string }) {
         </div>
 
         {/* Vista previa */}
-        <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100">
-          <p className="text-xs text-slate-400 mb-3 font-medium uppercase tracking-wide">Vista previa</p>
+        <div className="mt-6 p-4 rounded-xl bg-surface-elevated border border-border-subtle">
+          <p className="text-xs text-txt-tertiary mb-3 font-medium uppercase tracking-wide">Vista previa</p>
           <div className="flex flex-wrap gap-3">
             <div
               className="px-4 py-2 rounded-xl text-white text-sm font-medium shadow-sm"
@@ -278,10 +278,10 @@ function NegocioSection({ storeId }: { storeId: string }) {
 
   if (loading) return <Spinner />;
 
-  const inputClass = 'w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:bg-white transition text-sm text-slate-800';
+  const inputClass = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary';
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+    <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2">
@@ -290,14 +290,14 @@ function NegocioSection({ storeId }: { storeId: string }) {
           </svg>
         </div>
         <div>
-          <h2 className="font-semibold text-slate-800">Información del negocio</h2>
-          <p className="text-xs text-slate-400">Datos básicos de tu tienda — la IA los usa para presentarse</p>
+          <h2 className="font-semibold text-txt-primary">Información del negocio</h2>
+          <p className="text-xs text-txt-tertiary">Datos básicos de tu tienda — la IA los usa para presentarse</p>
         </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del negocio</label>
+          <label className="block text-sm font-medium text-txt-primary mb-1.5">Nombre del negocio</label>
           <input
             value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
@@ -307,17 +307,17 @@ function NegocioSection({ storeId }: { storeId: string }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Teléfono WhatsApp</label>
+          <label className="block text-sm font-medium text-txt-primary mb-1.5">Teléfono WhatsApp</label>
           <input
             value={form.phone}
             onChange={e => setForm({ ...form, phone: e.target.value })}
             placeholder="+573001234567"
             className={inputClass}
           />
-          <p className="text-xs text-slate-400 mt-1.5">Número con código de país — ej: +573001234567</p>
+          <p className="text-xs text-txt-tertiary mt-1.5">Número con código de país — ej: +573001234567</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre del propietario</label>
+          <label className="block text-sm font-medium text-txt-primary mb-1.5">Nombre del propietario</label>
           <input
             value={form.ownerName}
             onChange={e => setForm({ ...form, ownerName: e.target.value })}
@@ -326,9 +326,9 @@ function NegocioSection({ storeId }: { storeId: string }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">
+          <label className="block text-sm font-medium text-txt-primary mb-1.5">
             Teléfono personal del admin
-            <span className="ml-2 text-xs font-normal text-slate-400">(opcional)</span>
+            <span className="ml-2 text-xs font-normal text-txt-tertiary">(opcional)</span>
           </label>
           <input
             value={form.adminPhone}
@@ -336,7 +336,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
             placeholder="+573001234567"
             className={inputClass}
           />
-          <p className="text-xs text-slate-400 mt-1.5">
+          <p className="text-xs text-txt-tertiary mt-1.5">
             Notificaciones de citas (pagos, solicitudes cancel/reagenda, reportes diarios) llegan a este número por WhatsApp.
           </p>
         </div>
@@ -434,7 +434,7 @@ function ExcluidosSection() {
   };
 
   const labelColor = (label: string | null) => {
-    if (!label) return 'bg-slate-100 text-slate-500';
+    if (!label) return 'bg-surface-overlay text-txt-secondary';
     const l = label.toLowerCase();
     if (l.includes('empleado')) return 'bg-blue-50 text-blue-600';
     if (l.includes('distribuidor') || l.includes('proveedor')) return 'bg-purple-50 text-purple-600';
@@ -445,8 +445,8 @@ function ExcluidosSection() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-semibold text-slate-800">Contactos excluidos</h2>
-          <p className="text-sm text-slate-400 mt-0.5">Números que el bot ignora — empleados, distribuidores, proveedores</p>
+          <h2 className="font-semibold text-txt-primary">Contactos excluidos</h2>
+          <p className="text-sm text-txt-tertiary mt-0.5">Números que el bot ignora — empleados, distribuidores, proveedores</p>
         </div>
         <button
           onClick={() => { setForm(emptyBlockedForm); setError(''); setShowModal(true); }}
@@ -473,48 +473,48 @@ function ExcluidosSection() {
       {loading ? (
         <Spinner />
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-surface rounded-2xl border border-border-subtle shadow-sm overflow-hidden">
           {contacts.length === 0 ? (
             <div className="p-16 flex flex-col items-center gap-3 text-center">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-surface-elevated rounded-full flex items-center justify-center">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
                   <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
                 </svg>
               </div>
-              <p className="text-slate-700 font-medium">No hay números excluidos</p>
-              <p className="text-slate-400 text-sm">Agrega empleados, distribuidores o proveedores para que el bot los ignore</p>
+              <p className="text-txt-primary font-medium">No hay números excluidos</p>
+              <p className="text-txt-tertiary text-sm">Agrega empleados, distribuidores o proveedores para que el bot los ignore</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Número</th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Etiqueta</th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:table-cell">Agregado</th>
+                <tr className="border-b border-border-subtle">
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Número</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider">Etiqueta</th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-txt-tertiary uppercase tracking-wider hidden sm:table-cell">Agregado</th>
                   <th className="px-6 py-4"/>
                 </tr>
               </thead>
               <tbody>
                 {contacts.map((c, i) => (
-                  <tr key={c.blockedId} className={`${i < contacts.length - 1 ? 'border-b border-slate-50' : ''} hover:bg-slate-50 transition`}>
+                  <tr key={c.blockedId} className={`${i < contacts.length - 1 ? 'border-b border-slate-50' : ''} hover:bg-surface-elevated transition`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-surface-overlay flex items-center justify-center flex-shrink-0">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
                             <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
                           </svg>
                         </div>
-                        <span className="font-semibold text-slate-800 text-sm">{c.phone}</span>
+                        <span className="font-semibold text-txt-primary text-sm">{c.phone}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       {c.label ? (
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${labelColor(c.label)}`}>{c.label}</span>
                       ) : (
-                        <span className="text-slate-300 text-sm">—</span>
+                        <span className="text-txt-disabled text-sm">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 text-sm hidden sm:table-cell">
+                    <td className="px-6 py-4 text-txt-tertiary text-sm hidden sm:table-cell">
                       {new Date(c.createdAt).toLocaleDateString('es-CO')}
                     </td>
                     <td className="px-6 py-4">
@@ -537,10 +537,10 @@ function ExcluidosSection() {
       {/* Modal agregar */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-slate-800">Excluir número</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-lg font-bold text-txt-primary">Excluir número</h2>
+              <button onClick={() => setShowModal(false)} className="text-txt-tertiary hover:text-txt-secondary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -549,23 +549,23 @@ function ExcluidosSection() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Número de teléfono *</label>
+                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Número de teléfono *</label>
                 <input
                   value={form.phone}
                   onChange={handlePhoneChange}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 text-sm"
                   placeholder="+573001234567"
                 />
-                <p className="text-xs text-slate-400 mt-1.5">Incluye el código de país. Ej: <strong>+57</strong>3001234567</p>
+                <p className="text-xs text-txt-tertiary mt-1.5">Incluye el código de país. Ej: <strong>+57</strong>3001234567</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Etiqueta <span className="text-slate-400 font-normal">(opcional)</span>
+                <label className="block text-sm font-semibold text-txt-primary mb-1.5">
+                  Etiqueta <span className="text-txt-tertiary font-normal">(opcional)</span>
                 </label>
                 <select
                   value={form.label}
                   onChange={e => setForm({ ...form, label: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 text-sm bg-white"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 text-sm bg-surface"
                 >
                   <option value="">Sin etiqueta</option>
                   <option value="Empleado">Empleado</option>
@@ -587,7 +587,7 @@ function ExcluidosSection() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition"
+                className="flex-1 py-3 rounded-xl border border-border-default text-txt-secondary text-sm font-semibold hover:bg-surface-elevated transition"
               >
                 Cancelar
               </button>
@@ -636,14 +636,14 @@ function paymentStatusLabel(s: string) {
   if (s === 'approved') return { label: 'Pagado', cls: 'bg-emerald-100 text-emerald-700' };
   if (s === 'pending')  return { label: 'Pendiente', cls: 'bg-amber-100 text-amber-700' };
   if (s === 'rejected') return { label: 'Rechazado', cls: 'bg-red-100 text-red-700' };
-  return { label: s, cls: 'bg-slate-100 text-slate-600' };
+  return { label: s, cls: 'bg-surface-overlay text-txt-secondary' };
 }
 
 function subStatusInfo(s: string) {
   if (s === 'active')   return { label: 'Activa', cls: 'bg-emerald-100 text-emerald-700' };
   if (s === 'pending')  return { label: 'Pendiente de pago', cls: 'bg-amber-100 text-amber-700' };
   if (s === 'expired')  return { label: 'Vencida', cls: 'bg-red-100 text-red-700' };
-  return { label: 'Sin suscripción', cls: 'bg-slate-100 text-slate-500' };
+  return { label: 'Sin suscripción', cls: 'bg-surface-overlay text-txt-secondary' };
 }
 
 function SuscripcionSection() {
@@ -688,33 +688,33 @@ function SuscripcionSection() {
   return (
     <div className="space-y-5">
       {/* Estado actual */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-surface rounded-2xl border border-border-default p-6 shadow-sm">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Estado de tu plan</p>
+            <p className="text-xs font-semibold text-txt-tertiary uppercase tracking-wide mb-2">Estado de tu plan</p>
             <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${status.cls}`}>
               {status.label}
             </span>
           </div>
           <div className="text-right">
-            <p className="text-xs text-slate-400 mb-1">Plan mensual</p>
-            <p className="text-2xl font-bold text-slate-800">
+            <p className="text-xs text-txt-tertiary mb-1">Plan mensual</p>
+            <p className="text-2xl font-bold text-txt-primary">
               {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(data.currentPrice)}
             </p>
           </div>
         </div>
 
         {isActive && data.subscription?.currentPeriodEnd && (
-          <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4 mb-5">
+          <div className="grid grid-cols-2 gap-4 bg-surface-elevated rounded-xl p-4 mb-5">
             <div>
-              <p className="text-xs text-slate-400 mb-0.5">Desde</p>
-              <p className="text-sm font-medium text-slate-700">
+              <p className="text-xs text-txt-tertiary mb-0.5">Desde</p>
+              <p className="text-sm font-medium text-txt-primary">
                 {new Date(data.subscription.currentPeriodStart!).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 mb-0.5">Vence el</p>
-              <p className="text-sm font-medium text-slate-700">
+              <p className="text-xs text-txt-tertiary mb-0.5">Vence el</p>
+              <p className="text-sm font-medium text-txt-primary">
                 {new Date(data.subscription.currentPeriodEnd).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
               </p>
             </div>
@@ -763,17 +763,17 @@ function SuscripcionSection() {
       </div>
 
       {/* Historial de pagos */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h3 className="font-semibold text-slate-800 text-sm">Historial de pagos</h3>
+      <div className="bg-surface rounded-2xl border border-border-default shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-subtle">
+          <h3 className="font-semibold text-txt-primary text-sm">Historial de pagos</h3>
         </div>
 
         {payments.length === 0 ? (
-          <div className="px-6 py-8 text-center text-slate-400 text-sm">
+          <div className="px-6 py-8 text-center text-txt-tertiary text-sm">
             Aún no tienes pagos registrados
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border-subtle">
             {payments.map(p => {
               const st = paymentStatusLabel(p.status);
               const date = p.paidAt ?? p.createdAt;
@@ -799,13 +799,13 @@ function SuscripcionSection() {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-800">
+                      <p className="text-sm font-medium text-txt-primary">
                         {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(p.amount))}
                         {' '}— Plan mensual
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-txt-tertiary">
                         {new Date(date).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
-                        {p.mpPaymentId && <span className="ml-2 font-mono text-slate-300">#{p.mpPaymentId.slice(-8)}</span>}
+                        {p.mpPaymentId && <span className="ml-2 font-mono text-txt-disabled">#{p.mpPaymentId.slice(-8)}</span>}
                       </p>
                     </div>
                   </div>
@@ -887,20 +887,20 @@ export default function Config() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Configuración</h1>
-        <p className="text-slate-500 mt-1 text-sm">Personaliza tu plataforma desde un solo lugar</p>
+        <h1 className="text-2xl font-bold text-txt-primary">Configuración</h1>
+        <p className="text-txt-secondary mt-1 text-sm">Personaliza tu plataforma desde un solo lugar</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl mb-6 overflow-x-auto">
+      <div className="flex gap-1 p-1 bg-surface-overlay rounded-2xl mb-6 overflow-x-auto">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex flex-1 min-w-max items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-surface text-txt-primary shadow-sm'
+                : 'text-txt-secondary hover:text-txt-primary'
             }`}
           >
             {tab.icon}

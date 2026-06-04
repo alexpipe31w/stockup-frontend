@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { SubscriptionProvider, useSubscription } from './hooks/useSubscription';
-import { getStoreTheme } from './services/api';
+import Sidebar from './components/Sidebar';
+import BottomNav from './components/BottomNav';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Conversations from './pages/Conversations';
@@ -21,35 +23,36 @@ import SuperAdmin from './pages/SuperAdmin';
 import Register from './pages/Register';
 import Subscription from './pages/Subscription';
 import PaymentStatus from './pages/PaymentStatus';
+import More from './pages/More';
 
-/** Aplica los colores de la tienda como CSS vars en el elemento raíz */
-function applyTheme(primary?: string, secondary?: string, accent?: string) {
-  const root = document.documentElement;
-  if (primary) {
-    root.style.setProperty('--color-primary', primary);
-    // Aproximación de dark/light — en el futuro puede calcularse dinámicamente
-    root.style.setProperty('--color-primary-dark', primary);
-    root.style.setProperty('--color-primary-light', primary);
-  }
-  if (secondary) root.style.setProperty('--color-secondary', secondary);
-  if (accent)    root.style.setProperty('--color-accent', accent);
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+        className="flex-1 min-w-0 overflow-y-auto"
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
 }
 
-/** Carga el tema de la tienda una sola vez al autenticar */
-function ThemeLoader() {
-  const { storeId } = useAuth();
-
-  useEffect(() => {
-    if (!storeId) return;
-    getStoreTheme(storeId)
-      .then(res => {
-        const { primaryColor, secondaryColor, accentColor } = res.data;
-        applyTheme(primaryColor, secondaryColor, accentColor);
-      })
-      .catch(() => {}); // usa la paleta por defecto si falla
-  }, [storeId]);
-
-  return null;
+function Layout({ children }: { children: React.ReactElement }) {
+  return (
+    <div className="flex min-h-screen bg-canvas">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <PageWrapper>{children}</PageWrapper>
+        <BottomNav />
+      </div>
+    </div>
+  );
 }
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
@@ -57,7 +60,6 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
   return token ? children : <Navigate to="/login" replace />;
 }
 
-// Requiere suscripción activa; si está pendiente redirige a /subscription
 function SubscribedRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
   const { isActive, loading, error, refresh } = useSubscription();
@@ -66,23 +68,19 @@ function SubscribedRoute({ children }: { children: React.ReactElement }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <svg className="animate-spin w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
+      <div className="flex items-center justify-center min-h-screen bg-canvas">
+        <div className="w-8 h-8 rounded-full border-2 border-lime border-t-transparent animate-spin-loader" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-slate-600 font-medium">No pudimos verificar tu suscripción</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-canvas gap-4">
+        <p className="text-txt-secondary font-medium">No pudimos verificar tu suscripción</p>
         <button
           onClick={refresh}
-          className="px-5 py-2 rounded-xl text-white text-sm font-medium"
-          style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
+          className="px-5 py-2.5 rounded-xl gradient-brand text-txt-inverse text-sm font-semibold"
         >
           Reintentar
         </button>
@@ -97,204 +95,8 @@ function SubscribedRoute({ children }: { children: React.ReactElement }) {
 function AdminRoute({ children }: { children: React.ReactElement }) {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
-  if (user?.role !== 'superadmin') return <Navigate to="/dashboard" replace />;
+  if ((user as any)?.role !== 'superadmin') return <Navigate to="/dashboard" replace />;
   return children;
-}
-
-function Layout({ children }: { children: React.ReactElement }) {
-  const { logout, user } = useAuth();
-  const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const isAdmin = user?.role === 'superadmin';
-
-  const navItems = [
-    {
-      to: '/dashboard', label: 'Dashboard',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    },
-    {
-      to: '/whatsapp', label: 'WhatsApp',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-    },
-    {
-      to: '/conversations', label: 'Conversaciones',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-    },
-    {
-      to: '/customers', label: 'Clientes',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-    },
-    {
-      to: '/orders', label: 'Órdenes',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-    },
-    {
-      to: '/products', label: 'Productos',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-    },
-    {
-      to: '/services', label: 'Servicios',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-    },
-    {
-      to: '/appointments', label: 'Citas',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
-    },
-    {
-      to: '/campaigns', label: 'Campañas',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-    },
-    {
-      to: '/analytics', label: 'Analíticas',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    },
-    {
-      to: '/config', label: 'Configuración',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-    },
-  ];
-
-  const adminNavItems = [
-    {
-      to: '/users', label: 'Usuarios',
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-    },
-  ];
-
-  const allNavItems = isAdmin
-    ? [...navItems, ...adminNavItems]
-    : navItems;
-
-  // Sidebar content reutilizable para desktop y drawer móvil
-  const SidebarContent = () => (
-    <>
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="white"/>
-          </svg>
-        </div>
-        <span className="font-bold text-slate-800">Stockup Messages</span>
-      </div>
-
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {allNavItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
-                isActive ? 'text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`
-            }
-            style={({ isActive }) =>
-              isActive ? { background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' } : {}
-            }
-          >
-            {item.icon}
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="px-3 py-4 border-t border-slate-100">
-        <button
-          onClick={() => { logout(); navigate('/login'); setMobileOpen(false); }}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-500 transition w-full"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Cerrar sesión
-        </button>
-      </div>
-    </>
-  );
-
-  return (
-    <div className="flex min-h-screen">
-
-      {/* ── SIDEBAR DESKTOP (oculto en móvil) ── */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-100 flex-col shadow-sm flex-shrink-0">
-        <SidebarContent />
-      </aside>
-
-      {/* ── OVERLAY + DRAWER MÓVIL ── */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-      <aside
-        className={`
-          fixed top-0 left-0 h-full w-72 bg-white z-50 flex flex-col shadow-xl
-          transform transition-transform duration-300 ease-in-out md:hidden
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        {/* Botón cerrar dentro del drawer */}
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-        <SidebarContent />
-      </aside>
-
-      {/* ── CONTENIDO PRINCIPAL ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-
-        {/* ── TOPBAR MÓVIL ── */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 shadow-sm sticky top-0 z-30">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="white"/>
-              </svg>
-            </div>
-            <span className="font-bold text-slate-800 text-sm">Stockup Messages</span>
-          </div>
-
-          {/* Avatar / inicial del usuario */}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}
-          >
-            {user?.email?.[0]?.toUpperCase() ?? 'U'}
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-auto page-bg">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
 }
 
 function App() {
@@ -302,29 +104,27 @@ function App() {
     <AuthProvider>
       <SubscriptionProvider>
         <BrowserRouter>
-          <ThemeLoader />
           <Routes>
-            <Route path="/login"          element={<Login />} />
-            <Route path="/register"       element={<Register />} />
-            <Route path="/payment-status" element={<PrivateRoute><PaymentStatus /></PrivateRoute>} />
-            {/* /subscription accesible aunque esté pendiente — es donde se paga */}
-            <Route path="/subscription"   element={<PrivateRoute><Layout><Subscription /></Layout></PrivateRoute>} />
-            {/* Rutas que requieren suscripción activa */}
-            <Route path="/dashboard"      element={<SubscribedRoute><Layout><Dashboard /></Layout></SubscribedRoute>} />
-            <Route path="/whatsapp"       element={<SubscribedRoute><Layout><WhatsAppPage /></Layout></SubscribedRoute>} />
-            <Route path="/conversations"  element={<SubscribedRoute><Layout><Conversations /></Layout></SubscribedRoute>} />
-            <Route path="/customers"      element={<SubscribedRoute><Layout><Customers /></Layout></SubscribedRoute>} />
-            <Route path="/orders"         element={<SubscribedRoute><Layout><Orders /></Layout></SubscribedRoute>} />
-            <Route path="/products"       element={<SubscribedRoute><Layout><Products /></Layout></SubscribedRoute>} />
-            <Route path="/services"       element={<SubscribedRoute><Layout><Services /></Layout></SubscribedRoute>} />
-            <Route path="/appointments"   element={<SubscribedRoute><Layout><Appointments /></Layout></SubscribedRoute>} />
-            <Route path="/campaigns"      element={<SubscribedRoute><Layout><Campaigns /></Layout></SubscribedRoute>} />
-            <Route path="/analytics"      element={<SubscribedRoute><Layout><Analytics /></Layout></SubscribedRoute>} />
-            <Route path="/config"         element={<SubscribedRoute><Layout><Config /></Layout></SubscribedRoute>} />
-            <Route path="/users"          element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
+            <Route path="/login"            element={<Login />} />
+            <Route path="/register"         element={<Register />} />
+            <Route path="/payment-status"   element={<PrivateRoute><PaymentStatus /></PrivateRoute>} />
+            <Route path="/subscription"     element={<PrivateRoute><Layout><Subscription /></Layout></PrivateRoute>} />
+            <Route path="/dashboard"        element={<SubscribedRoute><Layout><Dashboard /></Layout></SubscribedRoute>} />
+            <Route path="/whatsapp"         element={<SubscribedRoute><Layout><WhatsAppPage /></Layout></SubscribedRoute>} />
+            <Route path="/conversations"    element={<SubscribedRoute><Layout><Conversations /></Layout></SubscribedRoute>} />
+            <Route path="/customers"        element={<SubscribedRoute><Layout><Customers /></Layout></SubscribedRoute>} />
+            <Route path="/orders"           element={<SubscribedRoute><Layout><Orders /></Layout></SubscribedRoute>} />
+            <Route path="/products"         element={<SubscribedRoute><Layout><Products /></Layout></SubscribedRoute>} />
+            <Route path="/services"         element={<SubscribedRoute><Layout><Services /></Layout></SubscribedRoute>} />
+            <Route path="/appointments"     element={<SubscribedRoute><Layout><Appointments /></Layout></SubscribedRoute>} />
+            <Route path="/campaigns"        element={<SubscribedRoute><Layout><Campaigns /></Layout></SubscribedRoute>} />
+            <Route path="/analytics"        element={<SubscribedRoute><Layout><Analytics /></Layout></SubscribedRoute>} />
+            <Route path="/config"           element={<SubscribedRoute><Layout><Config /></Layout></SubscribedRoute>} />
+            <Route path="/more"             element={<SubscribedRoute><Layout><More /></Layout></SubscribedRoute>} />
+            <Route path="/users"            element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
             <Route path="/superadmin/login" element={<SuperAdminLogin />} />
-            <Route path="/superadmin"     element={<SuperAdmin />} />
-            <Route path="*"              element={<Navigate to="/login" replace />} />
+            <Route path="/superadmin"       element={<SuperAdmin />} />
+            <Route path="*"                element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
       </SubscriptionProvider>

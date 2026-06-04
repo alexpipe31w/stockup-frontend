@@ -32,7 +32,7 @@ interface Campaign {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: 'Borrador',  cls: 'bg-slate-100 text-slate-500' },
+  draft:     { label: 'Borrador',  cls: 'bg-surface-overlay text-txt-secondary' },
   scheduled: { label: 'Programada', cls: 'bg-blue-100 text-blue-700' },
   sending:   { label: 'Enviando',  cls: 'bg-yellow-100 text-yellow-700' },
   sent:      { label: 'Enviada',   cls: 'bg-green-100 text-green-700' },
@@ -76,17 +76,17 @@ function CampaignModal({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="font-bold text-slate-800">Nueva campaña</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition">
+      <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg">
+        <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between">
+          <h2 className="font-bold text-txt-primary">Nueva campaña</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-txt-tertiary hover:bg-surface-overlay transition">
             <CloseIcon />
           </button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">
+            <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
               Nombre de la campaña
             </label>
             <input
@@ -94,12 +94,12 @@ function CampaignModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Promo fin de semana"
               autoFocus
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">
+            <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
               Mensaje
             </label>
             <textarea
@@ -107,11 +107,11 @@ function CampaignModal({
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Escribe el mensaje que recibirán todos tus clientes..."
               rows={5}
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none"
+              className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none"
             />
             <div className="flex justify-between mt-1">
-              <p className="text-xs text-slate-400">{charCount} caracteres</p>
-              <p className="text-xs text-slate-400">{smsCount} segmento{smsCount > 1 ? 's' : ''} WhatsApp</p>
+              <p className="text-xs text-txt-tertiary">{charCount} caracteres</p>
+              <p className="text-xs text-txt-tertiary">{smsCount} segmento{smsCount > 1 ? 's' : ''} WhatsApp</p>
             </div>
           </div>
 
@@ -163,14 +163,14 @@ export default function Campaigns() {
   };
 
   return (
-    <div className="min-h-screen page-bg">
+    <div className="min-h-screen bg-canvas">
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 px-6 py-5 shadow-sm">
+      <div className="bg-surface border-b border-border-subtle px-6 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Campañas</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
+            <h1 className="text-xl font-bold text-txt-primary">Campañas</h1>
+            <p className="text-sm text-txt-tertiary mt-0.5">
               {loading ? '...' : `${campaigns.length} campañas creadas`}
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function Campaigns() {
           </div>
 
         ) : campaigns.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
+          <div className="flex flex-col items-center justify-center h-64 gap-3 text-txt-tertiary">
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
             </svg>
@@ -207,23 +207,23 @@ export default function Campaigns() {
               const cfg = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.draft;
               const isSending = sending === c.campaignId;
               return (
-                <div key={c.campaignId} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition">
+                <div key={c.campaignId} className="bg-surface rounded-2xl border border-border-subtle shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition">
 
                   {/* Name + status */}
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-slate-800 leading-tight">{c.name}</p>
+                    <p className="font-semibold text-txt-primary leading-tight">{c.name}</p>
                     <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium flex-shrink-0 ${cfg.cls}`}>
                       {cfg.label}
                     </span>
                   </div>
 
                   {/* Message preview */}
-                  <p className="text-sm text-slate-500 line-clamp-3 bg-slate-50 rounded-xl px-3 py-2">
+                  <p className="text-sm text-txt-secondary line-clamp-3 bg-surface-elevated rounded-xl px-3 py-2">
                     {c.message}
                   </p>
 
                   {/* Meta */}
-                  <div className="flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center justify-between text-xs text-txt-tertiary">
                     <span>{fmtDate(c.createdAt)}</span>
                     {c.sentCount > 0 && (
                       <span className="text-green-600 font-medium">{c.sentCount} enviados</span>
@@ -269,10 +269,10 @@ export default function Campaigns() {
       {/* Confirm send */}
       {confirmSend && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="font-bold text-slate-800 mb-2">Enviar campaña masiva</h3>
-            <p className="text-sm text-slate-500 mb-1">
-              Vas a enviar <span className="font-semibold text-slate-700">"{confirmSend.name}"</span> a todos tus clientes por WhatsApp.
+          <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">Enviar campaña masiva</h3>
+            <p className="text-sm text-txt-secondary mb-1">
+              Vas a enviar <span className="font-semibold text-txt-primary">"{confirmSend.name}"</span> a todos tus clientes por WhatsApp.
             </p>
             <p className="text-xs text-orange-600 bg-orange-50 rounded-xl px-3 py-2 mb-5">
               Esta acción no se puede deshacer. Asegúrate que el mensaje esté correcto.
@@ -280,7 +280,7 @@ export default function Campaigns() {
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmSend(null)}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition"
               >
                 Cancelar
               </button>
