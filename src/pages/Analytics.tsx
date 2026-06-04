@@ -395,7 +395,11 @@ PRODUCTOS:
       const res = await getConversationInsights();
       setInsights(res.data);
     } catch (err: any) {
-      console.error('Error en insights:', err);
+      const msg = err.response?.data?.message ?? 'Error al analizar conversaciones';
+      setInsights({
+        analyzed: 0, satisfied: 0, neutral: 0, frustrated: 0,
+        topics: [], alerts: [msg], positives: [], summary: msg,
+      });
     } finally {
       setInsLoading(false);
     }
