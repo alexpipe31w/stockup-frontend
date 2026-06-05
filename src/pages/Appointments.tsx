@@ -95,7 +95,6 @@ const TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
 };
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-const HOURS    = Array.from({ length: 16 }, (_, i) => i + 7); // 7am–10pm
 
 // ─── Date utils ───────────────────────────────────────────────────────────────
 
