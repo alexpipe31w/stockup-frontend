@@ -223,10 +223,14 @@ function ReportsTab({ data }: { data: Summary }) {
         </select>
         <button
           onClick={() => exportCashReport(filtered.map(o => ({
-            createdAt: o.createdAt, total: String(o.amount),
+            orderId: o.orderId,
+            createdAt: o.createdAt,
+            total: String(o.amount),
+            type: o.type,
             manualPaymentMethod: o.paymentMethod,
-            customer: null, orderItems: [{ description: o.description, quantity: 1, unitPrice: String(o.amount), service: null }],
-            notes: null, appointmentId: null, orderId: o.orderId,
+            customer: null,
+            orderItems: [{ description: o.description, quantity: 1, unitPrice: String(o.amount), service: null }],
+            notes: null,
           })), [], 'Reporte')}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#0A0A0F] transition"
           style={{ background: 'linear-gradient(135deg,#D4FF00,#A3CC00)' }}

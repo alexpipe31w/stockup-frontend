@@ -323,7 +323,7 @@ export default function ServiceOrders() {
                 <Plus size={15} /> Nueva venta manual
               </button>
               <button
-                onClick={() => exportCashReport([], orders, 'Servicios')}
+                onClick={() => exportCashReport(orders, [], 'Servicios')}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-border-default text-txt-secondary hover:bg-surface-overlay transition"
               >
                 <Download size={15} /> Exportar
