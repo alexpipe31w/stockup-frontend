@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders, updateOrderStatus, createManualOrder, getCustomers } from '../services/api';
+import { getOrders, updateOrderStatus, createManualOrder, getCustomers, getProducts } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -29,7 +29,8 @@ const TrashIcon = () => (
 );
 
 // ── Manual Order Modal ────────────────────────────────────────────────────────
-interface ManualItem { description: string; quantity: number; unitPrice: number; }
+interface ProductOption { productId: string; name: string; salePrice: number; stock: number | null; }
+interface ManualItem { productId: string; description: string; quantity: number; unitPrice: number; }
 interface CustomerOption { customerId: string; name: string | null; phone: string; }
 
 function ManualOrderModal({ storeId, onClose, onCreated }: {
@@ -40,14 +41,21 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const [customers, setCustomers]       = useState<CustomerOption[]>([]);
   const [customerSearch, setCSearch]    = useState('');
   const [selectedCustomer, setSelCust]  = useState<CustomerOption | null>(null);
-  const [items, setItems]               = useState<ManualItem[]>([{ description: '', quantity: 1, unitPrice: 0 }]);
+  const [items, setItems]               = useState<ManualItem[]>([{ productId: '', description: '', quantity: 1, unitPrice: 0 }]);
   const [payMethod, setPayMethod]       = useState('CASH');
   const [discountPct, setDiscountPct]   = useState(0);
   const [notes, setNotes]               = useState('');
   const [submitting, setSubmitting]     = useState(false);
   const [error, setError]               = useState('');
+  const [products, setProducts]         = useState<ProductOption[]>([]);
 
-  useEffect(() => { getCustomers(storeId).then((r) => setCustomers(r.data)); }, [storeId]);
+  useEffect(() => {
+    getCustomers(storeId).then((r) => setCustomers(r.data));
+    getProducts().then((r) => {
+      const active = (r.data ?? []).filter((p: any) => p.isActive !== false);
+      setProducts(active);
+    });
+  }, [storeId]);
 
   const filteredCustomers = customers.filter((c) => {
     const q = customerSearch.toLowerCase();
@@ -58,20 +66,40 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const discountAmt   = Math.round(subtotal * (discountPct / 100) * 100) / 100;
   const total         = subtotal - discountAmt;
 
-  const addItem    = () => setItems((p) => [...p, { description: '', quantity: 1, unitPrice: 0 }]);
+  const addItem    = () => setItems((p) => [...p, { productId: '', description: '', quantity: 1, unitPrice: 0 }]);
   const removeItem = (i: number) => setItems((p) => p.filter((_, idx) => idx !== i));
   const updateItem = (i: number, field: keyof ManualItem, val: string | number) =>
     setItems((p) => p.map((it, idx) => idx === i ? { ...it, [field]: val } : it));
 
+  const selectProduct = (idx: number, productId: string) => {
+    if (!productId || productId === 'custom') {
+      setItems(p => p.map((it, i) => i === idx
+        ? { ...it, productId: productId === 'custom' ? 'custom' : '', description: '', unitPrice: 0 }
+        : it));
+    } else {
+      const prod = products.find(p => p.productId === productId);
+      if (prod) {
+        setItems(p => p.map((it, i) => i === idx
+          ? { ...it, productId: prod.productId, description: prod.name, unitPrice: prod.salePrice }
+          : it));
+      }
+    }
+  };
+
   const submit = async () => {
     if (!selectedCustomer) return setError('Selecciona un cliente.');
-    if (items.some((i) => !i.description.trim())) return setError('Completa la descripción de todos los ítems.');
+    if (items.some((i) => !i.productId && !i.description.trim())) return setError('Selecciona un producto o escribe una descripción para cada ítem.');
     if (items.some((i) => i.unitPrice <= 0)) return setError('El precio de cada ítem debe ser mayor a 0.');
     setError(''); setSubmitting(true);
     try {
       await createManualOrder({
         customerId:          selectedCustomer.customerId,
-        items:               items.map((i) => ({ description: i.description.trim(), quantity: i.quantity, unitPrice: i.unitPrice })),
+        items:               items.map((i) => ({
+          productId:   (i.productId && i.productId !== 'custom') ? i.productId : undefined,
+          description: i.description.trim() || undefined,
+          quantity:    i.quantity,
+          unitPrice:   i.unitPrice,
+        })),
         notes:               notes.trim() || undefined,
         discountPercent:     discountPct || undefined,
         manualPaymentMethod: payMethod,
@@ -152,30 +180,63 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
             <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Productos / Servicios</label>
             <div className="space-y-2">
               {items.map((item, i) => (
-                <div key={i} className="grid grid-cols-[1fr_80px_100px_32px] gap-2 items-center">
-                  <input
-                    value={item.description}
-                    onChange={(e) => updateItem(i, 'description', e.target.value)}
-                    placeholder="Descripción del ítem"
-                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
-                  />
-                  <input
-                    type="number" min={1} value={item.quantity}
-                    onChange={(e) => updateItem(i, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 text-center"
-                    placeholder="Cant."
-                  />
-                  <input
-                    type="number" min={0} value={item.unitPrice || ''}
-                    onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    className="px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
-                    placeholder="Precio"
-                  />
-                  <button onClick={() => items.length > 1 && removeItem(i)}
-                    disabled={items.length === 1}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 disabled:opacity-30 transition">
-                    <TrashIcon />
-                  </button>
+                <div key={i} className="space-y-1.5 p-3 bg-surface-elevated border border-border-default rounded-xl">
+                  <div className="grid grid-cols-[1fr_32px] gap-2 items-start">
+                    <select
+                      value={item.productId}
+                      onChange={(e) => selectProduct(i, e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-border-default bg-surface text-txt-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                    >
+                      <option value="">Selecciona un producto...</option>
+                      {products.map(p => (
+                        <option key={p.productId} value={p.productId}>
+                          {p.name}
+                          {p.stock !== null ? ` (stock: ${p.stock})` : ''}
+                        </option>
+                      ))}
+                      <option value="custom">✏️ Ítem personalizado</option>
+                    </select>
+                    <button
+                      onClick={() => items.length > 1 && removeItem(i)}
+                      disabled={items.length === 1}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 disabled:opacity-30 transition mt-0.5"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+
+                  {(!item.productId || item.productId === 'custom') && (
+                    <input
+                      value={item.description}
+                      onChange={(e) => updateItem(i, 'description', e.target.value)}
+                      placeholder="Descripción del ítem..."
+                      className="w-full px-3 py-2 text-sm border border-border-default bg-surface text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                    />
+                  )}
+
+                  {item.productId && item.productId !== 'custom' && item.description && (
+                    <p className="text-xs text-txt-secondary px-1">{item.description}</p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-txt-tertiary mb-0.5">Cantidad</label>
+                      <input
+                        type="number" min={1} value={item.quantity}
+                        onChange={(e) => updateItem(i, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface text-txt-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30 text-center"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-txt-tertiary mb-0.5">Precio unitario</label>
+                      <input
+                        type="number" min={0} value={item.unitPrice || ''}
+                        onChange={(e) => updateItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                        placeholder="Precio"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
