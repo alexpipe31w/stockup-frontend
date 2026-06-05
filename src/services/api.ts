@@ -259,6 +259,9 @@ export const getRevenueTrends = (days = 30) =>
 export const getConversationInsights = () =>
   api.post('/analytics/conversation-insights', {});
 
+export const getAnalyticsSummary = (period: string) =>
+  api.get('/analytics/summary', { params: { period } });
+
 // ── Campaigns ─────────────────────────────────────────────────────────────
 export const getCampaigns = (storeId: string) =>
   api.get(`/campaigns/store/${storeId}`);
