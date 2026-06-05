@@ -35,10 +35,6 @@ function numCell(n: number): XLSX.CellObject {
   return { t: 'n', v: n, z: '#,##0' };
 }
 
-function headerRow(cols: string[]): XLSX.CellObject[] {
-  return cols.map(c => ({ t: 's', v: c }));
-}
-
 // ── Main export ───────────────────────────────────────────────────────────────
 
 /**
