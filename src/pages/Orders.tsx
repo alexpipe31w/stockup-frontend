@@ -552,7 +552,7 @@ export default function Orders() {
   const load = useCallback(() => {
     setLoading(true);
     getOrders(storeId)
-      .then((res) => setOrders(res.data))
+      .then((res) => setOrders((res.data ?? []).filter((o: Order) => o.type !== 'service')))
       .finally(() => setLoading(false));
   }, [storeId]);
 
