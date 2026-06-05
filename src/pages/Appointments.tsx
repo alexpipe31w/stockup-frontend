@@ -3,7 +3,7 @@ import {
   getAppointments, getAppointmentStats,
   updateAppointment, getAppointmentTimeline,
   createAppointment, getCustomers, getServices,
-  getStore,
+  getStore, getStaff,
 } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -27,6 +27,7 @@ type ViewMode            = 'list' | 'calendar';
 interface Customer     { customerId: string; name: string | null; phone: string; cedula: string | null; city: string | null; }
 interface ServiceInfo  { name: string; }
 interface VariantInfo  { name: string; }
+interface StaffInfo    { staffId: string; name: string; }
 interface TimelineEntry {
   timelineId: string; action: string;
   previousStatus: AppointmentStatus | null; newStatus: AppointmentStatus | null;
@@ -40,6 +41,7 @@ interface Appointment {
   internalNotes:   string | null; agreedPrice: string | null;
   cancelReason:    string | null; createdAt: string;
   customer:        Customer; service: ServiceInfo | null; serviceVariant: VariantInfo | null;
+  staff:           StaffInfo | null;
   // Payment fields
   paymentStatus?:      string | null;
   paymentMethod?:      string | null;
@@ -674,11 +676,13 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
 // ─── New Appointment Modal ─────────────────────────────────────────────────────
 
-function NewAppointmentModal({ storeId, businessHours, onCreated, onClose }: {
+function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff, staffLabel }: {
   storeId: string;
   businessHours: BusinessHoursJson | null;
   onCreated: () => void;
   onClose: () => void;
+  staff: StaffInfo[];
+  staffLabel: string;
 }) {
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [services,  setServices]  = useState<ServiceOption[]>([]);
@@ -692,6 +696,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose }: {
   const [form, setForm] = useState({
     customerId:      '',
     serviceId:       '',
+    staffId:         '',
     scheduledAt:     defaultDT,
     durationMinutes: '60',
     description:     '',
@@ -730,6 +735,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose }: {
       await createAppointment({
         customerId:      form.customerId,
         serviceId:       form.serviceId       || undefined,
+        staffId:         form.staffId         || undefined,
         scheduledAt:     new Date(form.scheduledAt).toISOString(),
         durationMinutes: form.durationMinutes  ? Number(form.durationMinutes) : undefined,
         description:     form.description     || undefined,
@@ -802,6 +808,22 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose }: {
                 ))}
               </select>
             </div>
+
+            {staff.length > 0 && (
+              <div>
+                <label className="block text-xs font-semibold text-txt-secondary mb-1.5">{staffLabel}</label>
+                <select
+                  value={form.staffId}
+                  onChange={e => setForm((f: any) => ({ ...f, staffId: e.target.value }))}
+                  className={ic}
+                >
+                  <option value="">Sin asignar</option>
+                  {staff.map(s => (
+                    <option key={s.staffId} value={s.staffId}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -1023,6 +1045,7 @@ function ListView({ appointments, selected, onSelect }: {
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           {appt.address    && <span className="text-[10px] text-txt-tertiary">📍 {appt.address.slice(0,30)}{appt.address.length>30?'…':''}</span>}
                           {appt.agreedPrice && <span className="text-[10px] text-txt-tertiary flex items-center gap-0.5"><DollarSign size={9} />{fmtCOP(appt.agreedPrice)}</span>}
+                          {appt.staff && <span className="text-[10px] text-txt-secondary hidden md:inline">{appt.staff.name}</span>}
                           <span className="text-[10px] text-txt-disabled">{SRC_LABEL[appt.source] ?? appt.source}</span>
                           {appt.priority !== 'NORMAL' && (
                             <span className="text-[10px] font-semibold" style={{ color: PC[appt.priority].dot }}>
@@ -1177,6 +1200,11 @@ function CalendarView({ appointments, selected, onSelect, businessHours }: {
                           }}>
                           <p className="font-bold truncate leading-tight">{fmtTime(appt.scheduledAt)}</p>
                           <p className="truncate leading-tight opacity-90">{nameLabel}</p>
+                          {appt.staff && (
+                            <span className="text-[10px] text-txt-tertiary truncate block">
+                              {appt.staff.name}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -1202,6 +1230,9 @@ export default function Appointments() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [filterType,         setFilterType]         = useState('');
   const [filterPendingAction, setFilterPendingAction] = useState('');
+  const [filterStaffId, setFilterStaffId] = useState('');
+  const [staffList,     setStaffList]     = useState<StaffInfo[]>([]);
+  const [staffLabel,    setStaffLabel]    = useState('Profesional');
   const [search,             setSearch]             = useState('');
   const [selected,           setSelected]           = useState<Appointment | null>(null);
   const [view,               setView]               = useState<ViewMode>('list');
@@ -1212,9 +1243,14 @@ export default function Appointments() {
 
   useEffect(() => {
     if (!storeId) return;
-    getStore(storeId as string)
-      .then(res => { if (res.data?.businessHours) setBusinessHours(res.data.businessHours); })
-      .catch(() => {});
+    Promise.all([
+      getStore(storeId as string),
+      getStaff(),
+    ]).then(([storeRes, staffRes]) => {
+      if (storeRes.data?.businessHours) setBusinessHours(storeRes.data.businessHours);
+      if (storeRes.data?.staffLabel)    setStaffLabel(storeRes.data.staffLabel);
+      setStaffList(staffRes.data ?? []);
+    }).catch(() => {});
   }, [storeId]);
 
   const load = useCallback(async () => {
@@ -1224,11 +1260,12 @@ export default function Appointments() {
       if (filterStatus)        p.status           = filterStatus;
       if (filterType)          p.type             = filterType;
       if (filterPendingAction) p.hasPendingAction = filterPendingAction;
+      if (filterStaffId)       p.staffId          = filterStaffId;
       const [aR, sR] = await Promise.all([getAppointments(p), getAppointmentStats()]);
       setAppointments(aR.data); setStats(sR.data);
     } catch { setError('Error cargando agendamientos.'); }
     finally { setLoading(false); }
-  }, [filterStatus, filterType, filterPendingAction]);
+  }, [filterStatus, filterType, filterPendingAction, filterStaffId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1347,6 +1384,18 @@ export default function Appointments() {
               <option value="corte">Corte</option>
               <option value="otro">Otro</option>
             </select>
+            {staffList.length > 0 && (
+              <select
+                value={filterStaffId}
+                onChange={e => setFilterStaffId(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30"
+              >
+                <option value="">Todos los {staffLabel.toLowerCase()}s</option>
+                {staffList.map(s => (
+                  <option key={s.staffId} value={s.staffId}>{s.name}</option>
+                ))}
+              </select>
+            )}
             {/* Pending actions badge */}
             {appointments.filter((a: Appointment) => a.pendingAction).length > 0 && (
               <button
@@ -1363,8 +1412,8 @@ export default function Appointments() {
                 Solicitudes pendientes
               </button>
             )}
-            {(search || filterStatus || filterType || filterPendingAction) && (
-              <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); setFilterPendingAction(''); }}
+            {(search || filterStatus || filterType || filterPendingAction || filterStaffId) && (
+              <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); setFilterPendingAction(''); setFilterStaffId(''); }}
                 className="text-xs text-blue-600 hover:underline">Limpiar</button>
             )}
           </div>
@@ -1401,6 +1450,8 @@ export default function Appointments() {
           businessHours={businessHours}
           onCreated={() => { setShowNewAppt(false); load(); }}
           onClose={() => setShowNewAppt(false)}
+          staff={staffList}
+          staffLabel={staffLabel}
         />
       )}
     </div>
