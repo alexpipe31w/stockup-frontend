@@ -3,8 +3,13 @@ import {
   getAppointments, getAppointmentStats,
   updateAppointment, getAppointmentTimeline,
   createAppointment, getCustomers, getServices,
+  getStore,
 } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import {
+  BusinessHoursJson, getCellState, getEarliestOpenHour, getLatestCloseHour,
+  isWithinBusinessHours, getHoursRangeLabel,
+} from '../utils/businessHours';
 import {
   Bot, User, MessageSquare, Plug, Sparkles, CheckCircle, Loader,
   PartyPopper, XCircle, Ghost, RefreshCw, FileText, PenLine,
@@ -670,8 +675,9 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
 // ─── New Appointment Modal ─────────────────────────────────────────────────────
 
-function NewAppointmentModal({ storeId, onCreated, onClose }: {
+function NewAppointmentModal({ storeId, businessHours, onCreated, onClose }: {
   storeId: string;
+  businessHours: BusinessHoursJson | null;
   onCreated: () => void;
   onClose: () => void;
 }) {
@@ -697,6 +703,7 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
   });
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
+  const [outOfHoursWarning, setOutOfHoursWarning] = useState(false);
 
   useEffect(() => {
     Promise.all([getCustomers(storeId), getServices()])
@@ -708,14 +715,18 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
       .finally(() => setLoadingOpts(false));
   }, [storeId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSubmit = async (force = false) => {
     if (!form.customerId || !form.scheduledAt) {
       setError('Cliente y fecha/hora son obligatorios.');
       return;
     }
-    setSaving(true);
-    setError('');
+    if (businessHours && !force) {
+      if (!isWithinBusinessHours(new Date(form.scheduledAt), businessHours)) {
+        setOutOfHoursWarning(true);
+        return;
+      }
+    }
+    setSaving(true); setError(''); setOutOfHoursWarning(false);
     try {
       await createAppointment({
         customerId:      form.customerId,
@@ -728,15 +739,17 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
         notes:           form.notes           || undefined,
         priority:        form.priority,
         source:          'MANUAL',
+        forceSchedule:   force || undefined,
       });
       onCreated();
-      onClose();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Error al crear la cita.');
     } finally {
       setSaving(false);
     }
   };
+
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); doSubmit(false); };
 
   const ic = 'w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30 text-txt-primary';
 
@@ -884,6 +897,35 @@ function NewAppointmentModal({ storeId, onCreated, onClose }: {
               </div>
             )}
 
+          {outOfHoursWarning && (
+            <div className="rounded-xl bg-warning/10 border border-warning/30 p-4 space-y-3">
+              <p className="text-sm font-semibold text-warning flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Fuera del horario de atención
+              </p>
+              <p className="text-xs text-txt-secondary">
+                Esta hora está fuera del horario configurado.{' '}
+                {businessHours && (() => {
+                  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', weekday: 'short' }).formatToParts(new Date(form.scheduledAt));
+                  const dk = (parts.find(p => p.type === 'weekday')?.value ?? 'Mon').toLowerCase() as any;
+                  const label = getHoursRangeLabel(businessHours, dk);
+                  return <span>Horario del día: <span className="font-medium">{label}</span>.</span>;
+                })()}
+                {' '}¿Deseas guardar de todas formas?
+              </p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setOutOfHoursWarning(false)}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
+                  Cancelar
+                </button>
+                <button type="button" onClick={() => doSubmit(true)}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold bg-warning/20 text-warning hover:bg-warning/30 transition">
+                  Guardar de todas formas
+                </button>
+              </div>
+            </div>
+          )}
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
@@ -1008,8 +1050,11 @@ function ListView({ appointments, selected, onSelect }: {
 
 // ─── Calendar View ────────────────────────────────────────────────────────────
 
-function CalendarView({ appointments, selected, onSelect }: {
-  appointments: Appointment[]; selected: Appointment | null; onSelect:(a:Appointment|null)=>void;
+function CalendarView({ appointments, selected, onSelect, businessHours }: {
+  appointments: Appointment[];
+  selected: Appointment | null;
+  onSelect: (a: Appointment | null) => void;
+  businessHours: BusinessHoursJson | null;
 }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const weekDays  = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -1018,16 +1063,27 @@ function CalendarView({ appointments, selected, onSelect }: {
 
   const CELL_H = 60;
 
-  // Index appointments by day × hour
+  const calendarHours = businessHours
+    ? Array.from(
+        { length: getLatestCloseHour(businessHours) - getEarliestOpenHour(businessHours) + 1 },
+        (_, i) => i + getEarliestOpenHour(businessHours),
+      )
+    : Array.from({ length: 16 }, (_, i) => i + 7);
+
   const grid: Record<number, Record<number, Appointment[]>> = {};
-  for (let d = 0; d < 7; d++) { grid[d] = {}; for (const h of HOURS) grid[d][h] = []; }
+  for (let d = 0; d < 7; d++) {
+    grid[d] = {};
+    for (const h of calendarHours) grid[d][h] = [];
+  }
 
   appointments.forEach(a => {
     const date   = new Date(a.scheduledAt);
     const dayIdx = weekDays.findIndex(d => sameDay(d, date));
     if (dayIdx === -1) return;
-    const h    = date.getHours();
-    const slot = h < 7 ? 7 : h > 22 ? 22 : h;
+    const h        = date.getHours();
+    const earliest = calendarHours[0];
+    const latest   = calendarHours[calendarHours.length - 1];
+    const slot = h < earliest ? earliest : h > latest ? latest : h;
     grid[dayIdx][slot]?.push(a);
   });
 
@@ -1058,13 +1114,15 @@ function CalendarView({ appointments, selected, onSelect }: {
         style={{ display:'grid', gridTemplateColumns:'48px repeat(7,1fr)' }}>
         <div className="border-r border-border-subtle" />
         {weekDays.map((d, i) => {
-          const today = i === todayIdx;
+          const today  = i === todayIdx;
+          const closed = businessHours ? getCellState(d, 0, businessHours) === 'closed-day' : false;
           return (
-            <div key={i} className={`py-2 text-center border-r border-border-subtle last:border-r-0 ${today ? 'bg-blue-50' : ''}`}>
-              <p className={`text-[10px] font-bold uppercase tracking-wide ${today ? 'text-blue-500' : 'text-txt-tertiary'}`}>{WEEKDAYS[i]}</p>
-              <p className={`text-xl font-black leading-tight ${today ? 'text-blue-600' : 'text-txt-primary'}`}>
+            <div key={i} className={`py-2 text-center border-r border-border-subtle last:border-r-0 ${today ? 'bg-blue-50/20' : closed ? 'bg-surface-overlay/40' : ''}`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wide ${today ? 'text-blue-500' : closed ? 'text-txt-disabled' : 'text-txt-tertiary'}`}>{WEEKDAYS[i]}</p>
+              <p className={`text-xl font-black leading-tight ${today ? 'text-blue-600' : closed ? 'text-txt-disabled' : 'text-txt-primary'}`}>
                 {d.toLocaleDateString('es-CO',{day:'numeric'})}
               </p>
+              {closed && <p className="text-[9px] text-txt-disabled uppercase tracking-wide mt-0.5">Cerrado</p>}
             </div>
           );
         })}
@@ -1073,7 +1131,7 @@ function CalendarView({ appointments, selected, onSelect }: {
       {/* grid */}
       <div className="flex-1 overflow-y-auto overscroll-contain" style={{ minHeight: 0 }}>
         <div className="relative">
-          {HOURS.map(hour => (
+          {calendarHours.map(hour => (
             <div key={hour} className="border-b border-slate-50"
               style={{ display:'grid', gridTemplateColumns:'48px repeat(7,1fr)', height: CELL_H }}>
               {/* hour label */}
@@ -1083,16 +1141,21 @@ function CalendarView({ appointments, selected, onSelect }: {
                 </span>
               </div>
               {/* cells */}
-              {weekDays.map((_, dayIdx) => {
-                const appts   = grid[dayIdx]?.[hour] ?? [];
-                const isToday_= dayIdx === todayIdx;
-                const showNow = isToday_ && nowHour === hour;
+              {weekDays.map((day, dayIdx) => {
+                const appts    = grid[dayIdx]?.[hour] ?? [];
+                const isToday_ = dayIdx === todayIdx;
+                const showNow  = isToday_ && nowHour === hour;
+                const state    = businessHours ? getCellState(day, hour, businessHours) : 'open';
+
+                const cellBg =
+                  state === 'closed-day'   ? 'bg-surface-overlay/50 cursor-not-allowed' :
+                  state === 'break'        ? 'bg-surface-overlay/30' :
+                  state === 'out-of-hours' ? 'bg-surface-overlay/40 cursor-not-allowed' :
+                  isToday_                 ? 'bg-blue-50/20' : '';
 
                 return (
                   <div key={dayIdx}
-                    className={`border-r border-slate-50 last:border-r-0 relative px-0.5 py-0.5 ${isToday_ ? 'bg-blue-50/20' : ''}`}>
-
-                    {/* "now" line */}
+                    className={`border-r border-slate-50 last:border-r-0 relative px-0.5 py-0.5 ${cellBg}`}>
                     {showNow && (
                       <div className="absolute left-0 right-0 z-10 flex items-center pointer-events-none"
                         style={{ top: `${(nowMin / 60) * 100}%` }}>
@@ -1100,10 +1163,9 @@ function CalendarView({ appointments, selected, onSelect }: {
                         <div className="flex-1 h-px bg-blue-500" />
                       </div>
                     )}
-
                     {appts.map(appt => {
-                      const cfg    = SC[appt.status];
-                      const isSel  = selected?.appointmentId === appt.appointmentId;
+                      const cfg      = SC[appt.status];
+                      const isSel    = selected?.appointmentId === appt.appointmentId;
                       const nameLabel = appt.service?.name ?? appt.customer.name ?? appt.type;
                       return (
                         <button key={appt.appointmentId} onClick={() => onSelect(isSel ? null : appt)}
@@ -1146,6 +1208,15 @@ export default function Appointments() {
   const [view,               setView]               = useState<ViewMode>('list');
   const [showNewAppt, setShowNewAppt] = useState(false);
   const { storeId } = useAuth();
+
+  const [businessHours, setBusinessHours] = useState<BusinessHoursJson | null>(null);
+
+  useEffect(() => {
+    if (!storeId) return;
+    getStore(storeId as string)
+      .then(res => { if (res.data?.businessHours) setBusinessHours(res.data.businessHours); })
+      .catch(() => {});
+  }, [storeId]);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -1317,7 +1388,7 @@ export default function Appointments() {
           <div className="flex gap-4 items-start flex-1" style={{ minHeight: 600 }}>
             {view === 'list'
               ? <ListView     appointments={filtered} selected={selected} onSelect={setSelected} />
-              : <CalendarView appointments={filtered} selected={selected} onSelect={setSelected} />
+              : <CalendarView appointments={filtered} selected={selected} onSelect={setSelected} businessHours={businessHours} />
             }
             {selected && (
               <DetailPanel appt={selected} onUpdate={handleUpdate} onClose={() => setSelected(null)} />
@@ -1327,8 +1398,9 @@ export default function Appointments() {
       </div>
       {showNewAppt && (
         <NewAppointmentModal
-          storeId={storeId}
-          onCreated={load}
+          storeId={storeId as string}
+          businessHours={businessHours}
+          onCreated={() => { setShowNewAppt(false); load(); }}
           onClose={() => setShowNewAppt(false)}
         />
       )}
