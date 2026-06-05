@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api, { getMySubscription, createCheckout, getStore, updateStore } from '../services/api';
+import api, { getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
@@ -8,7 +8,7 @@ import {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Tab = 'negocio' | 'ia' | 'excluidos' | 'suscripcion';
+type Tab = 'negocio' | 'ia' | 'excluidos' | 'suscripcion' | 'equipo';
 
 interface BlockedContact {
   blockedId: string;
@@ -46,6 +46,79 @@ const ADVANCE_OPTS = [
   { value: 1440, label: '24 horas' },
 ];
 
+// ── Shared UI components ───────────────────────────────────────────────────
+
+function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
+  return (
+    <button type="button" onClick={onChange}
+      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-lime' : 'bg-surface-overlay'}`}>
+      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : ''}`} />
+    </button>
+  );
+}
+
+function BusinessHoursEditor({
+  hours,
+  onChange,
+}: {
+  hours: BusinessHoursJson;
+  onChange: (h: BusinessHoursJson) => void;
+}) {
+  const setDay = (key: string, patch: Partial<DaySchedule>) =>
+    onChange({ ...hours, [key]: { ...hours[key as keyof BusinessHoursJson], ...patch } });
+
+  const setShift = (key: string, shift: 'shift1' | 'shift2', field: 'open' | 'close', val: string) => {
+    const day = { ...hours[key as keyof BusinessHoursJson] };
+    const existing = day[shift] ?? { open: '08:00', close: '18:00' };
+    onChange({ ...hours, [key]: { ...day, [shift]: { ...existing, [field]: val } } });
+  };
+
+  return (
+    <div className="space-y-2">
+      {DAY_KEYS.map(key => {
+        const day = hours[key];
+        return (
+          <div key={key} className={`flex flex-wrap items-center gap-3 py-2 px-3 rounded-xl border transition ${day.isOpen ? 'border-border-default bg-surface-elevated' : 'border-border-subtle bg-surface opacity-60'}`}>
+            <Toggle value={day.isOpen} onChange={() => setDay(key, { isOpen: !day.isOpen })} />
+            <span className="text-sm font-medium text-txt-primary w-20 flex-shrink-0">{DAY_LABELS[key]}</span>
+            {day.isOpen ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <input type="time" value={day.shift1?.open ?? '08:00'}
+                    onChange={e => setShift(key, 'shift1', 'open', e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                  <span className="text-txt-tertiary text-xs">→</span>
+                  <input type="time" value={day.shift1?.close ?? '12:00'}
+                    onChange={e => setShift(key, 'shift1', 'close', e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                </div>
+                <button type="button"
+                  onClick={() => setDay(key, { shift2: day.shift2 ? null : { open: '14:00', close: '18:00' } })}
+                  className={`text-xs px-2 py-1 rounded-lg border transition flex-shrink-0 ${day.shift2 ? 'border-lime text-lime bg-lime/10' : 'border-border-default text-txt-tertiary hover:bg-surface-overlay'}`}>
+                  {day.shift2 ? '− Tarde' : '+ Tarde'}
+                </button>
+                {day.shift2 && (
+                  <div className="flex items-center gap-1.5">
+                    <input type="time" value={day.shift2.open}
+                      onChange={e => setShift(key, 'shift2', 'open', e.target.value)}
+                      className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                    <span className="text-txt-tertiary text-xs">→</span>
+                    <input type="time" value={day.shift2.close}
+                      onChange={e => setShift(key, 'shift2', 'close', e.target.value)}
+                      className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-txt-tertiary italic">Cerrado</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function NegocioSection({ storeId }: { storeId: string }) {
   const [form, setForm] = useState({
     name: '', phone: '', ownerName: '', adminPhone: '',
@@ -61,6 +134,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     deliveryZone: '',
     hasParking: false,
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
+    staffLabel: 'Barbero',
   });
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
@@ -95,6 +169,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         deliveryZone:       d.deliveryZone       ?? '',
         hasParking:         d.hasParking         ?? false,
         businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
+        staffLabel:         d.staffLabel         ?? 'Barbero',
       });
     }).catch(() => {}).finally(() => setLoading(false));
   }, [storeId]);
@@ -105,25 +180,6 @@ function NegocioSection({ storeId }: { storeId: string }) {
     setf('paymentMethods', form.paymentMethods.includes(val)
       ? form.paymentMethods.filter(v => v !== val)
       : [...form.paymentMethods, val]);
-
-  const setDay = (key: string, patch: Partial<DaySchedule>) =>
-    setForm(p => ({
-      ...p,
-      businessHours: {
-        ...p.businessHours,
-        [key]: { ...p.businessHours[key as keyof BusinessHoursJson], ...patch },
-      },
-    }));
-
-  const setShift = (key: string, shift: 'shift1' | 'shift2', field: 'open' | 'close', val: string) =>
-    setForm(p => {
-      const day = { ...p.businessHours[key as keyof BusinessHoursJson] };
-      const existing = day[shift] ?? { open: '08:00', close: '18:00' };
-      return {
-        ...p,
-        businessHours: { ...p.businessHours, [key]: { ...day, [shift]: { ...existing, [field]: val } } },
-      };
-    });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +209,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         deliveryZone:       form.deliveryZone       || undefined,
         hasParking:         form.hasParking,
         businessHours:      form.businessHours,
+        staffLabel:         form.staffLabel      || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -177,13 +234,6 @@ function NegocioSection({ storeId }: { storeId: string }) {
         <p className="text-xs text-txt-tertiary">{sub}</p>
       </div>
     </div>
-  );
-
-  const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => (
-    <button type="button" onClick={onChange}
-      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-lime' : 'bg-surface-overlay'}`}>
-      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : ''}`} />
-    </button>
   );
 
   return (
@@ -343,54 +393,46 @@ function NegocioSection({ storeId }: { storeId: string }) {
         </div>
       </div>
 
-      {/* Card 5 — Horarios de atención */}
+      {/* Card 5 — Tipo de personal */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+          title="Tipo de personal" sub="¿Cómo se llama el personal en tu negocio?"
+        />
+        <div className="flex flex-wrap gap-2 mb-3">
+          {['Barbero', 'Estilista', 'Técnico', 'Asesor'].map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setf('staffLabel', opt)}
+              className={`py-1.5 px-4 rounded-xl border text-sm font-medium transition ${
+                form.staffLabel === opt
+                  ? 'border-lime bg-lime/10 text-lime'
+                  : 'border-border-default text-txt-secondary hover:bg-surface-overlay'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+        <input
+          value={form.staffLabel}
+          onChange={e => setf('staffLabel', e.target.value)}
+          placeholder="O escribe otro (ej: Colorista, Nutricionista...)"
+          className={ic}
+        />
+      </div>
+
+      {/* Card 6 — Horarios de atención */}
       <div className={card}>
         <CardHeader
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
           title="Horarios de atención" sub="El calendario y la IA respetarán estos horarios"
         />
-        <div className="space-y-2">
-          {DAY_KEYS.map(key => {
-            const day = form.businessHours[key];
-            return (
-              <div key={key} className={`flex flex-wrap items-center gap-3 py-2 px-3 rounded-xl border transition ${day.isOpen ? 'border-border-default bg-surface-elevated' : 'border-border-subtle bg-surface opacity-60'}`}>
-                <Toggle value={day.isOpen} onChange={() => setDay(key, { isOpen: !day.isOpen })} />
-                <span className="text-sm font-medium text-txt-primary w-20 flex-shrink-0">{DAY_LABELS[key]}</span>
-                {day.isOpen ? (
-                  <>
-                    <div className="flex items-center gap-1.5">
-                      <input type="time" value={day.shift1?.open ?? '08:00'}
-                        onChange={e => setShift(key, 'shift1', 'open', e.target.value)}
-                        className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
-                      <span className="text-txt-tertiary text-xs">→</span>
-                      <input type="time" value={day.shift1?.close ?? '12:00'}
-                        onChange={e => setShift(key, 'shift1', 'close', e.target.value)}
-                        className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
-                    </div>
-                    <button type="button"
-                      onClick={() => setDay(key, { shift2: day.shift2 ? null : { open: '14:00', close: '18:00' } })}
-                      className={`text-xs px-2 py-1 rounded-lg border transition flex-shrink-0 ${day.shift2 ? 'border-lime text-lime bg-lime/10' : 'border-border-default text-txt-tertiary hover:bg-surface-overlay'}`}>
-                      {day.shift2 ? '− Tarde' : '+ Tarde'}
-                    </button>
-                    {day.shift2 && (
-                      <div className="flex items-center gap-1.5">
-                        <input type="time" value={day.shift2.open}
-                          onChange={e => setShift(key, 'shift2', 'open', e.target.value)}
-                          className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
-                        <span className="text-txt-tertiary text-xs">→</span>
-                        <input type="time" value={day.shift2.close}
-                          onChange={e => setShift(key, 'shift2', 'close', e.target.value)}
-                          className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-xs text-txt-tertiary italic">Cerrado</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <BusinessHoursEditor
+          hours={form.businessHours}
+          onChange={h => setf('businessHours', h)}
+        />
       </div>
 
       {error && <p className="text-sm text-red-400 px-1">{error}</p>}
@@ -855,6 +897,222 @@ function SuscripcionSection() {
   );
 }
 
+// ── TAB: EQUIPO ────────────────────────────────────────────────────────────────
+
+interface StaffMember {
+  staffId: string;
+  name: string;
+  isActive: boolean;
+  schedule: BusinessHoursJson | null;
+  createdAt: string;
+}
+
+function EquipoSection({ storeId }: { storeId: string }) {
+  const [staff,      setStaff]      = useState<StaffMember[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [showModal,  setShowModal]  = useState(false);
+  const [editing,    setEditing]    = useState<StaffMember | null>(null);
+  const [deleting,   setDeleting]   = useState<string | null>(null);
+  const [staffLabel, setStaffLabel] = useState('profesional');
+  const [error,      setError]      = useState('');
+
+  useEffect(() => {
+    Promise.all([getStaff(), getStore(storeId)])
+      .then(([sr, storeR]) => {
+        setStaff(sr.data);
+        setStaffLabel((storeR.data?.staffLabel ?? 'profesional').toLowerCase());
+      })
+      .catch(() => setError('Error cargando el equipo'))
+      .finally(() => setLoading(false));
+  }, [storeId]);
+
+  const staffLabelCap = staffLabel.charAt(0).toUpperCase() + staffLabel.slice(1);
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm(`¿Desactivar a este ${staffLabel}?`)) return;
+    setDeleting(id);
+    try {
+      await deleteStaff(id);
+      setStaff(p => p.filter(s => s.staffId !== id));
+    } catch {
+      setError('Error al desactivar');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  if (loading) return <div className="text-sm text-txt-secondary p-4">Cargando equipo...</div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-txt-secondary">
+          {staff.length === 0
+            ? `Aún no tienes ${staffLabel}s registrados.`
+            : `${staff.length} ${staffLabel}${staff.length !== 1 ? 's' : ''} activo${staff.length !== 1 ? 's' : ''}`}
+        </p>
+        <button
+          onClick={() => { setEditing(null); setShowModal(true); }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#0A0A0F] transition"
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
+        >
+          + Agregar {staffLabelCap}
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
+
+      {staff.length > 0 && (
+        <div className="rounded-2xl border border-border-default overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-elevated">
+              <tr>
+                <th className="text-left px-4 py-3 text-txt-secondary font-medium">Nombre</th>
+                <th className="text-left px-4 py-3 text-txt-secondary font-medium hidden sm:table-cell">Horario</th>
+                <th className="text-right px-4 py-3 text-txt-secondary font-medium">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {staff.map(s => (
+                <tr key={s.staffId} className="bg-surface hover:bg-surface-elevated transition">
+                  <td className="px-4 py-3 text-txt-primary font-medium">{s.name}</td>
+                  <td className="px-4 py-3 text-txt-secondary hidden sm:table-cell">
+                    {s.schedule ? 'Horario propio' : 'Hereda del negocio'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => { setEditing(s); setShowModal(true); }}
+                        className="px-3 py-1.5 rounded-lg text-xs border border-border-default text-txt-secondary hover:bg-surface-overlay transition"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDelete(s.staffId)}
+                        disabled={deleting === s.staffId}
+                        className="px-3 py-1.5 rounded-lg text-xs border border-red-800/50 text-red-400 hover:bg-red-900/20 transition disabled:opacity-50"
+                      >
+                        {deleting === s.staffId ? '...' : 'Desactivar'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showModal && (
+        <StaffModal
+          staffLabel={staffLabelCap}
+          editing={editing}
+          onClose={() => setShowModal(false)}
+          onSaved={(updated) => {
+            if (editing) {
+              setStaff(p => p.map(s => s.staffId === updated.staffId ? updated : s));
+            } else {
+              setStaff(p => [...p, updated]);
+            }
+            setShowModal(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function StaffModal({
+  staffLabel, editing, onClose, onSaved,
+}: {
+  staffLabel: string;
+  editing: StaffMember | null;
+  onClose: () => void;
+  onSaved: (s: StaffMember) => void;
+}) {
+  const [name,           setName]           = useState(editing?.name ?? '');
+  const [hasOwnSchedule, setHasOwnSchedule] = useState(!!editing?.schedule);
+  const [schedule,       setSchedule]       = useState<BusinessHoursJson>(
+    (editing?.schedule as BusinessHoursJson | null) ?? DEFAULT_BUSINESS_HOURS,
+  );
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { setError('El nombre es obligatorio.'); return; }
+    setSaving(true); setError('');
+    try {
+      const payload = { name: name.trim(), schedule: hasOwnSchedule ? schedule : null };
+      const res = editing
+        ? await updateStaff(editing.staffId, payload)
+        : await createStaff(payload);
+      onSaved(res.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const ic = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm text-txt-primary placeholder:text-txt-tertiary';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle sticky top-0 bg-surface z-10">
+          <h2 className="text-base font-bold text-txt-primary">
+            {editing ? `Editar ${staffLabel}` : `Nuevo ${staffLabel}`}
+          </h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-txt-tertiary hover:bg-surface-overlay">
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Nombre *</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder={`Nombre del ${staffLabel.toLowerCase()}`}
+              className={ic}
+              required
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Toggle value={hasOwnSchedule} onChange={() => setHasOwnSchedule(p => !p)} />
+            <span className="text-sm text-txt-primary">Tiene horario propio</span>
+          </div>
+
+          {hasOwnSchedule ? (
+            <div>
+              <p className="text-xs text-txt-secondary mb-2">Define cuándo atiende este {staffLabel.toLowerCase()}:</p>
+              <BusinessHoursEditor hours={schedule} onChange={setSchedule} />
+            </div>
+          ) : (
+            <p className="text-sm text-txt-tertiary italic">Hereda el horario del negocio</p>
+          )}
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-border-default text-sm text-txt-secondary hover:bg-surface-overlay transition">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-[#0A0A0F] disabled:opacity-60 transition"
+              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
+              {saving ? 'Guardando...' : editing ? 'Guardar cambios' : `Crear ${staffLabel}`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Main: Config ───────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -897,6 +1155,18 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'equipo',
+    label: 'Equipo',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function Config() {
@@ -933,6 +1203,7 @@ export default function Config() {
       {activeTab === 'ia'          && <AiConfigPage />}
       {activeTab === 'excluidos'   && <ExcluidosSection />}
       {activeTab === 'suscripcion' && <SuscripcionSection />}
+      {activeTab === 'equipo'      && <EquipoSection     storeId={storeId} />}
     </div>
   );
 }
