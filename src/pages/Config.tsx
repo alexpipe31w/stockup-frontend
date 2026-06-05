@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getMySubscription, createCheckout } from '../services/api';
-import api from '../services/api';
+import api, { getMySubscription, createCheckout, getStore, updateStore } from '../services/api';
 import AiConfigPage from './AiConfig';
+import {
+  BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
+} from '../utils/businessHours';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -27,37 +29,130 @@ function Spinner() {
 
 // ── TAB: NEGOCIO ───────────────────────────────────────────────────────────
 
+const PAYMENT_OPTS = [
+  { value: 'efectivo',      label: 'Efectivo' },
+  { value: 'nequi',         label: 'Nequi' },
+  { value: 'daviplata',     label: 'Daviplata' },
+  { value: 'transferencia', label: 'Transferencia bancaria' },
+  { value: 'debito',        label: 'Tarjeta débito' },
+  { value: 'credito',       label: 'Tarjeta crédito' },
+];
+
+const ADVANCE_OPTS = [
+  { value: 30,   label: '30 minutos' },
+  { value: 60,   label: '1 hora' },
+  { value: 120,  label: '2 horas' },
+  { value: 240,  label: '4 horas' },
+  { value: 1440, label: '24 horas' },
+];
+
 function NegocioSection({ storeId }: { storeId: string }) {
-  const [form, setForm] = useState({ name: '', phone: '', ownerName: '', adminPhone: '' });
+  const [form, setForm] = useState({
+    name: '', phone: '', ownerName: '', adminPhone: '',
+    description: '', address: '', neighborhood: '', directions: '', googleMapsUrl: '',
+    email: '', website: '', instagram: '', facebook: '', tiktok: '',
+    paymentMethods: [] as string[],
+    paymentAccount: '',
+    requiresDeposit: false,
+    depositAmount: '',
+    minAdvanceMinutes: 120,
+    cancellationPolicy: '',
+    hasDelivery: false,
+    deliveryZone: '',
+    hasParking: false,
+    businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
+  });
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
+  const [saving,  setSaving]  = useState(false);
+  const [saved,   setSaved]   = useState(false);
+  const [error,   setError]   = useState('');
 
   useEffect(() => {
-    api.get(`/stores/${storeId}`)
-      .then(res => {
-        setForm({
-          name:       res.data.name       ?? '',
-          phone:      res.data.phone      ?? '',
-          ownerName:  res.data.ownerName  ?? '',
-          adminPhone: res.data.adminPhone ?? '',
-        });
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    getStore(storeId).then(res => {
+      const d = res.data;
+      setForm({
+        name:               d.name               ?? '',
+        phone:              d.phone              ?? '',
+        ownerName:          d.ownerName          ?? '',
+        adminPhone:         d.adminPhone         ?? '',
+        description:        d.description        ?? '',
+        address:            d.address            ?? '',
+        neighborhood:       d.neighborhood       ?? '',
+        directions:         d.directions         ?? '',
+        googleMapsUrl:      d.googleMapsUrl       ?? '',
+        email:              d.email              ?? '',
+        website:            d.website            ?? '',
+        instagram:          d.instagram          ?? '',
+        facebook:           d.facebook           ?? '',
+        tiktok:             d.tiktok             ?? '',
+        paymentMethods:     d.paymentMethods     ?? [],
+        paymentAccount:     d.paymentAccount     ?? '',
+        requiresDeposit:    d.requiresDeposit    ?? false,
+        depositAmount:      d.depositAmount      ?? '',
+        minAdvanceMinutes:  d.minAdvanceMinutes  ?? 120,
+        cancellationPolicy: d.cancellationPolicy ?? '',
+        hasDelivery:        d.hasDelivery        ?? false,
+        deliveryZone:       d.deliveryZone       ?? '',
+        hasParking:         d.hasParking         ?? false,
+        businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [storeId]);
+
+  const setf = (key: string, val: any) => setForm(p => ({ ...p, [key]: val }));
+
+  const togglePayment = (val: string) =>
+    setf('paymentMethods', form.paymentMethods.includes(val)
+      ? form.paymentMethods.filter(v => v !== val)
+      : [...form.paymentMethods, val]);
+
+  const setDay = (key: string, patch: Partial<DaySchedule>) =>
+    setForm(p => ({
+      ...p,
+      businessHours: {
+        ...p.businessHours,
+        [key]: { ...p.businessHours[key as keyof BusinessHoursJson], ...patch },
+      },
+    }));
+
+  const setShift = (key: string, shift: 'shift1' | 'shift2', field: 'open' | 'close', val: string) =>
+    setForm(p => {
+      const day = { ...p.businessHours[key as keyof BusinessHoursJson] };
+      const existing = day[shift] ?? { open: '08:00', close: '18:00' };
+      return {
+        ...p,
+        businessHours: { ...p.businessHours, [key]: { ...day, [shift]: { ...existing, [field]: val } } },
+      };
+    });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    setError('');
+    setSaving(true); setError('');
     try {
-      await api.patch(`/stores/${storeId}`, {
-        name:       form.name,
-        phone:      form.phone,
-        ownerName:  form.ownerName,
-        adminPhone: form.adminPhone || undefined,
+      await updateStore(storeId, {
+        name: form.name, phone: form.phone,
+        ownerName:          form.ownerName          || undefined,
+        adminPhone:         form.adminPhone         || undefined,
+        description:        form.description        || undefined,
+        address:            form.address            || undefined,
+        neighborhood:       form.neighborhood       || undefined,
+        directions:         form.directions         || undefined,
+        googleMapsUrl:      form.googleMapsUrl      || undefined,
+        email:              form.email              || undefined,
+        website:            form.website            || undefined,
+        instagram:          form.instagram          || undefined,
+        facebook:           form.facebook           || undefined,
+        tiktok:             form.tiktok             || undefined,
+        paymentMethods:     form.paymentMethods,
+        paymentAccount:     form.paymentAccount     || undefined,
+        requiresDeposit:    form.requiresDeposit,
+        depositAmount:      form.depositAmount      || undefined,
+        minAdvanceMinutes:  form.minAdvanceMinutes,
+        cancellationPolicy: form.cancellationPolicy || undefined,
+        hasDelivery:        form.hasDelivery,
+        deliveryZone:       form.deliveryZone       || undefined,
+        hasParking:         form.hasParking,
+        businessHours:      form.businessHours,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -70,95 +165,241 @@ function NegocioSection({ storeId }: { storeId: string }) {
 
   if (loading) return <Spinner />;
 
-  const inputClass = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary';
+  const ic = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary placeholder:text-txt-tertiary';
+  const ta = `${ic} resize-none`;
+  const card = 'bg-surface rounded-2xl shadow-sm border border-border-subtle p-6 space-y-4';
+
+  const CardHeader = ({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) => (
+    <div className="flex items-center gap-3 pb-3 border-b border-border-subtle">
+      <div className="w-9 h-9 rounded-xl bg-surface-overlay flex items-center justify-center flex-shrink-0 text-lime">{icon}</div>
+      <div>
+        <h2 className="font-semibold text-txt-primary text-sm">{title}</h2>
+        <p className="text-xs text-txt-tertiary">{sub}</p>
+      </div>
+    </div>
+  );
+
+  const Toggle = ({ value, onChange }: { value: boolean; onChange: () => void }) => (
+    <button type="button" onClick={onChange}
+      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-lime' : 'bg-surface-overlay'}`}>
+      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : ''}`} />
+    </button>
+  );
 
   return (
-    <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
+    <form onSubmit={handleSave} className="space-y-5">
+
+      {/* Card 1 — Información básica */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+          title="Información básica" sub="Nombre, descripción y ubicación del negocio"
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Nombre del negocio *</label>
+            <input value={form.name} onChange={e => setf('name', e.target.value)} placeholder="Mi Negocio" className={ic} required />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Propietario</label>
+            <input value={form.ownerName} onChange={e => setf('ownerName', e.target.value)} placeholder="Nombre del dueño" className={ic} />
+          </div>
         </div>
         <div>
-          <h2 className="font-semibold text-txt-primary">Información del negocio</h2>
-          <p className="text-xs text-txt-tertiary">Datos básicos de tu tienda — la IA los usa para presentarse</p>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Descripción del negocio</label>
+          <textarea value={form.description} onChange={e => setf('description', e.target.value)}
+            placeholder="¿Qué ofreces? La IA usará esto para presentarse ante los clientes." rows={3} className={ta} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Dirección</label>
+            <input value={form.address} onChange={e => setf('address', e.target.value)} placeholder="Calle 10 #5-20" className={ic} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Barrio / Ciudad</label>
+            <input value={form.neighborhood} onChange={e => setf('neighborhood', e.target.value)} placeholder="El Poblado, Medellín" className={ic} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Indicaciones de llegada</label>
+          <textarea value={form.directions} onChange={e => setf('directions', e.target.value)}
+            placeholder="Frente al parque, segundo piso..." rows={2} className={ta} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Link Google Maps</label>
+          <input value={form.googleMapsUrl} onChange={e => setf('googleMapsUrl', e.target.value)} placeholder="https://maps.app.goo.gl/..." className={ic} />
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-txt-primary mb-1.5">Nombre del negocio</label>
-          <input
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="Mi Tienda"
-            className={inputClass}
-            style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
-          />
+      {/* Card 2 — Contacto y redes */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>}
+          title="Contacto y redes sociales" sub="Cómo pueden encontrarte los clientes"
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Teléfono WhatsApp *</label>
+            <input value={form.phone} onChange={e => setf('phone', e.target.value)} placeholder="+573001234567" className={ic} required />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Teléfono admin (notificaciones)</label>
+            <input value={form.adminPhone} onChange={e => setf('adminPhone', e.target.value)} placeholder="+573001234567" className={ic} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Email de contacto</label>
+            <input value={form.email} onChange={e => setf('email', e.target.value)} placeholder="contacto@negocio.com" className={ic} type="email" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Sitio web</label>
+            <input value={form.website} onChange={e => setf('website', e.target.value)} placeholder="https://minegocio.com" className={ic} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Instagram</label>
+            <div className="flex">
+              <span className="flex items-center px-3 bg-surface-overlay border border-r-0 border-border-default rounded-l-xl text-txt-tertiary text-sm">@</span>
+              <input value={form.instagram} onChange={e => setf('instagram', e.target.value)} placeholder="minegocio" className={`${ic} rounded-l-none`} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Facebook</label>
+            <input value={form.facebook} onChange={e => setf('facebook', e.target.value)} placeholder="facebook.com/minegocio" className={ic} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">TikTok</label>
+            <div className="flex">
+              <span className="flex items-center px-3 bg-surface-overlay border border-r-0 border-border-default rounded-l-xl text-txt-tertiary text-sm">@</span>
+              <input value={form.tiktok} onChange={e => setf('tiktok', e.target.value)} placeholder="minegocio" className={`${ic} rounded-l-none`} />
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-txt-primary mb-1.5">Teléfono WhatsApp</label>
-          <input
-            value={form.phone}
-            onChange={e => setForm({ ...form, phone: e.target.value })}
-            placeholder="+573001234567"
-            className={inputClass}
-          />
-          <p className="text-xs text-txt-tertiary mt-1.5">Número con código de país — ej: +573001234567</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-txt-primary mb-1.5">Nombre del propietario</label>
-          <input
-            value={form.ownerName}
-            onChange={e => setForm({ ...form, ownerName: e.target.value })}
-            placeholder="Juan Pérez"
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-txt-primary mb-1.5">
-            Teléfono personal del admin
-            <span className="ml-2 text-xs font-normal text-txt-tertiary">(opcional)</span>
-          </label>
-          <input
-            value={form.adminPhone}
-            onChange={e => setForm({ ...form, adminPhone: e.target.value })}
-            placeholder="+573001234567"
-            className={inputClass}
-          />
-          <p className="text-xs text-txt-tertiary mt-1.5">
-            Notificaciones de citas (pagos, solicitudes cancel/reagenda, reportes diarios) llegan a este número por WhatsApp.
-          </p>
-        </div>
+      </div>
 
-        {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {error}
+      {/* Card 3 — Pagos */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>}
+          title="Métodos de pago" sub="La IA informará al cliente cómo puede pagar"
+        />
+        <div className="flex flex-wrap gap-2">
+          {PAYMENT_OPTS.map(opt => (
+            <button key={opt.value} type="button" onClick={() => togglePayment(opt.value)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
+                form.paymentMethods.includes(opt.value)
+                  ? 'bg-lime/20 border-lime text-lime'
+                  : 'bg-surface-elevated border-border-default text-txt-secondary hover:border-border-default'
+              }`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {(form.paymentMethods.includes('nequi') || form.paymentMethods.includes('transferencia') || form.paymentMethods.includes('daviplata')) && (
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Número Nequi / cuenta bancaria</label>
+            <input value={form.paymentAccount} onChange={e => setf('paymentAccount', e.target.value)}
+              placeholder="3001234567 — Bancolombia 123-456789" className={ic} />
           </div>
         )}
-
-        <div className="flex items-center gap-4 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2.5 rounded-xl text-txt-inverse gradient-brand"
-          >
-            {saving ? 'Guardando...' : 'Guardar cambios'}
-          </button>
-          {saved && (
-            <span className="text-sm text-green-600 font-medium flex items-center gap-1.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-              Guardado correctamente
-            </span>
-          )}
+        <div className="flex items-center gap-3">
+          <Toggle value={form.requiresDeposit} onChange={() => setf('requiresDeposit', !form.requiresDeposit)} />
+          <span className="text-sm text-txt-primary">Requiere anticipo para confirmar cita</span>
         </div>
-      </form>
-    </div>
+        {form.requiresDeposit && (
+          <input value={form.depositAmount} onChange={e => setf('depositAmount', e.target.value)}
+            placeholder="Monto del anticipo (ej: 50000 o 30%)" className={ic} />
+        )}
+      </div>
+
+      {/* Card 4 — Políticas */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
+          title="Políticas del negocio" sub="Reglas de cancelación, anticipación y servicios extra"
+        />
+        <div>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Anticipación mínima para agendar</label>
+          <select value={form.minAdvanceMinutes} onChange={e => setf('minAdvanceMinutes', Number(e.target.value))} className={ic}>
+            {ADVANCE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Política de cancelación</label>
+          <textarea value={form.cancellationPolicy} onChange={e => setf('cancellationPolicy', e.target.value)}
+            placeholder="Cancela con al menos 2 horas de anticipación..." rows={2} className={ta} />
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.hasDelivery} onChange={() => setf('hasDelivery', !form.hasDelivery)} />
+            <span className="text-sm text-txt-primary">Servicio a domicilio disponible</span>
+          </div>
+          {form.hasDelivery && (
+            <input value={form.deliveryZone} onChange={e => setf('deliveryZone', e.target.value)}
+              placeholder="Zona de cobertura (ej: Barrio El Centro, comunas 10 y 11)" className={ic} />
+          )}
+          <div className="flex items-center gap-3">
+            <Toggle value={form.hasParking} onChange={() => setf('hasParking', !form.hasParking)} />
+            <span className="text-sm text-txt-primary">Parqueadero disponible</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Card 5 — Horarios de atención */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+          title="Horarios de atención" sub="El calendario y la IA respetarán estos horarios"
+        />
+        <div className="space-y-2">
+          {DAY_KEYS.map(key => {
+            const day = form.businessHours[key];
+            return (
+              <div key={key} className={`flex flex-wrap items-center gap-3 py-2 px-3 rounded-xl border transition ${day.isOpen ? 'border-border-default bg-surface-elevated' : 'border-border-subtle bg-surface opacity-60'}`}>
+                <Toggle value={day.isOpen} onChange={() => setDay(key, { isOpen: !day.isOpen })} />
+                <span className="text-sm font-medium text-txt-primary w-20 flex-shrink-0">{DAY_LABELS[key]}</span>
+                {day.isOpen ? (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <input type="time" value={day.shift1?.open ?? '08:00'}
+                        onChange={e => setShift(key, 'shift1', 'open', e.target.value)}
+                        className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                      <span className="text-txt-tertiary text-xs">→</span>
+                      <input type="time" value={day.shift1?.close ?? '12:00'}
+                        onChange={e => setShift(key, 'shift1', 'close', e.target.value)}
+                        className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                    </div>
+                    <button type="button"
+                      onClick={() => setDay(key, { shift2: day.shift2 ? null : { open: '14:00', close: '18:00' } })}
+                      className={`text-xs px-2 py-1 rounded-lg border transition flex-shrink-0 ${day.shift2 ? 'border-lime text-lime bg-lime/10' : 'border-border-default text-txt-tertiary hover:bg-surface-overlay'}`}>
+                      {day.shift2 ? '− Tarde' : '+ Tarde'}
+                    </button>
+                    {day.shift2 && (
+                      <div className="flex items-center gap-1.5">
+                        <input type="time" value={day.shift2.open}
+                          onChange={e => setShift(key, 'shift2', 'open', e.target.value)}
+                          className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                        <span className="text-txt-tertiary text-xs">→</span>
+                        <input type="time" value={day.shift2.close}
+                          onChange={e => setShift(key, 'shift2', 'close', e.target.value)}
+                          className="px-2 py-1 rounded-lg border border-border-default bg-surface text-sm text-txt-primary" />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-xs text-txt-tertiary italic">Cerrado</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-400 px-1">{error}</p>}
+      <button type="submit" disabled={saving}
+        className="w-full py-3 rounded-2xl font-semibold text-[#0A0A0F] transition disabled:opacity-60"
+        style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
+        {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar cambios'}
+      </button>
+    </form>
   );
 }
 
