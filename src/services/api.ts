@@ -278,6 +278,7 @@ export const getAppointments = (params?: {
   to?: string;
   serviceId?: string;
   priority?: string;
+  staffId?: string;
 }) => api.get('/appointments', { params });
 
 export const getAppointmentStats = () =>
@@ -293,6 +294,7 @@ export const createAppointment = (data: {
   customerId: string;
   serviceId?: string;
   serviceVariantId?: string;
+  staffId?: string;
   type?: string;
   priority?: string;
   source?: string;
@@ -312,6 +314,19 @@ export const updateAppointment = (id: string, data: Record<string, any>) =>
 
 export const deleteAppointment = (id: string) =>
   api.delete(`/appointments/${id}`);
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+export const getStaff = () =>
+  api.get('/staff');
+
+export const createStaff = (data: { name: string; schedule?: Record<string, any> | null }) =>
+  api.post('/staff', data);
+
+export const updateStaff = (id: string, data: { name?: string; isActive?: boolean; schedule?: Record<string, any> | null }) =>
+  api.patch(`/staff/${id}`, data);
+
+export const deleteStaff = (id: string) =>
+  api.delete(`/staff/${id}`);
 
 export const getDailyReports = (limit = 30) =>
   api.get(`/reports/daily?limit=${limit}`);
