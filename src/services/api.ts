@@ -315,6 +315,13 @@ export const updateAppointment = (id: string, data: Record<string, any>) =>
 export const deleteAppointment = (id: string) =>
   api.delete(`/appointments/${id}`);
 
+// ── Public (no auth needed) ───────────────────────────────────────────────────
+export const getPublicStore = (slug: string) =>
+  api.get(`/public/${slug}`);
+
+export const getPublicAvailability = (slug: string, date: string) =>
+  api.get(`/public/${slug}/availability`, { params: { date } });
+
 // ── Staff ─────────────────────────────────────────────────────────────────────
 export const getStaff = () =>
   api.get('/staff');

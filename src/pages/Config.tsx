@@ -135,6 +135,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     hasParking: false,
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
     staffLabel: 'Barbero',
+    slug: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
@@ -170,6 +171,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         hasParking:         d.hasParking         ?? false,
         businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
+        slug:               d.slug               ?? '',
       });
     }).catch(() => {}).finally(() => setLoading(false));
   }, [storeId]);
@@ -210,6 +212,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         hasParking:         form.hasParking,
         businessHours:      form.businessHours,
         staffLabel:         form.staffLabel      || undefined,
+        slug:               form.slug            || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -421,6 +424,40 @@ function NegocioSection({ storeId }: { storeId: string }) {
           placeholder="O escribe otro (ej: Colorista, Nutricionista...)"
           className={ic}
         />
+      </div>
+
+      {/* Link público del calendario */}
+      <div className={card}>
+        <p className="text-sm font-semibold text-txt-primary mb-1">Link público del calendario</p>
+        <p className="text-xs text-txt-secondary mb-3">
+          Comparte este link para que tus clientes vean tu disponibilidad sin necesidad de registrarse.
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-txt-tertiary whitespace-nowrap flex-shrink-0">…/cal/</span>
+          <input
+            value={form.slug}
+            onChange={e => setf('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+            placeholder="mi-negocio"
+            maxLength={100}
+            className={ic}
+          />
+        </div>
+        {form.slug && (
+          <div className="mt-2 flex items-center gap-2 p-2 bg-surface-elevated rounded-lg border border-border-default">
+            <span className="text-xs text-txt-secondary truncate flex-1 font-mono">
+              {window.location.origin}/cal/{form.slug}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/cal/${form.slug}`);
+              }}
+              className="text-xs text-lime hover:underline flex-shrink-0 font-medium"
+            >
+              Copiar
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Card 6 — Horarios de atención */}

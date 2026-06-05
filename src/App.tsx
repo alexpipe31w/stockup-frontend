@@ -25,6 +25,7 @@ import Subscription from './pages/Subscription';
 import PaymentStatus from './pages/PaymentStatus';
 import More from './pages/More';
 import ServiceOrders from './pages/ServiceOrders';
+import PublicCalendar from './pages/PublicCalendar';
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -126,6 +127,7 @@ function App() {
             <Route path="/users"            element={<AdminRoute><Layout><Users /></Layout></AdminRoute>} />
             <Route path="/superadmin/login" element={<SuperAdminLogin />} />
             <Route path="/superadmin"       element={<SuperAdmin />} />
+            <Route path="/cal/:slug"        element={<PublicCalendar />} />
             <Route path="*"                element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>
