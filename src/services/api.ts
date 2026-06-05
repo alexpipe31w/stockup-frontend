@@ -240,6 +240,7 @@ export const createManualOrder = (data: {
   discountPercent?: number;
   manualPaymentMethod?: string;
   idempotencyKey?: string;
+  type?: string;
 }) => api.post('/orders/manual', data);
 
 // ── Customers ─────────────────────────────────────────────────────────────
@@ -251,6 +252,9 @@ export const getCustomer = (id: string) =>
 
 export const updateCustomer = (id: string, data: { name?: string; city?: string; cedula?: string; acceptsMarketing?: boolean }) =>
   api.patch(`/customers/${id}`, data);
+
+export const createCustomer = (data: { phone: string; name?: string }) =>
+  api.post('/customers', data);
 
 // ── Analytics ─────────────────────────────────────────────────────────────
 export const getRevenueTrends = (days = 30) =>

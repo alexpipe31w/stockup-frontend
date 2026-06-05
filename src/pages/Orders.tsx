@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders, updateOrderStatus, createManualOrder, getCustomers, getProducts } from '../services/api';
+import { getOrders, updateOrderStatus, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -41,6 +41,9 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const [customers, setCustomers]       = useState<CustomerOption[]>([]);
   const [customerSearch, setCSearch]    = useState('');
   const [selectedCustomer, setSelCust]  = useState<CustomerOption | null>(null);
+  const [customerMode, setCustMode]     = useState<'search' | 'new'>('search');
+  const [newPhone, setNewPhone]         = useState('');
+  const [newName, setNewName]           = useState('');
   const [items, setItems]               = useState<ManualItem[]>([{ productId: '', description: '', quantity: 1, unitPrice: 0 }]);
   const [payMethod, setPayMethod]       = useState('CASH');
   const [discountPct, setDiscountPct]   = useState(0);
@@ -87,13 +90,19 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   };
 
   const submit = async () => {
-    if (!selectedCustomer) return setError('Selecciona un cliente.');
+    if (customerMode === 'search' && !selectedCustomer) return setError('Selecciona un cliente.');
+    if (customerMode === 'new' && !newPhone.trim()) return setError('El teléfono del cliente es obligatorio.');
     if (items.some((i) => !i.productId && !i.description.trim())) return setError('Selecciona un producto o escribe una descripción para cada ítem.');
     if (items.some((i) => i.unitPrice <= 0)) return setError('El precio de cada ítem debe ser mayor a 0.');
     setError(''); setSubmitting(true);
     try {
+      let customerId = selectedCustomer?.customerId ?? '';
+      if (customerMode === 'new') {
+        const r = await createCustomer({ phone: newPhone.trim(), name: newName.trim() || undefined });
+        customerId = r.data.customerId;
+      }
       await createManualOrder({
-        customerId:          selectedCustomer.customerId,
+        customerId,
         items:               items.map((i) => ({
           productId:   (i.productId && i.productId !== 'custom') ? i.productId : undefined,
           description: i.description.trim() || undefined,
@@ -140,37 +149,65 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
           {/* Cliente */}
           <div>
-            <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Cliente</label>
-            {selectedCustomer ? (
-              <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-                <div>
-                  <p className="font-medium text-txt-primary text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
-                  <p className="text-xs text-txt-secondary font-mono">{selectedCustomer.phone}</p>
-                </div>
-                <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-blue-600 hover:underline">Cambiar</button>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">Cliente</label>
+              <div className="flex gap-1 bg-surface-overlay rounded-lg p-0.5">
+                <button onClick={() => { setCustMode('search'); setNewPhone(''); setNewName(''); }}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition ${customerMode === 'search' ? 'bg-surface text-txt-primary shadow-sm' : 'text-txt-tertiary hover:text-txt-secondary'}`}>
+                  Existente
+                </button>
+                <button onClick={() => { setCustMode('new'); setSelCust(null); setCSearch(''); }}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition ${customerMode === 'new' ? 'bg-surface text-txt-primary shadow-sm' : 'text-txt-tertiary hover:text-txt-secondary'}`}>
+                  Nuevo
+                </button>
               </div>
+            </div>
+
+            {customerMode === 'search' ? (
+              selectedCustomer ? (
+                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                  <div>
+                    <p className="font-medium text-txt-primary text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
+                    <p className="text-xs text-txt-secondary font-mono">{selectedCustomer.phone}</p>
+                  </div>
+                  <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-blue-600 hover:underline">Cambiar</button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    value={customerSearch}
+                    onChange={(e) => setCSearch(e.target.value)}
+                    placeholder="Buscar por nombre o teléfono..."
+                    className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
+                  />
+                  {customerSearch && filteredCustomers.length > 0 && (
+                    <div className="absolute w-full bg-surface border border-border-default rounded-xl shadow-lg mt-1 overflow-hidden z-10">
+                      {filteredCustomers.map((c) => (
+                        <button key={c.customerId} onClick={() => { setSelCust(c); setCSearch(''); }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-surface-elevated transition">
+                          <p className="text-sm font-medium text-txt-primary">{c.name ?? 'Sin nombre'}</p>
+                          <p className="text-xs text-txt-tertiary font-mono">{c.phone}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {customerSearch && filteredCustomers.length === 0 && (
+                    <p className="mt-2 text-xs text-txt-tertiary">Sin coincidencias. Cambia a "Nuevo" para crear el cliente.</p>
+                  )}
+                </div>
+              )
             ) : (
-              <div className="relative">
+              <div className="space-y-2">
                 <input
-                  value={customerSearch}
-                  onChange={(e) => setCSearch(e.target.value)}
-                  placeholder="Buscar por nombre o teléfono..."
+                  value={newPhone} onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="Teléfono (obligatorio)"
                   className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
                 />
-                {customerSearch && filteredCustomers.length > 0 && (
-                  <div className="absolute w-full bg-surface border border-border-default rounded-xl shadow-lg mt-1 overflow-hidden z-10">
-                    {filteredCustomers.map((c) => (
-                      <button key={c.customerId} onClick={() => { setSelCust(c); setCSearch(''); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-surface-elevated transition">
-                        <p className="text-sm font-medium text-txt-primary">{c.name ?? 'Sin nombre'}</p>
-                        <p className="text-xs text-txt-tertiary font-mono">{c.phone}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {customerSearch && filteredCustomers.length === 0 && (
-                  <p className="mt-2 text-xs text-txt-tertiary">Sin coincidencias</p>
-                )}
+                <input
+                  value={newName} onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Nombre (opcional)"
+                  className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
+                />
               </div>
             )}
           </div>
@@ -305,7 +342,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
           {/* Botones */}
           <div className="flex gap-2 pt-1">
-            <button onClick={submit} disabled={submitting || !selectedCustomer}
+            <button onClick={submit} disabled={submitting || (customerMode === 'search' ? !selectedCustomer : !newPhone.trim())}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
               style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
               {submitting ? 'Registrando...' : 'Registrar venta'}
