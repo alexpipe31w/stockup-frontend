@@ -304,6 +304,7 @@ export const createAppointment = (data: {
   notes?: string;
   internalNotes?: string;
   agreedPrice?: number;
+  forceSchedule?: boolean;
 }) => api.post('/appointments', data);
 
 export const updateAppointment = (id: string, data: Record<string, any>) =>
@@ -340,6 +341,12 @@ export const updateStoreTheme = (storeId: string, data: {
   secondaryColor?: string;
   accentColor?: string;
 }) => api.patch(`/stores/${storeId}/theme`, data);
+
+export const getStore    = (storeId: string) =>
+  api.get(`/stores/${storeId}`);
+
+export const updateStore = (storeId: string, data: Record<string, any>) =>
+  api.patch(`/stores/${storeId}`, data);
 
 // ── AI Config ─────────────────────────────────────────────────────────────
 export const getAiConfig = (storeId: string) =>
