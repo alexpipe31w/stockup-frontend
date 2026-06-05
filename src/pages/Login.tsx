@@ -61,7 +61,7 @@ export default function Login() {
             Gestiona tu negocio<br />desde WhatsApp
           </h2>
           <p className="text-txt-secondary text-lg max-w-md">
-            CRM inteligente con IA para barberos, salones y tiendas. Automatiza respuestas, gestiona citas y crece tu negocio.
+            CRM inteligente con IA para cualquier negocio. Automatiza respuestas, gestiona citas y crece tu negocio.
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
             {['IA 24/7', 'WhatsApp CRM', 'Citas', 'Campañas'].map((tag) => (

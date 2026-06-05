@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getServiceOrders } from '../services/api';
-import { Scissors, Calendar, CreditCard, TrendingUp, Search, Download } from 'lucide-react';
+import { Briefcase, Calendar, CreditCard, TrendingUp, Search, Download } from 'lucide-react';
 import { exportCashReport } from '../utils/exportExcel';
 
 const fmt = (n: number) =>
@@ -87,7 +87,7 @@ export default function ServiceOrders() {
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
             <div>
               <h1 className="text-xl font-bold text-txt-primary flex items-center gap-2">
-                <Scissors size={20} className="text-lime" />
+                <Briefcase size={20} className="text-lime" />
                 Órdenes de Servicios
               </h1>
               <p className="text-sm text-txt-tertiary mt-0.5">
@@ -120,7 +120,7 @@ export default function ServiceOrders() {
               </div>
               <div className="bg-surface-elevated rounded-xl p-3 border border-border-subtle">
                 <p className="text-xs text-txt-tertiary font-medium flex items-center gap-1">
-                  <Scissors size={12} /> Servicios
+                  <Briefcase size={12} /> Servicios
                 </p>
                 <p className="text-lg font-bold text-txt-primary mt-0.5">{filtered.length}</p>
               </div>
@@ -180,7 +180,7 @@ export default function ServiceOrders() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-txt-tertiary">
-            <Scissors size={40} strokeWidth={1} />
+            <Briefcase size={40} strokeWidth={1} />
             <p className="text-sm">
               {search || filterMethod !== 'all'
                 ? 'Sin resultados para este filtro'
@@ -225,7 +225,7 @@ export default function ServiceOrders() {
 
                     {/* Servicio */}
                     <div className="flex items-center gap-2 min-w-0">
-                      <Scissors size={14} className="text-lime flex-shrink-0" />
+                      <Briefcase size={14} className="text-lime flex-shrink-0" />
                       <span className="text-sm text-txt-primary truncate">{serviceName}</span>
                     </div>
 

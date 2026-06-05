@@ -64,22 +64,44 @@ const PRICE_TYPE_OPTIONS: { value: PriceType; label: string; hint: string }[] = 
   { value: 'VARIABLE', label: 'Precio variable',  hint: 'Sin precio fijo — el admin cotiza cada caso' },
 ];
 
-const BARBERIA_TEMPLATES: Array<{
+const SERVICE_TEMPLATES: Array<{
   name: string; category: string; description: string;
   priceType: PriceType; basePrice: number; estimatedMinutes: number;
 }> = [
-  { name: 'Corte de cabello',        category: 'Corte',        description: 'Corte de cabello con tijeras o máquina',       priceType: 'FIXED',    basePrice: 20000,  estimatedMinutes: 30  },
-  { name: 'Corte + Barba',           category: 'Combo',        description: 'Corte de cabello y arreglo de barba',          priceType: 'FIXED',    basePrice: 35000,  estimatedMinutes: 45  },
-  { name: 'Arreglo de barba',        category: 'Barba',        description: 'Perfilado y arreglo de barba con navaja',      priceType: 'FIXED',    basePrice: 15000,  estimatedMinutes: 20  },
-  { name: 'Tinte de cabello',        category: 'Color',        description: 'Coloración completa con tinte profesional',    priceType: 'VARIABLE', basePrice: 80000,  estimatedMinutes: 90  },
-  { name: 'Mechas / highlights',     category: 'Color',        description: 'Mechas parciales o completas',                 priceType: 'VARIABLE', basePrice: 100000, estimatedMinutes: 120 },
-  { name: 'Manicure',                category: 'Uñas',         description: 'Limpieza y esmaltado de uñas de manos',        priceType: 'FIXED',    basePrice: 25000,  estimatedMinutes: 45  },
-  { name: 'Pedicure',                category: 'Uñas',         description: 'Limpieza y esmaltado de uñas de pies',         priceType: 'FIXED',    basePrice: 30000,  estimatedMinutes: 60  },
-  { name: 'Manicure + Pedicure',     category: 'Uñas',         description: 'Combo manicure y pedicure',                    priceType: 'FIXED',    basePrice: 50000,  estimatedMinutes: 90  },
-  { name: 'Alisado / keratina',      category: 'Tratamientos', description: 'Alisado con keratina o formol',                priceType: 'VARIABLE', basePrice: 150000, estimatedMinutes: 180 },
-  { name: 'Hidratación capilar',     category: 'Tratamientos', description: 'Mascarilla nutritiva + baño de crema',         priceType: 'FIXED',    basePrice: 45000,  estimatedMinutes: 60  },
-  { name: 'Maquillaje',              category: 'Estética',     description: 'Maquillaje social o artístico',                priceType: 'VARIABLE', basePrice: 60000,  estimatedMinutes: 60  },
-  { name: 'Depilación con cera',     category: 'Depilación',   description: 'Depilación zona a convenir',                   priceType: 'VARIABLE', basePrice: 20000,  estimatedMinutes: 30  },
+  // Barbería y estética
+  { name: 'Corte de cabello',             category: 'Barbería',         description: 'Corte de cabello con tijeras o máquina',              priceType: 'FIXED',    basePrice: 20000,  estimatedMinutes: 30  },
+  { name: 'Corte + Barba',               category: 'Barbería',         description: 'Corte de cabello y arreglo de barba',                 priceType: 'FIXED',    basePrice: 35000,  estimatedMinutes: 45  },
+  { name: 'Manicure',                    category: 'Estética',         description: 'Limpieza y esmaltado de uñas de manos',               priceType: 'FIXED',    basePrice: 25000,  estimatedMinutes: 45  },
+  { name: 'Tinte de cabello',            category: 'Estética',         description: 'Coloración completa con tinte profesional',           priceType: 'VARIABLE', basePrice: 80000,  estimatedMinutes: 90  },
+  // Mantenimiento de celulares
+  { name: 'Cambio de pantalla (celular)',category: 'Celulares',        description: 'Reemplazo de display según modelo',                   priceType: 'VARIABLE', basePrice: 80000,  estimatedMinutes: 60  },
+  { name: 'Cambio de batería (celular)', category: 'Celulares',        description: 'Sustitución de batería original o compatible',        priceType: 'FIXED',    basePrice: 50000,  estimatedMinutes: 30  },
+  { name: 'Limpieza interna (celular)',  category: 'Celulares',        description: 'Limpieza de placa y conectores internos',             priceType: 'FIXED',    basePrice: 30000,  estimatedMinutes: 30  },
+  { name: 'Desbloqueo de red',           category: 'Celulares',        description: 'Desbloqueo de operador mediante software o IMEI',     priceType: 'FIXED',    basePrice: 25000,  estimatedMinutes: 20  },
+  // Mantenimiento de computadores
+  { name: 'Formateo + instalación SO',  category: 'Computadores',     description: 'Formateo completo e instalación de Windows o Linux',  priceType: 'FIXED',    basePrice: 60000,  estimatedMinutes: 90  },
+  { name: 'Limpieza interna (PC/laptop)',category: 'Computadores',     description: 'Limpieza de polvo, ventiladores y disipadores',       priceType: 'FIXED',    basePrice: 40000,  estimatedMinutes: 45  },
+  { name: 'Cambio de pasta térmica',    category: 'Computadores',     description: 'Sustitución de pasta térmica en procesador',          priceType: 'FIXED',    basePrice: 35000,  estimatedMinutes: 30  },
+  { name: 'Cambio de disco SSD',        category: 'Computadores',     description: 'Instalación de SSD y migración de datos',             priceType: 'VARIABLE', basePrice: 80000,  estimatedMinutes: 60  },
+  { name: 'Diagnóstico técnico',        category: 'Computadores',     description: 'Revisión completa del equipo e informe de fallas',    priceType: 'FIXED',    basePrice: 30000,  estimatedMinutes: 30  },
+  // Taller mecánico / automotriz
+  { name: 'Cambio de aceite y filtro',  category: 'Taller',           description: 'Cambio de aceite motor + filtro de aceite',           priceType: 'FIXED',    basePrice: 80000,  estimatedMinutes: 45  },
+  { name: 'Revisión de frenos',         category: 'Taller',           description: 'Inspección y ajuste del sistema de frenos',           priceType: 'VARIABLE', basePrice: 60000,  estimatedMinutes: 60  },
+  { name: 'Lavado y encerado',          category: 'Taller',           description: 'Lavado exterior + encerado manual del vehículo',      priceType: 'FIXED',    basePrice: 50000,  estimatedMinutes: 60  },
+  { name: 'Diagnóstico computarizado',  category: 'Taller',           description: 'Lectura de códigos OBD y diagnóstico electrónico',    priceType: 'FIXED',    basePrice: 50000,  estimatedMinutes: 45  },
+  { name: 'Cambio de llantas',          category: 'Taller',           description: 'Desmontaje y montaje de llantas',                     priceType: 'PER_UNIT', basePrice: 20000,  estimatedMinutes: 15  },
+  // Limpieza y hogar
+  { name: 'Limpieza residencial',       category: 'Limpieza',         description: 'Limpieza general de apartamento o casa',              priceType: 'PER_HOUR', basePrice: 25000,  estimatedMinutes: 120 },
+  { name: 'Lavado de muebles',          category: 'Limpieza',         description: 'Lavado y desinfección de sofás o muebles tapizados',  priceType: 'PER_UNIT', basePrice: 40000,  estimatedMinutes: 60  },
+  { name: 'Planchado de ropa',          category: 'Limpieza',         description: 'Servicio de planchado por hora',                      priceType: 'PER_HOUR', basePrice: 15000,  estimatedMinutes: 60  },
+  // Fitness y bienestar
+  { name: 'Entrenamiento personal',     category: 'Fitness',          description: 'Sesión de entrenamiento personalizado',               priceType: 'FIXED',    basePrice: 50000,  estimatedMinutes: 60  },
+  { name: 'Plan mensual fitness',       category: 'Fitness',          description: 'Seguimiento y rutinas durante un mes',                priceType: 'FIXED',    basePrice: 300000, estimatedMinutes: 0   },
+  { name: 'Masaje relajante',           category: 'Bienestar',        description: 'Masaje corporal de relajación completa',              priceType: 'FIXED',    basePrice: 70000,  estimatedMinutes: 60  },
+  // Consultoría y servicios digitales
+  { name: 'Consultoría (por hora)',     category: 'Consultoría',      description: 'Asesoría profesional facturada por hora',             priceType: 'PER_HOUR', basePrice: 80000,  estimatedMinutes: 60  },
+  { name: 'Diseño de logo',             category: 'Diseño',           description: 'Diseño de identidad visual + archivos editables',     priceType: 'VARIABLE', basePrice: 150000, estimatedMinutes: 0   },
+  { name: 'Gestión redes sociales',     category: 'Marketing',        description: 'Administración mensual de redes sociales',            priceType: 'FIXED',    basePrice: 200000, estimatedMinutes: 0   },
 ];
 
 const PRICE_TYPE_COLORS: Record<PriceType, string> = {
@@ -828,7 +850,7 @@ export default function Services() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleApplyTemplate = async (tpl: typeof BARBERIA_TEMPLATES[0]) => {
+  const handleApplyTemplate = async (tpl: typeof SERVICE_TEMPLATES[0]) => {
     setApplyingTemplate(tpl.name);
     try {
       await createService({
@@ -1011,7 +1033,7 @@ export default function Services() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div>
                 <h2 className="text-base font-bold text-txt-primary">Plantillas de servicios</h2>
-                <p className="text-xs text-txt-tertiary mt-0.5">Barbería, salón de belleza y estética — un clic para agregar</p>
+                <p className="text-xs text-txt-tertiary mt-0.5">Barbería, celulares, taller, limpieza, fitness y más — un clic para agregar</p>
               </div>
               <button
                 onClick={() => setShowTemplates(false)}
@@ -1021,7 +1043,7 @@ export default function Services() {
               </button>
             </div>
             <div className="overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {BARBERIA_TEMPLATES.map(tpl => {
+              {SERVICE_TEMPLATES.map(tpl => {
                 const isApplying = applyingTemplate === tpl.name;
                 return (
                   <button

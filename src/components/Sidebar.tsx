@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, MessageSquare, CalendarDays, Zap, ShoppingBag,
-  Scissors, Users, BarChart3, Settings, ChevronLeft, ChevronRight,
+  Briefcase, Users, BarChart3, Settings, ChevronLeft, ChevronRight,
   LogOut, Smartphone, ShoppingCart, UserCog, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -16,7 +16,7 @@ const navItems = [
   { to: '/appointments',  label: 'Citas',            icon: CalendarDays },
   { to: '/campaigns',     label: 'Campañas',         icon: Zap },
   { to: '/products',      label: 'Productos',        icon: ShoppingBag },
-  { to: '/services',      label: 'Servicios',        icon: Scissors },
+  { to: '/services',      label: 'Servicios',        icon: Briefcase },
   { to: '/orders',         label: 'Ventas Productos',  icon: ShoppingCart },
   { to: '/service-orders', label: 'Ventas Servicios',  icon: ClipboardList },
   { to: '/customers',     label: 'Clientes',         icon: Users },

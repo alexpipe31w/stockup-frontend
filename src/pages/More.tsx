@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ShoppingBag, Scissors, Users, BarChart3, Settings,
+  ShoppingBag, Briefcase, Users, BarChart3, Settings,
   ChevronRight, Smartphone, ShoppingCart, LogOut, ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 const moreItems = [
   { to: '/whatsapp',   label: 'WhatsApp',      icon: Smartphone,   desc: 'Conectar dispositivo' },
   { to: '/products',   label: 'Productos',     icon: ShoppingBag,  desc: 'Catálogo y stock' },
-  { to: '/services',   label: 'Servicios',     icon: Scissors,     desc: 'Servicios del negocio' },
+  { to: '/services',   label: 'Servicios',     icon: Briefcase,    desc: 'Servicios del negocio' },
   { to: '/orders',        label: 'Ventas Productos',   icon: ShoppingCart,  desc: 'Ordenes de productos' },
   { to: '/service-orders',label: 'Ventas Servicios',   icon: ClipboardList, desc: 'Citas cobradas / servicios' },
   { to: '/customers',  label: 'Clientes',      icon: Users,        desc: 'Base de clientes' },
