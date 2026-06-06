@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getAppointments, getAppointmentStats,
   updateAppointment, getAppointmentTimeline,
-  createAppointment, getCustomers, getServices,
+  createAppointment, createCustomer, getCustomers, getServices,
   getStore, getStaff,
 } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -55,7 +55,7 @@ interface Appointment {
   pendingActionData?:  Record<string, any> | null;
 }
 interface CustomerOption { customerId: string; name: string | null; phone: string; }
-interface ServiceOption  { serviceId:  string; name: string; }
+interface ServiceOption  { serviceId: string; name: string; basePrice?: number | null; estimatedMinutes?: number | null; }
 interface Stats {
   total: number; pending: number; confirmed: number; todayCount: number;
   upcomingWeek: number; inProgress: number; completedTotal: number;
@@ -684,9 +684,11 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   staff: StaffInfo[];
   staffLabel: string;
 }) {
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [services,  setServices]  = useState<ServiceOption[]>([]);
+  const [customers,   setCustomers]   = useState<CustomerOption[]>([]);
+  const [services,    setServices]    = useState<ServiceOption[]>([]);
   const [loadingOpts, setLoadingOpts] = useState(true);
+  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '' });
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -720,8 +722,16 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   }, [storeId]);
 
   const doSubmit = async (force = false) => {
-    if (!form.customerId || !form.scheduledAt) {
-      setError('Cliente y fecha/hora son obligatorios.');
+    if (customerMode === 'new' && !newCustomer.phone.trim()) {
+      setError('El teléfono del cliente es obligatorio.');
+      return;
+    }
+    if (customerMode === 'existing' && !form.customerId) {
+      setError('Selecciona un cliente.');
+      return;
+    }
+    if (!form.scheduledAt) {
+      setError('La fecha y hora son obligatorias.');
       return;
     }
     if (businessHours && !force) {
@@ -732,8 +742,16 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
     }
     setSaving(true); setError(''); setOutOfHoursWarning(false);
     try {
+      let customerId = form.customerId;
+      if (customerMode === 'new') {
+        const res = await createCustomer({
+          phone: newCustomer.phone.trim(),
+          name:  newCustomer.name.trim() || undefined,
+        });
+        customerId = res.data.customerId;
+      }
       await createAppointment({
-        customerId:      form.customerId,
+        customerId,
         serviceId:       form.serviceId       || undefined,
         staffId:         form.staffId         || undefined,
         scheduledAt:     new Date(form.scheduledAt).toISOString(),
@@ -752,6 +770,16 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleServiceChange = (serviceId: string) => {
+    const svc = services.find(s => s.serviceId === serviceId);
+    setForm(f => ({
+      ...f,
+      serviceId,
+      agreedPrice:     svc?.basePrice != null ? String(svc.basePrice) : f.agreedPrice,
+      durationMinutes: svc?.estimatedMinutes != null ? String(svc.estimatedMinutes) : f.durationMinutes,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); doSubmit(false); };
@@ -779,27 +807,63 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Cliente *</label>
-              <select
-                value={form.customerId}
-                onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}
-                className={ic}
-                required
-              >
-                <option value="">Seleccionar cliente...</option>
-                {customers.map(c => (
-                  <option key={c.customerId} value={c.customerId}>
-                    {c.name ? `${c.name} — ${c.phone}` : c.phone}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-txt-secondary">Cliente *</label>
+                <div className="flex rounded-lg overflow-hidden border border-border-default text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCustomerMode('existing')}
+                    className={`px-2.5 py-1 font-medium transition ${customerMode === 'existing' ? 'bg-lime text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
+                  >
+                    Existente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerMode('new')}
+                    className={`px-2.5 py-1 font-medium transition ${customerMode === 'new' ? 'bg-lime text-white' : 'text-txt-secondary hover:bg-surface-elevated'}`}
+                  >
+                    Nuevo
+                  </button>
+                </div>
+              </div>
+
+              {customerMode === 'existing' ? (
+                <select
+                  value={form.customerId}
+                  onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}
+                  className={ic}
+                >
+                  <option value="">Seleccionar cliente...</option>
+                  {customers.map(c => (
+                    <option key={c.customerId} value={c.customerId}>
+                      {c.name ? `${c.name} — ${c.phone}` : c.phone}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={newCustomer.name}
+                    onChange={e => setNewCustomer(n => ({ ...n, name: e.target.value }))}
+                    placeholder="Nombre (opcional)"
+                    className={ic}
+                  />
+                  <input
+                    value={newCustomer.phone}
+                    onChange={e => setNewCustomer(n => ({ ...n, phone: e.target.value }))}
+                    placeholder="Teléfono *"
+                    className={ic}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Servicio</label>
               <select
                 value={form.serviceId}
-                onChange={e => setForm(f => ({ ...f, serviceId: e.target.value }))}
+                onChange={e => handleServiceChange(e.target.value)}
                 className={ic}
               >
                 <option value="">Sin servicio específico</option>
@@ -957,7 +1021,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
               </button>
               <button
                 type="submit"
-                disabled={saving || !form.customerId || !form.scheduledAt}
+                disabled={saving || !form.scheduledAt || (customerMode === 'existing' ? !form.customerId : !newCustomer.phone.trim())}
                 className="flex-1 py-2.5 rounded-xl text-txt-inverse gradient-brand"
               >
                 {saving ? 'Creando...' : 'Crear cita'}
