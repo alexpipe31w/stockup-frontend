@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getAiConfig, saveAiConfig } from '../services/api';
+import { getAiConfig, saveAiConfig, getAiPoolStatus } from '../services/api';
 
 type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic' | 'gemini';
 
@@ -94,12 +94,50 @@ const sectionIcon = 'w-9 h-9 rounded-xl bg-surface-elevated flex items-center ju
 
 interface CartridgeForm { provider: AIProvider; apiKey: string; model: string }
 
+interface CartridgeSnapshot {
+  provider:  string;
+  maskedKey: string;
+  model:     string;
+  status:    'active' | 'unused' | 'exhausted';
+}
+interface PoolSnapshot {
+  hasPool:    boolean;
+  cartridges: CartridgeSnapshot[];
+  resetAt:    number | null;
+}
+
+const STATUS_LABEL: Record<CartridgeSnapshot['status'], { label: string; dot: string; text: string }> = {
+  active:    { label: 'Activo',    dot: 'bg-success',       text: 'text-success' },
+  unused:    { label: 'En espera', dot: 'bg-txt-tertiary',  text: 'text-txt-tertiary' },
+  exhausted: { label: 'Agotado',   dot: 'bg-red-500 animate-pulse', text: 'text-red-400' },
+};
+
+function useCountdown(resetAt: number | null): string {
+  const [label, setLabel] = useState('');
+  useEffect(() => {
+    if (!resetAt) { setLabel(''); return; }
+    const tick = () => {
+      const diff = Math.max(0, resetAt - Date.now());
+      if (diff === 0) { setLabel('Recargando...'); return; }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setLabel(`${m}:${String(s).padStart(2, '0')}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [resetAt]);
+  return label;
+}
+
 export default function AiConfig() {
   const { storeId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [cartridges, setCartridges] = useState<CartridgeForm[]>([]);
+  const [pool, setPool] = useState<PoolSnapshot | null>(null);
+  const countdown = useCountdown(pool?.resetAt ?? null);
   const [form, setForm] = useState({
     aiProvider:   'groq' as AIProvider,
     apiKey:       '',
@@ -108,6 +146,10 @@ export default function AiConfig() {
     temperature:  0.7,
     maxTokens:    500,
   });
+
+  const fetchPool = useCallback(() => {
+    getAiPoolStatus().then(r => setPool(r.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     getAiConfig(storeId)
@@ -134,7 +176,11 @@ export default function AiConfig() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [storeId]);
+
+    fetchPool();
+    const id = setInterval(fetchPool, 30_000);
+    return () => clearInterval(id);
+  }, [storeId, fetchPool]);
 
   const handleProviderChange = (p: AIProvider) => {
     setForm(f => ({ ...f, aiProvider: p, model: PROVIDERS[p].models[0].value, apiKey: '' }));
@@ -245,7 +291,7 @@ export default function AiConfig() {
               Se usan 2 en paralelo. Cuando uno agota su límite, el siguiente entra automáticamente.
             </p>
           </div>
-          {cartridges.length < 3 && (
+          {cartridges.length < 5 && (
             <button
               type="button"
               onClick={() => setCartridges(c => [...c, { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }])}
@@ -325,7 +371,7 @@ export default function AiConfig() {
           </div>
         )}
 
-        {/* Pool status indicator */}
+        {/* Pool status indicator (conteo) */}
         <div className="mt-3 flex items-center gap-2 text-xs text-txt-tertiary">
           <div className={`w-2 h-2 rounded-full ${cartridges.filter(c => c.apiKey.trim()).length + 1 >= 2 ? 'bg-success' : 'bg-warning'}`} />
           {cartridges.filter(c => c.apiKey.trim()).length + 1} cartucho{cartridges.filter(c => c.apiKey.trim()).length + 1 !== 1 ? 's' : ''} configurado{cartridges.filter(c => c.apiKey.trim()).length + 1 !== 1 ? 's' : ''} en total
@@ -333,6 +379,99 @@ export default function AiConfig() {
             ? ' — Alta disponibilidad activa'
             : ' — Agrega al menos 1 cartucho más para redundancia'}
         </div>
+      </div>
+
+      {/* ── Monitor de uso en tiempo real ── */}
+      <div className={cardClass}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={sectionIcon}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4FF00" strokeWidth="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-txt-primary text-sm">Monitor de cartuchos</h3>
+              <p className="text-xs text-txt-tertiary mt-0.5">Estado en vivo — actualiza cada 30 seg</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={fetchPool}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border-default text-txt-tertiary hover:bg-surface-elevated transition"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+            </svg>
+            Actualizar
+          </button>
+        </div>
+
+        {!pool || !pool.hasPool ? (
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-dashed border-border-default text-txt-tertiary text-xs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Sin actividad reciente. El monitor se activa cuando el asistente recibe mensajes.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {pool.cartridges.map((c, i) => {
+              const st = STATUS_LABEL[c.status];
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+                    c.status === 'exhausted'
+                      ? 'border-red-500/30 bg-red-500/5'
+                      : c.status === 'active'
+                      ? 'border-success/30 bg-success/5'
+                      : 'border-border-default bg-surface-elevated'
+                  }`}
+                >
+                  {/* Número */}
+                  <span className="w-6 h-6 rounded-full bg-surface-overlay flex items-center justify-center text-[10px] font-bold text-txt-tertiary flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  {/* Provider + key */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-txt-primary capitalize">{c.provider}</span>
+                      <span className="font-mono text-xs text-txt-tertiary">{c.maskedKey}</span>
+                    </div>
+                    <p className="text-[10px] text-txt-tertiary truncate">{c.model}</p>
+                  </div>
+                  {/* Status badge */}
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${st.text} bg-current/10`}
+                       style={{ backgroundColor: c.status === 'active' ? 'rgba(var(--color-success-rgb,34,197,94),0.12)' : c.status === 'exhausted' ? 'rgba(239,68,68,0.1)' : 'rgba(100,116,139,0.1)' }}>
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
+                    {st.label}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Timer de reset */}
+            {pool.cartridges.some(c => c.status === 'exhausted') && pool.resetAt && (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/8 border border-red-500/20 text-xs">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span className="text-txt-secondary">Límites se recargan en:</span>
+                <span className="font-mono font-bold text-red-400">{countdown}</span>
+                <span className="text-txt-tertiary ml-auto">— los cartuchos agotados vuelven automáticamente</span>
+              </div>
+            )}
+            {!pool.cartridges.some(c => c.status === 'exhausted') && (
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-txt-tertiary">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Límites se recargan en: <span className="font-mono font-medium">{countdown}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Modelo ── */}

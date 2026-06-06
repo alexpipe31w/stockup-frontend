@@ -387,6 +387,9 @@ export const saveAiConfig = (data: {
   cartridges?: Array<{ provider: string; apiKey: string; model: string }>;
 }) => api.post('/ai-config', data);
 
+export const getAiPoolStatus = () =>
+  api.get('/ai-config/pool-status');
+
 // ── Blocked Contacts ──────────────────────────────────────────────────────
 export const getBlockedContacts = () =>
   api.get('/blocked');
