@@ -329,6 +329,16 @@ export const getPublicStore = (slug: string) =>
 export const getPublicAvailability = (slug: string, date: string) =>
   api.get(`/public/${slug}/availability`, { params: { date } });
 
+export const bookPublicAppointment = (slug: string, data: {
+  customerName: string;
+  customerPhone: string;
+  serviceId?: string;
+  serviceVariantId?: string;
+  staffId?: string;
+  scheduledAt: string;
+  notes?: string;
+}) => api.post(`/public/${slug}/book`, data);
+
 // ── Staff ─────────────────────────────────────────────────────────────────────
 export const getStaff = () =>
   api.get('/staff');

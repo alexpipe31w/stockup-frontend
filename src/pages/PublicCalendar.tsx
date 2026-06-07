@@ -1,9 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getPublicStore, getPublicAvailability } from '../services/api';
+import { getPublicStore, getPublicAvailability, bookPublicAppointment } from '../services/api';
 
 interface StaffSlots { staffId: string | null; name: string; slots: string[]; }
-interface StoreInfo  { name: string; staffLabel: string; hasStaff: boolean; }
+interface ServiceVariantOption { variantId: string; name: string; priceOverride?: number | null; estimatedMinutes?: number | null; }
+interface ServiceOption {
+  serviceId: string; name: string; basePrice?: number | null; priceType?: string;
+  unitLabel?: string | null; estimatedMinutes?: number | null;
+  hasVariants: boolean; variants: ServiceVariantOption[];
+}
+interface StoreInfo  { name: string; staffLabel: string; hasStaff: boolean; services: ServiceOption[]; }
+interface SlotChoice { staffId: string | null; staffName: string; date: string; time: string; }
 
 const toISO    = (d: Date) => d.toISOString().slice(0, 10);
 const addDays  = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
@@ -18,6 +25,10 @@ export default function PublicCalendar() {
   const [loading,  setLoading]            = useState(true);
   const [loadSlots, setLoadSlots]         = useState(false);
   const [notFound, setNotFound]           = useState(false);
+
+  const [serviceId,  setServiceId]  = useState('');
+  const [variantId,  setVariantId]  = useState('');
+  const [slotChoice, setSlotChoice] = useState<SlotChoice | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -49,6 +60,13 @@ export default function PublicCalendar() {
   const prev = () => canBack && setDate(d => addDays(d, -1));
   const next = () => canFwd  && setDate(d => addDays(d,  1));
 
+  const selectedService = store?.services.find(s => s.serviceId === serviceId) ?? null;
+
+  const handleServiceChange = (id: string) => {
+    setServiceId(id);
+    setVariantId('');
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
       <div className="w-8 h-8 rounded-full border-2 border-[#D4FF00] border-t-transparent animate-spin" />
@@ -74,11 +92,40 @@ export default function PublicCalendar() {
         <p className="text-[10px] font-bold tracking-[0.2em] text-[#D4FF00] uppercase mb-2">Powered by Stockup</p>
         <h1 className="text-2xl font-bold tracking-tight">{store?.name}</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Consulta la disponibilidad de nuestros {staffLabel}s
+          Agenda tu cita en línea — elige {staffLabel}, fecha y hora
         </p>
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+        {/* Service picker */}
+        {store && store.services.length > 0 && (
+          <div className="bg-[#111117] rounded-2xl p-5 border border-white/10">
+            <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">¿Qué servicio necesitas?</p>
+            <select
+              value={serviceId}
+              onChange={e => handleServiceChange(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0F] text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/30"
+            >
+              <option value="">Sin servicio específico</option>
+              {store.services.map(s => (
+                <option key={s.serviceId} value={s.serviceId}>{s.name}</option>
+              ))}
+            </select>
+            {selectedService && selectedService.hasVariants && selectedService.variants.length > 0 && (
+              <select
+                value={variantId}
+                onChange={e => setVariantId(e.target.value)}
+                className="w-full mt-2 px-3 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0F] text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/30"
+              >
+                <option value="">Selecciona una opción</option>
+                {selectedService.variants.map(v => (
+                  <option key={v.variantId} value={v.variantId}>{v.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
         {/* Date navigator */}
         <div className="flex items-center justify-between bg-[#111117] rounded-2xl px-5 py-4 border border-white/10">
           <button onClick={prev} disabled={!canBack}
@@ -120,10 +167,14 @@ export default function PublicCalendar() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {s.slots.map(slot => (
-                      <span key={slot}
-                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-white hover:bg-white/10 transition">
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setSlotChoice({ staffId: s.staffId, staffName: s.name, date: toISO(date), time: slot })}
+                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-white hover:bg-[#D4FF00]/10 hover:border-[#D4FF00]/40 hover:text-[#D4FF00] transition"
+                      >
                         {slot}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}
@@ -133,9 +184,158 @@ export default function PublicCalendar() {
         )}
 
         <p className="text-center text-xs text-gray-600 pb-6">
-          Horarios orientativos · Confirma tu cita escribiéndonos directamente
+          Horarios orientativos · Toca un horario para agendar al instante
         </p>
+      </div>
+
+      {slotChoice && slug && (
+        <BookingModal
+          slug={slug}
+          slot={slotChoice}
+          serviceId={serviceId || undefined}
+          serviceName={selectedService?.name}
+          variantId={variantId || undefined}
+          variantName={selectedService?.variants.find(v => v.variantId === variantId)?.name}
+          onClose={() => setSlotChoice(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Modal de agendamiento ───────────────────────────────────────────────────
+
+function BookingModal({ slug, slot, serviceId, serviceName, variantId, variantName, onClose }: {
+  slug: string;
+  slot: SlotChoice;
+  serviceId?: string;
+  serviceName?: string;
+  variantId?: string;
+  variantName?: string;
+  onClose: () => void;
+}) {
+  const [name,  setName]  = useState('');
+  const [phone, setPhone] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving]   = useState(false);
+  const [error,  setError]    = useState('');
+  const [done,   setDone]     = useState<{ scheduledAt: string; staff: string | null; service: string | null } | null>(null);
+
+  const fmtDate = (d: Date) => d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmtTime = (d: Date) => d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || name.trim().length < 2) { setError('Ingresa tu nombre completo.'); return; }
+    if (!phone.trim() || phone.replace(/\D/g, '').length < 7) { setError('Ingresa un número de teléfono válido.'); return; }
+
+    setSaving(true); setError('');
+    try {
+      const scheduledAt = `${slot.date}T${slot.time}:00-05:00`;
+      const res = await bookPublicAppointment(slug, {
+        customerName:  name.trim(),
+        customerPhone: phone.trim(),
+        serviceId,
+        serviceVariantId: variantId,
+        staffId:       slot.staffId ?? undefined,
+        scheduledAt,
+        notes:         notes.trim() || undefined,
+      });
+      setDone({
+        scheduledAt: res.data?.scheduledAt ?? scheduledAt,
+        staff:       res.data?.staff ?? slot.staffName,
+        service:     res.data?.service ?? variantName ?? serviceName ?? null,
+      });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'No se pudo agendar la cita. Intenta con otro horario.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const ic = 'w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0F] text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/30';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+      <div className="bg-[#111117] rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[92vh] overflow-y-auto border border-white/10">
+        {done ? (
+          <div className="p-8 text-center">
+            <p className="text-5xl mb-4">✅</p>
+            <h2 className="text-lg font-bold text-white mb-2">¡Listo, {name.split(' ')[0]}!</h2>
+            <p className="text-sm text-gray-400 mb-5">
+              Tu cita quedó registrada y está pendiente de confirmación. Te escribiremos por WhatsApp para confirmarla.
+            </p>
+            <div className="bg-[#0A0A0F] rounded-2xl p-4 text-left text-sm space-y-1.5 border border-white/10 mb-6">
+              {done.service && <p><span className="text-gray-500">Servicio:</span> <span className="font-medium">{done.service}</span></p>}
+              {done.staff   && <p><span className="text-gray-500">Atiende:</span> <span className="font-medium">{done.staff}</span></p>}
+              <p><span className="text-gray-500">Fecha:</span> <span className="font-medium capitalize">{fmtDate(new Date(done.scheduledAt))}</span></p>
+              <p><span className="text-gray-500">Hora:</span> <span className="font-medium">{fmtTime(new Date(done.scheduledAt))}</span></p>
+            </div>
+            <button onClick={onClose} className="w-full py-3 rounded-xl bg-[#D4FF00] text-[#0A0A0F] font-bold text-sm hover:brightness-95 transition">
+              Listo
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#111117] z-10">
+              <div>
+                <h2 className="text-base font-bold text-white">Confirma tu cita</h2>
+                <p className="text-xs text-gray-400 mt-0.5 capitalize">
+                  {fmtDay_(slot)} · {slot.time} {slot.staffName ? `· ${slot.staffName}` : ''}
+                </p>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-white/10">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={submit} className="p-6 space-y-4">
+              {(serviceName || variantName) && (
+                <div className="text-xs text-gray-400 bg-white/5 rounded-xl px-3 py-2 border border-white/10">
+                  Servicio seleccionado: <span className="text-white font-medium">{variantName ?? serviceName}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Tu nombre completo *</label>
+                <input value={name} onChange={e => setName(e.target.value)} placeholder="Ej: Carlos Pérez" className={ic} required />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Tu número de WhatsApp *</label>
+                <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej: 300 123 4567" className={ic} required />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Notas (opcional)</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Cuéntanos algo más sobre lo que necesitas..."
+                  rows={2} className={ic} />
+              </div>
+
+              {error && (
+                <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={saving}
+                className="w-full py-3 rounded-xl bg-[#D4FF00] text-[#0A0A0F] font-bold text-sm hover:brightness-95 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                {saving && <span className="w-4 h-4 rounded-full border-2 border-[#0A0A0F] border-t-transparent animate-spin" />}
+                {saving ? 'Agendando...' : 'Confirmar cita'}
+              </button>
+              <p className="text-center text-[11px] text-gray-600">
+                Tu cita quedará pendiente de confirmación por nuestro equipo.
+              </p>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
+}
+
+function fmtDay_(slot: SlotChoice) {
+  return new Date(`${slot.date}T12:00:00-05:00`).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 }
