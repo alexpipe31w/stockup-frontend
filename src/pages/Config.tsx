@@ -133,6 +133,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
     hasDelivery: false,
     deliveryZone: '',
     hasParking: false,
+    requiresCustomerAddress: false,
+    requiresCustomerCedula: false,
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
     staffLabel: 'Barbero',
     slug: '',
@@ -169,6 +171,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
         hasDelivery:        d.hasDelivery        ?? false,
         deliveryZone:       d.deliveryZone       ?? '',
         hasParking:         d.hasParking         ?? false,
+        requiresCustomerAddress: d.requiresCustomerAddress ?? false,
+        requiresCustomerCedula:  d.requiresCustomerCedula  ?? false,
         businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
         slug:               d.slug               ?? '',
@@ -210,6 +214,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
         hasDelivery:        form.hasDelivery,
         deliveryZone:       form.deliveryZone       || undefined,
         hasParking:         form.hasParking,
+        requiresCustomerAddress: form.requiresCustomerAddress,
+        requiresCustomerCedula:  form.requiresCustomerCedula,
         businessHours:      form.businessHours,
         staffLabel:         form.staffLabel      || undefined,
         slug:               form.slug            || undefined,
@@ -393,6 +399,37 @@ function NegocioSection({ storeId }: { storeId: string }) {
             <Toggle value={form.hasParking} onChange={() => setf('hasParking', !form.hasParking)} />
             <span className="text-sm text-txt-primary">Parqueadero disponible</span>
           </div>
+        </div>
+      </div>
+
+      {/* Card 4.5 — Datos del cliente que la IA debe pedir */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
+          title="Datos del cliente" sub="¿Qué información debe pedir la IA al agendar una cita?"
+        />
+        <p className="text-xs text-txt-secondary -mt-1">
+          Actívalo solo si tu negocio realmente necesita ese dato (ej: visitas a domicilio, instalaciones,
+          entregas o trámites). Si tus clientes asisten a tu local, déjalo apagado — así la IA nunca
+          lo pedirá ni lo guardará por error.
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.requiresCustomerAddress} onChange={() => setf('requiresCustomerAddress', !form.requiresCustomerAddress)} />
+            <span className="text-sm text-txt-primary">Requiere dirección del cliente</span>
+          </div>
+          <p className="text-xs text-txt-secondary -mt-2 ml-12">
+            Actívalo si haces visitas a domicilio, entregas o instalaciones. La IA pedirá y guardará
+            la dirección física para agendar la cita.
+          </p>
+          <div className="flex items-center gap-3">
+            <Toggle value={form.requiresCustomerCedula} onChange={() => setf('requiresCustomerCedula', !form.requiresCustomerCedula)} />
+            <span className="text-sm text-txt-primary">Requiere cédula / documento del cliente</span>
+          </div>
+          <p className="text-xs text-txt-secondary -mt-2 ml-12">
+            Actívalo si necesitas el número de documento para contratos, garantías o trámites
+            con el cliente.
+          </p>
         </div>
       </div>
 
