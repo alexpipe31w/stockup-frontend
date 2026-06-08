@@ -1,8 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { getAnalyticsSummary } from '../services/api';
+import { getAnalyticsSummary, getAnalyticsInsights } from '../services/api';
 import { TrendingUp, ShoppingBag, Scissors, Users, CreditCard, Download } from 'lucide-react';
 import { exportCashReport } from '../utils/exportExcel';
+import {
+  TrendCard, ComparisonCard, ActivityPatternsCard, FunnelCard, RevenueDonut, TopBarChart,
+} from '../components/AnalyticsCharts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Summary {
@@ -19,6 +23,23 @@ interface Summary {
     description: string; amount: number; paymentMethod: string;
   }[];
 }
+
+interface Insights {
+  period: string; from: string; to: string;
+  series: { date: string; revenue: number; appointments: number; conversations: number }[];
+  comparison: Record<string, { current: number; previous: number; pctChange: number }>;
+  patterns: { byHour: number[]; byWeekday: number[] };
+  funnel: { conversations: number; withAppointment: number; withPurchase: number };
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+};
 
 type Period = 'today' | 'week' | 'month' | 'last_month';
 type TabId  = 'dashboard' | 'reports';
@@ -63,72 +84,61 @@ function KpiCard({ label, value, sub, icon, accent = false }: {
   );
 }
 
-// ── Mini Bar ──────────────────────────────────────────────────────────────────
-function MiniBar({ items }: { items: { name: string; value: number; sub?: string }[] }) {
-  const max = Math.max(...items.map(i => i.value), 1);
+// ── Dashboard Tab ─────────────────────────────────────────────────────────────
+function InsightsSkeleton() {
   return (
-    <div className="space-y-2.5">
-      {items.map((item, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <p className="text-xs text-txt-secondary w-28 truncate flex-shrink-0">{item.name}</p>
-          <div className="flex-1 bg-surface-overlay rounded-full h-1.5 overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${(item.value / max) * 100}%`, background: 'linear-gradient(90deg,#D4FF00,#A3CC00)' }} />
-          </div>
-          <p className="text-xs font-semibold text-txt-primary w-12 text-right flex-shrink-0">
-            {item.sub ?? item.value}
-          </p>
-        </div>
-      ))}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="lg:col-span-2 bg-surface border border-border-subtle rounded-2xl h-64 skeleton-shimmer" />
+      <div className="bg-surface border border-border-subtle rounded-2xl h-64 skeleton-shimmer" />
     </div>
   );
 }
 
-// ── Dashboard Tab ─────────────────────────────────────────────────────────────
-function DashboardTab({ data }: { data: Summary }) {
+function DashboardTab({ data, insights, insightsLoading, insightsError }: {
+  data: Summary;
+  insights: Insights | null;
+  insightsLoading: boolean;
+  insightsError: string;
+}) {
   const { revenue, orders, customers, byPaymentMethod, topProducts, topServices, byStaff } = data;
   const topStaff = byStaff[0]?.appointments ?? 1;
 
   return (
-    <div className="space-y-5">
+    <motion.div className="space-y-5" variants={containerVariants} initial="hidden" animate="visible">
       {/* Row 1 — KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard label="Ingresos totales"   value={fmt(revenue.total)}   sub={`${orders.total} ventas`}        icon={<TrendingUp size={20} />} accent />
         <KpiCard label="Ventas productos"   value={fmt(revenue.products)} sub={`${orders.products} órdenes`}   icon={<ShoppingBag size={20} />} />
         <KpiCard label="Ventas servicios"   value={fmt(revenue.services)} sub={`${orders.services} servicios`} icon={<Scissors size={20} />} />
         <KpiCard label="Clientes nuevos"    value={String(customers.new)} sub={`${customers.total} en total`}  icon={<Users size={20} />} />
-      </div>
+      </motion.div>
 
-      {/* Row 2 — Productos vs Servicios breakdown */}
-      {(revenue.total > 0) && (
-        <div className="bg-surface rounded-2xl border border-border-subtle p-5">
-          <p className="text-sm font-semibold text-txt-primary mb-3">Distribución de ingresos</p>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex-1 bg-surface-overlay rounded-full h-3 overflow-hidden flex">
-              <div className="h-full transition-all duration-500"
-                style={{ width: `${(revenue.products / revenue.total) * 100}%`, background: 'linear-gradient(90deg,#D4FF00,#A3CC00)' }} />
-              <div className="h-full transition-all duration-500 bg-blue-500/60"
-                style={{ width: `${(revenue.services / revenue.total) * 100}%` }} />
-            </div>
-          </div>
-          <div className="flex gap-4 text-xs text-txt-secondary">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: '#D4FF00' }} />
-              Productos {revenue.total > 0 ? Math.round((revenue.products / revenue.total) * 100) : 0}%
-              &nbsp;({fmt(revenue.products)})
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500/60 flex-shrink-0" />
-              Servicios {revenue.total > 0 ? Math.round((revenue.services / revenue.total) * 100) : 0}%
-              &nbsp;({fmt(revenue.services)})
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Row 2 — Tendencia + Comparativa vs período anterior */}
+      {insightsLoading ? (
+        <InsightsSkeleton />
+      ) : insightsError ? (
+        <motion.div variants={itemVariants} className="bg-surface rounded-2xl border border-border-subtle p-5 text-center text-xs text-txt-tertiary">
+          {insightsError}
+        </motion.div>
+      ) : insights ? (
+        <>
+          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2"><TrendCard series={insights.series} /></div>
+            <ComparisonCard comparison={insights.comparison} />
+          </motion.div>
 
-      {/* Row 3 — Métodos de pago */}
+          {/* Row 3 — Patrones de actividad + Embudo + Distribución */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <ActivityPatternsCard byHour={insights.patterns.byHour} byWeekday={insights.patterns.byWeekday} />
+            <FunnelCard funnel={insights.funnel} />
+            <RevenueDonut products={revenue.products} services={revenue.services} />
+          </motion.div>
+        </>
+      ) : null}
+
+      {/* Row 4 — Métodos de pago */}
       {byPaymentMethod.length > 0 && (
-        <div className="bg-surface rounded-2xl border border-border-subtle p-5">
+        <motion.div variants={itemVariants} className="bg-surface rounded-2xl border border-border-subtle p-5">
           <p className="text-sm font-semibold text-txt-primary mb-3 flex items-center gap-2">
             <CreditCard size={16} className="text-txt-tertiary" /> Métodos de pago
           </p>
@@ -141,28 +151,20 @@ function DashboardTab({ data }: { data: Summary }) {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Row 4 — Top productos + top servicios */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {topProducts.length > 0 && (
-          <div className="bg-surface rounded-2xl border border-border-subtle p-5">
-            <p className="text-sm font-semibold text-txt-primary mb-4">🛍 Top productos</p>
-            <MiniBar items={topProducts.map(p => ({ name: p.name, value: p.quantity, sub: `${p.quantity} uds · ${fmt(p.revenue)}` }))} />
-          </div>
-        )}
-        {topServices.length > 0 && (
-          <div className="bg-surface rounded-2xl border border-border-subtle p-5">
-            <p className="text-sm font-semibold text-txt-primary mb-4">✂ Top servicios</p>
-            <MiniBar items={topServices.map(s => ({ name: s.name, value: s.quantity, sub: `${s.quantity} · ${fmt(s.revenue)}` }))} />
-          </div>
-        )}
-      </div>
+      {/* Row 5 — Top productos + top servicios */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TopBarChart title="Top productos" valueFmt={fmt}
+          items={topProducts.map(p => ({ name: p.name, value: p.revenue, sub: `${p.quantity} uds` }))} />
+        <TopBarChart title="Top servicios" valueFmt={fmt}
+          items={topServices.map(s => ({ name: s.name, value: s.revenue, sub: `${s.quantity} citas` }))} />
+      </motion.div>
 
-      {/* Row 5 — Por empleado */}
+      {/* Row 6 — Por empleado */}
       {byStaff.length > 0 && (
-        <div className="bg-surface rounded-2xl border border-border-subtle p-5">
+        <motion.div variants={itemVariants} className="bg-surface rounded-2xl border border-border-subtle p-5">
           <p className="text-sm font-semibold text-txt-primary mb-4">👥 Rendimiento por profesional</p>
           <div className="space-y-3">
             {byStaff.map(s => (
@@ -186,9 +188,9 @@ function DashboardTab({ data }: { data: Summary }) {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -286,11 +288,14 @@ function ReportsTab({ data }: { data: Summary }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Analytics() {
   const { storeId }                   = useAuth();
-  const [period,  setPeriod]          = useState<Period>('month');
-  const [tab,     setTab]             = useState<TabId>('dashboard');
-  const [data,    setData]            = useState<Summary | null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [error,   setError]           = useState('');
+  const [period,    setPeriod]        = useState<Period>('month');
+  const [tab,       setTab]           = useState<TabId>('dashboard');
+  const [data,      setData]          = useState<Summary | null>(null);
+  const [loading,   setLoading]       = useState(true);
+  const [error,     setError]         = useState('');
+  const [insights,        setInsights]        = useState<Insights | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [insightsError,   setInsightsError]   = useState('');
 
   const load = useCallback(() => {
     setLoading(true); setError('');
@@ -298,6 +303,12 @@ export default function Analytics() {
       .then(r => setData(r.data))
       .catch(() => setError('Error cargando analíticas'))
       .finally(() => setLoading(false));
+
+    setInsightsLoading(true); setInsightsError('');
+    getAnalyticsInsights(period)
+      .then(r => setInsights(r.data))
+      .catch(() => setInsightsError('No se pudieron cargar los gráficos de tendencia'))
+      .finally(() => setInsightsLoading(false));
   }, [period]);
 
   useEffect(() => { load(); }, [load]);
@@ -361,7 +372,7 @@ export default function Analytics() {
           <div className="text-center py-16 text-red-400 text-sm">{error}</div>
         ) : data ? (
           tab === 'dashboard'
-            ? <DashboardTab data={data} />
+            ? <DashboardTab data={data} insights={insights} insightsLoading={insightsLoading} insightsError={insightsError} />
             : <ReportsTab   data={data} />
         ) : null}
       </div>

@@ -38,7 +38,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col h-screen bg-surface border-r border-border-subtle flex-shrink-0 transition-all duration-300 z-40"
+      className="hidden md:flex flex-col h-screen sticky top-0 bg-surface border-r border-border-subtle flex-shrink-0 transition-all duration-300 z-40"
       style={{ width: collapsed ? 72 : 260 }}
     >
       <div className="flex items-center h-16 px-4 border-b border-border-subtle flex-shrink-0">

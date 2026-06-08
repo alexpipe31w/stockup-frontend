@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, animate } from 'framer-motion';
 import {
   Users, MessageCircle, ShoppingCart, DollarSign, Bot, UserCheck,
   Megaphone, CalendarDays, AlertCircle, RefreshCw,
@@ -22,15 +22,32 @@ interface AppointmentStats {
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.08 } },
 };
+const EASE_OUT = [0.16, 1, 0.3, 1] as const;
+
 const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+  hidden: { opacity: 0, y: 14, scale: 0.98 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: EASE_OUT } },
 };
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+const fmtInt = (n: number) => String(n);
+
+// Cuenta animada de 0 al valor final — easeOut suave (~700ms)
+function AnimatedNumber({ value, format }: { value: number; format: (n: number) => string }) {
+  const [display, setDisplay] = useState(() => format(0));
+  useEffect(() => {
+    const controls = animate(0, value, {
+      duration: 0.7,
+      ease: EASE_OUT,
+      onUpdate: (v) => setDisplay(format(Math.round(v))),
+    });
+    return () => controls.stop();
+  }, [value, format]);
+  return <>{display}</>;
+}
 
 const convStatusStyle: Record<string, string> = {
   active:        'bg-success/10 text-success',
@@ -47,7 +64,7 @@ function WAStatus({ storeId }: { storeId: string }) {
 
   useEffect(() => {
     getWhatsAppStatus(storeId)
-      .then(res => setStatus(res.data?.status === 'connected' ? 'connected' : 'disconnected'))
+      .then(res => setStatus(res.data?.connected === true ? 'connected' : 'disconnected'))
       .catch(() => setStatus('disconnected'));
   }, [storeId]);
 
@@ -62,18 +79,30 @@ function WAStatus({ storeId }: { storeId: string }) {
   );
 }
 
-function KPICard({ label, value, sub, icon: Icon, color }: {
-  label: string; value: string | number; sub?: string; icon: any; color: string;
+function KPICard({ label, rawValue, format, sub, icon: Icon, color, urgent }: {
+  label: string; rawValue: number; format: (n: number) => string; sub?: string;
+  icon: any; color: string; urgent?: boolean;
 }) {
   return (
     <motion.div
       variants={itemVariants}
-      className="bg-surface border border-border-subtle rounded-2xl p-4 md:p-5 hover:border-border-default hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+      whileHover={{ y: -3 }}
+      className={`relative bg-surface rounded-2xl p-4 md:p-5 transition-colors duration-200 hover:shadow-md ${
+        urgent ? 'border border-warning/40 bg-warning/[0.04]' : 'border border-border-subtle hover:border-border-default'
+      }`}
     >
-      <div className="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center mb-3">
+      {urgent && (
+        <span className="absolute top-4 right-4 flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-60" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-warning" />
+        </span>
+      )}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${urgent ? 'bg-warning/10' : 'bg-surface-elevated'}`}>
         <Icon size={20} strokeWidth={1.5} className={color} />
       </div>
-      <p className="text-2xl font-bold text-txt-primary tracking-tight">{value}</p>
+      <p className="text-2xl font-bold text-txt-primary tracking-tight">
+        <AnimatedNumber value={rawValue} format={format} />
+      </p>
       <p className="text-xs text-txt-secondary mt-1 font-medium">{label}</p>
       {sub && <p className="text-[11px] text-txt-tertiary mt-0.5">{sub}</p>}
     </motion.div>
@@ -113,23 +142,23 @@ export default function Dashboard() {
   const dateStr = now.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 
   const kpis = data ? [
-    { label: 'Clientes',           value: data.clientes.total,         sub: data.clientes.nuevosHoy > 0 ? `+${data.clientes.nuevosHoy} hoy` : undefined, icon: Users,        color: 'text-info' },
-    { label: 'Chats activos',      value: data.conversaciones.activas, sub: `${data.conversaciones.esperandoHumano} esperando asesor`,                     icon: MessageCircle,color: 'text-whatsapp' },
-    { label: 'Órdenes pendientes', value: data.ordenes.pendientes,      sub: `${data.ordenes.total} en total`,                                             icon: ShoppingCart, color: 'text-warning' },
-    { label: 'Revenue total',      value: fmt(data.ordenes.revenueTotal),sub: `${data.ordenes.entregadas} entregadas`,                                     icon: DollarSign,   color: 'text-lime' },
-    { label: 'Mensajes por IA',    value: data.mensajes.porIA,          sub: `de ${data.mensajes.total} totales`,                                          icon: Bot,          color: 'text-info' },
-    { label: 'Esperando asesor',   value: data.conversaciones.esperandoHumano, sub: 'Intervención manual',                                                  icon: UserCheck,    color: 'text-error' },
-    { label: 'Campañas enviadas',  value: data.campanas.enviadas,       sub: `${data.campanas.total} creadas`,                                             icon: Megaphone,    color: 'text-warning' },
-    { label: 'Citas pendientes',   value: apptStats?.pending ?? apptStats?.total ?? data.ordenes.confirmadas, sub: apptStats?.today !== undefined ? `${apptStats.today} hoy` : `${data.ordenes.confirmadas} confirmadas`, icon: CalendarDays, color: 'text-success' },
+    { label: 'Clientes',           rawValue: data.clientes.total,         format: fmtInt, sub: data.clientes.nuevosHoy > 0 ? `+${data.clientes.nuevosHoy} hoy` : undefined, icon: Users,        color: 'text-info' },
+    { label: 'Chats activos',      rawValue: data.conversaciones.activas, format: fmtInt, sub: `${data.conversaciones.esperandoHumano} esperando asesor`, icon: MessageCircle, color: 'text-whatsapp' },
+    { label: 'Órdenes pendientes', rawValue: data.ordenes.pendientes,     format: fmtInt, sub: `${data.ordenes.total} en total`, urgent: data.ordenes.pendientes > 0, icon: ShoppingCart, color: 'text-warning' },
+    { label: 'Revenue total',      rawValue: data.ordenes.revenueTotal,   format: fmt,    sub: `${data.ordenes.entregadas} entregadas`, icon: DollarSign, color: 'text-lime' },
+    { label: 'Mensajes por IA',    rawValue: data.mensajes.porIA,         format: fmtInt, sub: `de ${data.mensajes.total} totales`, icon: Bot, color: 'text-info' },
+    { label: 'Esperando asesor',   rawValue: data.conversaciones.esperandoHumano, format: fmtInt, sub: 'Intervención manual', urgent: data.conversaciones.esperandoHumano > 0, icon: UserCheck, color: 'text-error' },
+    { label: 'Campañas enviadas',  rawValue: data.campanas.enviadas,      format: fmtInt, sub: `${data.campanas.total} creadas`, icon: Megaphone, color: 'text-warning' },
+    { label: 'Citas pendientes',   rawValue: apptStats?.pending ?? apptStats?.total ?? data.ordenes.confirmadas, format: fmtInt, sub: apptStats?.today !== undefined ? `${apptStats.today} hoy` : `${data.ordenes.confirmadas} confirmadas`, urgent: (apptStats?.today ?? 0) > 0, icon: CalendarDays, color: 'text-success' },
   ] : [];
 
   return (
     <div className="min-h-screen pb-24 md:pb-6">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
+        transition={{ duration: 0.4, ease: EASE_OUT }}
         className="px-4 md:px-6 pt-4 md:pt-6 pb-4"
       >
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -180,7 +209,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.5 }}
+            transition={{ duration: 0.45, delay: 0.32, ease: EASE_OUT }}
             className="px-4 md:px-6 mt-6"
           >
             <div className="bg-surface border border-border-subtle rounded-2xl overflow-hidden">

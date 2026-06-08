@@ -266,6 +266,9 @@ export const getConversationInsights = () =>
 export const getAnalyticsSummary = (period: string) =>
   api.get('/analytics/summary', { params: { period } });
 
+export const getAnalyticsInsights = (period: string) =>
+  api.get('/analytics/insights', { params: { period } });
+
 // ── Campaigns ─────────────────────────────────────────────────────────────
 export const getCampaigns = (storeId: string) =>
   api.get(`/campaigns/store/${storeId}`);
