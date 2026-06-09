@@ -36,6 +36,46 @@
   ::-webkit-scrollbar-thumb:hover { background: #3A3A4A; }
 }
 
+@layer components {
+  .container-stockup {
+    @apply max-w-[1200px] mx-auto px-6 lg:px-12;
+  }
+
+  .section-label {
+    @apply text-[11px] font-bold tracking-[0.08em] uppercase;
+  }
+
+  .text-gradient-lime {
+    background: linear-gradient(135deg, #D4FF00 0%, #e5ff4d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btn-primary {
+    @apply relative overflow-hidden bg-stockup-lime text-stockup-bg font-bold px-7 py-3.5 rounded-xl inline-flex items-center gap-2 transition-all duration-200;
+  }
+  .btn-primary:hover { filter: brightness(1.05); transform: scale(1.02); }
+  .btn-primary::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer-sweep 3s ease-in-out infinite;
+  }
+
+  .btn-outline {
+    @apply relative border border-white/15 text-white font-semibold px-7 py-3.5 rounded-xl inline-flex items-center gap-2 transition-all duration-200;
+  }
+  .btn-outline:hover { @apply border-stockup-lime/50 bg-stockup-lime/5; }
+
+  .card-feature {
+    @apply bg-stockup-card border border-white/[0.06] rounded-2xl p-8 transition-all duration-400;
+  }
+  .card-feature:hover { @apply border-stockup-lime/25 shadow-glow-lime; }
+
+  .duration-400 { transition-duration: 400ms; }
+}
+
 @layer utilities {
   .gradient-brand {
     background: linear-gradient(135deg, #D4FF00 0%, #A3CC00 100%);
