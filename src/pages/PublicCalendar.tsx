@@ -5,7 +5,8 @@ import { getPublicStore, getPublicAvailability, bookPublicAppointment } from '..
 interface StaffSlots { staffId: string | null; name: string; slots: string[]; occupiedSlots?: string[]; }
 interface ServiceVariantOption { variantId: string; name: string; priceOverride?: number | null; estimatedMinutes?: number | null; }
 interface ServiceOption {
-  serviceId: string; name: string; basePrice?: number | null; priceType?: string;
+  serviceId: string; name: string; description?: string | null; basePrice?: number | null;
+  minPrice?: number | null; maxPrice?: number | null; priceType?: string;
   unitLabel?: string | null; estimatedMinutes?: number | null;
   hasVariants: boolean; variants: ServiceVariantOption[];
 }
@@ -13,6 +14,14 @@ interface StoreInfo  { name: string; staffLabel: string; hasStaff: boolean; serv
 interface SlotChoice { staffId: string | null; staffName: string; date: string; time: string; }
 
 const toISO    = (d: Date) => d.toISOString().slice(0, 10);
+const fmtCOP   = (n: number) =>
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+const fmtPrice = (s: ServiceOption): string | null => {
+  if (s.priceType === 'VARIABLE' || (!s.basePrice && !s.minPrice)) return null;
+  if (s.minPrice && s.maxPrice) return `${fmtCOP(Number(s.minPrice))} – ${fmtCOP(Number(s.maxPrice))}`;
+  if (s.basePrice) return fmtCOP(Number(s.basePrice));
+  return null;
+};
 const addDays  = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
 const fmtDay   = (d: Date) => d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 const today0   = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
@@ -100,28 +109,69 @@ export default function PublicCalendar() {
         {/* Service picker */}
         {store && store.services.length > 0 && (
           <div className="bg-[#111117] rounded-2xl p-5 border border-white/10">
-            <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">¿Qué servicio necesitas?</p>
-            <select
-              value={serviceId}
-              onChange={e => handleServiceChange(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0F] text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/30"
-            >
-              <option value="">Sin servicio específico</option>
-              {store.services.map(s => (
-                <option key={s.serviceId} value={s.serviceId}>{s.name}</option>
-              ))}
-            </select>
-            {selectedService && selectedService.hasVariants && selectedService.variants.length > 0 && (
-              <select
-                value={variantId}
-                onChange={e => setVariantId(e.target.value)}
-                className="w-full mt-2 px-3 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0F] text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/30"
+            <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">¿Qué servicio necesitas?</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleServiceChange('')}
+                className={`text-left px-4 py-3 rounded-xl border text-sm transition ${
+                  serviceId === ''
+                    ? 'border-[#D4FF00]/60 bg-[#D4FF00]/10 text-[#D4FF00]'
+                    : 'border-white/10 bg-[#0A0A0F] text-gray-400 hover:border-white/20'
+                }`}
               >
-                <option value="">Selecciona una opción</option>
-                {selectedService.variants.map(v => (
-                  <option key={v.variantId} value={v.variantId}>{v.name}</option>
-                ))}
-              </select>
+                <span className="font-medium">Sin preferencia</span>
+              </button>
+              {store.services.map(s => {
+                const price = fmtPrice(s);
+                const mins  = s.estimatedMinutes ? `${s.estimatedMinutes} min` : null;
+                const isSelected = serviceId === s.serviceId;
+                return (
+                  <button
+                    key={s.serviceId}
+                    type="button"
+                    onClick={() => handleServiceChange(s.serviceId)}
+                    className={`text-left px-4 py-3 rounded-xl border text-sm transition ${
+                      isSelected
+                        ? 'border-[#D4FF00]/60 bg-[#D4FF00]/10'
+                        : 'border-white/10 bg-[#0A0A0F] hover:border-white/20'
+                    }`}
+                  >
+                    <p className={`font-semibold leading-tight ${isSelected ? 'text-[#D4FF00]' : 'text-white'}`}>{s.name}</p>
+                    {s.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{s.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {price && <span className={`text-xs font-bold ${isSelected ? 'text-[#D4FF00]' : 'text-[#D4FF00]/80'}`}>{price}</span>}
+                      {mins  && <span className="text-xs text-gray-500">{mins}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {selectedService && selectedService.hasVariants && selectedService.variants.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 mb-2">Elige una opción:</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedService.variants.map(v => (
+                    <button
+                      key={v.variantId}
+                      type="button"
+                      onClick={() => setVariantId(v.variantId)}
+                      className={`px-3 py-1.5 rounded-xl text-sm border transition ${
+                        variantId === v.variantId
+                          ? 'border-[#D4FF00]/60 bg-[#D4FF00]/10 text-[#D4FF00]'
+                          : 'border-white/10 bg-[#0A0A0F] text-gray-300 hover:border-white/20'
+                      }`}
+                    >
+                      {v.name}
+                      {v.priceOverride != null && (
+                        <span className="ml-1.5 text-xs text-[#D4FF00]/80">{fmtCOP(Number(v.priceOverride))}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
