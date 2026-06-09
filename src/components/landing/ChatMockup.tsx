@@ -19,9 +19,6 @@ export default function ChatMockup() {
   const [visibleMessages, setVisibleMessages] = useState<number[]>([]);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) { setVisibleMessages(MESSAGES.map((m) => m.id)); return; }
-
     const tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });
     tl.fromTo(containerRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
 

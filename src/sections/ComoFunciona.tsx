@@ -17,7 +17,6 @@ export default function ComoFunciona() {
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const ctx = gsap.context(() => {
       cardsRef.current.forEach((card, i) => {
         if (!card) return;
