@@ -26,15 +26,6 @@ export default function HeroSection() {
   const badgeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) {
-      wordsRef.current.forEach((w) => { if (w) w.style.opacity = '1'; });
-      if (subtitleRef.current) subtitleRef.current.style.opacity = '1';
-      if (buttonsRef.current) buttonsRef.current.style.opacity = '1';
-      if (badgeRef.current) badgeRef.current.style.opacity = '1';
-      return;
-    }
-
     const tl = gsap.timeline();
     tl.fromTo(badgeRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 0.1);
     wordsRef.current.forEach((word, i) => {

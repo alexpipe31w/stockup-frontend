@@ -19,9 +19,6 @@ export function useScrollReveal<T extends HTMLElement>(
     const el = ref.current;
     if (!el) return;
 
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) return;
-
     const { y = 30, duration = 0.6, delay = 0, stagger = 0, childSelector } = options || {};
     const targets = childSelector ? el.querySelectorAll(childSelector) : el;
 
