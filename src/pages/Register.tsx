@@ -230,12 +230,6 @@ export default function Register() {
     }
   };
 
-  const inputBase: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: 'white',
-  };
-
   return (
     <div className="min-h-screen flex relative overflow-hidden" style={{ background: '#0A0A0F' }}>
       <AuthGridBg />
