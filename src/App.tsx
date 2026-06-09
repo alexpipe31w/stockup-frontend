@@ -26,6 +26,9 @@ import PaymentStatus from './pages/PaymentStatus';
 import More from './pages/More';
 import ServiceOrders from './pages/ServiceOrders';
 import PublicCalendar from './pages/PublicCalendar';
+import Landing from './pages/Landing';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -107,6 +110,9 @@ function App() {
       <SubscriptionProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/"                 element={<Landing />} />
+            <Route path="/terminos"         element={<Terms />} />
+            <Route path="/privacidad"       element={<Privacy />} />
             <Route path="/login"            element={<Login />} />
             <Route path="/register"         element={<Register />} />
             <Route path="/payment-status"   element={<PrivateRoute><PaymentStatus /></PrivateRoute>} />
