@@ -4,6 +4,7 @@ import {
   addServiceVariant, updateServiceVariant, deleteServiceVariant,
 } from '../services/api';
 import type { PriceType, ServiceVariantPayload } from '../services/api';
+import { ImageUploadField } from '../components/ImageUploadField';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PlusIcon   = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
@@ -544,12 +545,11 @@ function ServiceModal({ service, onClose, onSaved }: {
           {/* ── TAB INFO ─────────────────────────────────────────────────── */}
           {tab === 'info' && (
             <>
-              {/* Preview imagen */}
-              {form.imageUrl && (
-                <div className="h-36 rounded-xl overflow-hidden bg-surface-elevated border border-border-subtle">
-                  <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
-                </div>
-              )}
+              <ImageUploadField
+                value={form.imageUrl}
+                onChange={url => set('imageUrl', url)}
+                label="Imagen del servicio"
+              />
 
               {/* Nombre */}
               <div>
@@ -560,24 +560,15 @@ function ServiceModal({ service, onClose, onSaved }: {
                   className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
-              {/* Categoría + URL imagen */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1 flex items-center gap-1">
-                    <TagIcon /> Categoría
-                  </label>
-                  <input type="text" value={form.category}
-                    onChange={e => set('category', e.target.value)}
-                    placeholder="Ej: Cortes, Reparaciones, Eventos"
-                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">URL imagen</label>
-                  <input type="text" value={form.imageUrl}
-                    onChange={e => set('imageUrl', e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
-                </div>
+              {/* Categoría */}
+              <div>
+                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1 flex items-center gap-1">
+                  <TagIcon /> Categoría
+                </label>
+                <input type="text" value={form.category}
+                  onChange={e => set('category', e.target.value)}
+                  placeholder="Ej: Cortes, Reparaciones, Eventos"
+                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               {/* Descripción */}

@@ -406,6 +406,13 @@ export const getAiPoolStatus = () =>
 export const verifyAiKeys = () =>
   api.post('/ai-config/verify-keys');
 
+// ── Uploads ───────────────────────────────────────────────────────────────
+export const uploadImage = (file: File) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return api.post<{ url: string }>('/uploads/image', fd);
+};
+
 // ── Blocked Contacts ──────────────────────────────────────────────────────
 export const getBlockedContacts = () =>
   api.get('/blocked');

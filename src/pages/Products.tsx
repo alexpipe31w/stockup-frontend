@@ -4,6 +4,7 @@ import {
   addVariant, updateVariant, deleteVariant,
   getCategories, createCategory,
 } from '../services/api';
+import { ImageUploadField } from '../components/ImageUploadField';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon  = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
@@ -618,11 +619,11 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           {/* ── TAB INFO ───────────────────────────────────────────────────── */}
           {tab === 'info' && (
             <>
-              {form.imageUrl && (
-                <div className="h-40 rounded-xl overflow-hidden bg-surface-elevated border border-border-subtle">
-                  <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
-                </div>
-              )}
+              <ImageUploadField
+                value={form.imageUrl}
+                onChange={url => set('imageUrl', url)}
+                label="Imagen del producto"
+              />
 
               <div>
                 <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Nombre *</label>
@@ -668,14 +669,6 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">URL de imagen</label>
-                <input type="text" value={form.imageUrl}
-                  onChange={e => set('imageUrl', e.target.value)}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
               </div>
 
               {/* CAMBIO 2: al activar hasVariants → ir automáticamente al tab variantes */}
