@@ -346,10 +346,10 @@ export const bookPublicAppointment = (slug: string, data: {
 export const getStaff = () =>
   api.get('/staff');
 
-export const createStaff = (data: { name: string; schedule?: Record<string, any> | null }) =>
+export const createStaff = (data: { name: string; schedule?: Record<string, any> | null; commissionPercentage?: number | null }) =>
   api.post('/staff', data);
 
-export const updateStaff = (id: string, data: { name?: string; isActive?: boolean; schedule?: Record<string, any> | null }) =>
+export const updateStaff = (id: string, data: { name?: string; isActive?: boolean; schedule?: Record<string, any> | null; commissionPercentage?: number | null }) =>
   api.patch(`/staff/${id}`, data);
 
 export const deleteStaff = (id: string) =>

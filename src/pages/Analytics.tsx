@@ -17,7 +17,7 @@ interface Summary {
   byPaymentMethod: { method: string; label: string; amount: number; count: number }[];
   topProducts: { name: string; quantity: number; revenue: number }[];
   topServices: { name: string; quantity: number; revenue: number }[];
-  byStaff: { staffId: string; name: string; appointments: number; revenue: number }[];
+  byStaff: { staffId: string; name: string; appointments: number; revenue: number; commissionPercentage: number | null; commission: number }[];
   recentOrders: {
     orderId: string; createdAt: string; type: string;
     description: string; amount: number; paymentMethod: string;
@@ -175,16 +175,21 @@ function DashboardTab({ data, insights, insightsLoading, insightsError }: {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-medium text-txt-primary truncate">{s.name}</p>
-                    <p className="text-xs text-txt-secondary flex-shrink-0 ml-2">{s.appointments} citas</p>
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                      <p className="text-xs text-txt-secondary">{s.appointments} citas</p>
+                      {s.revenue > 0 && (
+                        <p className="text-sm font-bold text-txt-primary">{fmt(s.revenue)}</p>
+                      )}
+                      {s.commissionPercentage != null && s.commission > 0 && (
+                        <p className="text-xs font-semibold text-lime">{fmt(s.commission)} <span className="text-txt-tertiary font-normal">({s.commissionPercentage}%)</span></p>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-surface-overlay rounded-full h-1.5 overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${topStaff > 0 ? (s.appointments / topStaff) * 100 : 0}%`, background: 'linear-gradient(90deg,#D4FF00,#A3CC00)' }} />
                   </div>
                 </div>
-                {s.revenue > 0 && (
-                  <p className="text-sm font-bold text-txt-primary flex-shrink-0 w-24 text-right">{fmt(s.revenue)}</p>
-                )}
               </div>
             ))}
           </div>

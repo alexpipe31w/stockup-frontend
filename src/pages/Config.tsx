@@ -978,6 +978,7 @@ interface StaffMember {
   name: string;
   isActive: boolean;
   schedule: BusinessHoursJson | null;
+  commissionPercentage: number | null;
   createdAt: string;
 }
 
@@ -1043,6 +1044,7 @@ function EquipoSection({ storeId }: { storeId: string }) {
               <tr>
                 <th className="text-left px-4 py-3 text-txt-secondary font-medium">Nombre</th>
                 <th className="text-left px-4 py-3 text-txt-secondary font-medium hidden sm:table-cell">Horario</th>
+                <th className="text-left px-4 py-3 text-txt-secondary font-medium hidden md:table-cell">Comisión</th>
                 <th className="text-right px-4 py-3 text-txt-secondary font-medium">Acciones</th>
               </tr>
             </thead>
@@ -1052,6 +1054,9 @@ function EquipoSection({ storeId }: { storeId: string }) {
                   <td className="px-4 py-3 text-txt-primary font-medium">{s.name}</td>
                   <td className="px-4 py-3 text-txt-secondary hidden sm:table-cell">
                     {s.schedule ? 'Horario propio' : 'Hereda del negocio'}
+                  </td>
+                  <td className="px-4 py-3 text-txt-secondary hidden md:table-cell">
+                    {s.commissionPercentage != null ? `${s.commissionPercentage}%` : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -1109,15 +1114,26 @@ function StaffModal({
   const [schedule,       setSchedule]       = useState<BusinessHoursJson>(
     (editing?.schedule as BusinessHoursJson | null) ?? DEFAULT_BUSINESS_HOURS,
   );
+  const [commission,     setCommission]     = useState<string>(
+    editing?.commissionPercentage != null ? String(editing.commissionPercentage) : '',
+  );
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { setError('El nombre es obligatorio.'); return; }
+    const commissionVal = commission.trim() !== '' ? Number(commission) : null;
+    if (commissionVal !== null && (isNaN(commissionVal) || commissionVal < 0 || commissionVal > 100)) {
+      setError('La comisión debe ser un número entre 0 y 100.'); return;
+    }
     setSaving(true); setError('');
     try {
-      const payload = { name: name.trim(), schedule: hasOwnSchedule ? schedule : null };
+      const payload = {
+        name: name.trim(),
+        schedule: hasOwnSchedule ? schedule : null,
+        commissionPercentage: commissionVal,
+      };
       const res = editing
         ? await updateStaff(editing.staffId, payload)
         : await createStaff(payload);
@@ -1152,6 +1168,24 @@ function StaffModal({
               className={ic}
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-txt-secondary mb-1.5">Comisión (%)</label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={commission}
+                onChange={e => setCommission(e.target.value)}
+                placeholder="Ej: 30"
+                className={ic + ' pr-8'}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-txt-tertiary text-sm">%</span>
+            </div>
+            <p className="text-xs text-txt-tertiary mt-1">Opcional. Aparece en las analíticas para calcular ganancias por {staffLabel.toLowerCase()}.</p>
           </div>
 
           <div className="flex items-center gap-3">
