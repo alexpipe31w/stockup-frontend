@@ -403,6 +403,9 @@ export const saveAiConfig = (data: {
 export const getAiPoolStatus = () =>
   api.get('/ai-config/pool-status');
 
+export const verifyAiKeys = () =>
+  api.post('/ai-config/verify-keys');
+
 // ── Blocked Contacts ──────────────────────────────────────────────────────
 export const getBlockedContacts = () =>
   api.get('/blocked');

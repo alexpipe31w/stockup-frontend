@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getAiConfig, saveAiConfig, getAiPoolStatus } from '../services/api';
+import { getAiConfig, saveAiConfig, getAiPoolStatus, verifyAiKeys } from '../services/api';
 
 type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic' | 'gemini';
 
@@ -373,12 +373,31 @@ interface CartridgeSnapshot {
   maskedKey: string;
   model:     string;
   status:    'active' | 'unused' | 'exhausted';
+  useCount:  number;
 }
 interface PoolSnapshot {
   hasPool:    boolean;
   cartridges: CartridgeSnapshot[];
   resetAt:    number | null;
+  totalUses:  number;
 }
+
+type VerifyStatus = 'valid' | 'invalid' | 'rate_limited' | 'timeout' | 'error';
+interface VerifyResult {
+  provider:  string;
+  maskedKey: string;
+  model:     string;
+  status:    VerifyStatus;
+  detail?:   string;
+}
+
+const VERIFY_LABEL: Record<VerifyStatus, { label: string; dot: string; text: string }> = {
+  valid:        { label: 'Válida',       dot: 'bg-success',                text: 'text-success'       },
+  invalid:      { label: 'Inválida',     dot: 'bg-red-500',                text: 'text-red-400'       },
+  rate_limited: { label: 'Rate limited', dot: 'bg-warning animate-pulse',  text: 'text-warning'       },
+  timeout:      { label: 'Timeout',      dot: 'bg-txt-tertiary',           text: 'text-txt-tertiary'  },
+  error:        { label: 'Error',        dot: 'bg-red-500',                text: 'text-red-400'       },
+};
 
 const STATUS_LABEL: Record<CartridgeSnapshot['status'], { label: string; dot: string; text: string }> = {
   active:    { label: 'Activo',    dot: 'bg-success',       text: 'text-success' },
@@ -412,7 +431,9 @@ export default function AiConfig() {
   const [cartridges, setCartridges] = useState<CartridgeForm[]>([]);
   const [pool, setPool] = useState<PoolSnapshot | null>(null);
   const countdown = useCountdown(pool?.resetAt ?? null);
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [showTemplates, setShowTemplates]   = useState(false);
+  const [verifying,    setVerifying]        = useState(false);
+  const [verifyResults, setVerifyResults]   = useState<VerifyResult[] | null>(null);
   const [form, setForm] = useState({
     aiProvider:   'groq' as AIProvider,
     apiKey:       '',
@@ -424,6 +445,18 @@ export default function AiConfig() {
 
   const fetchPool = useCallback(() => {
     getAiPoolStatus().then(r => setPool(r.data)).catch(() => {});
+  }, []);
+
+  const handleVerify = useCallback(async () => {
+    setVerifying(true);
+    try {
+      const r = await verifyAiKeys();
+      setVerifyResults(r.data.cartridges ?? []);
+    } catch {
+      setVerifyResults([]);
+    } finally {
+      setVerifying(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -670,63 +703,114 @@ export default function AiConfig() {
               <p className="text-xs text-txt-tertiary mt-0.5">Estado en vivo — actualiza cada 30 seg</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={fetchPool}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border-default text-txt-tertiary hover:bg-surface-elevated transition"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
-            </svg>
-            Actualizar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleVerify}
+              disabled={verifying}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-lime/40 text-lime hover:bg-lime/10 transition disabled:opacity-50"
+            >
+              {verifying ? (
+                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              )}
+              {verifying ? 'Verificando...' : 'Verificar claves'}
+            </button>
+            <button
+              type="button"
+              onClick={fetchPool}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border-default text-txt-tertiary hover:bg-surface-elevated transition"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+              </svg>
+              Actualizar
+            </button>
+          </div>
         </div>
 
+        {/* ── Pool status (runtime) ── */}
         {!pool || !pool.hasPool ? (
-          <div className="flex items-center gap-3 p-4 rounded-xl border border-dashed border-border-default text-txt-tertiary text-xs">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <div className="flex items-start gap-3 p-4 rounded-xl border border-dashed border-border-default text-txt-tertiary text-xs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="flex-shrink-0 mt-0.5">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            Sin actividad reciente. El monitor se activa cuando el asistente recibe mensajes.
+            <span>Sin actividad reciente — el monitor de uso se activa cuando el asistente recibe mensajes. Usa <span className="text-lime font-medium">Verificar claves</span> para comprobar el estado sin esperar.</span>
           </div>
         ) : (
           <div className="space-y-2">
-            {pool.cartridges.map((c, i) => {
-              const st = STATUS_LABEL[c.status];
-              return (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
-                    c.status === 'exhausted'
-                      ? 'border-red-500/30 bg-red-500/5'
-                      : c.status === 'active'
-                      ? 'border-success/30 bg-success/5'
-                      : 'border-border-default bg-surface-elevated'
-                  }`}
-                >
-                  {/* Número */}
-                  <span className="w-6 h-6 rounded-full bg-surface-overlay flex items-center justify-center text-[10px] font-bold text-txt-tertiary flex-shrink-0">
-                    {i + 1}
-                  </span>
-                  {/* Provider + key */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-txt-primary capitalize">{c.provider}</span>
-                      <span className="font-mono text-xs text-txt-tertiary">{c.maskedKey}</span>
+            {(() => {
+              const maxUses = Math.max(...pool.cartridges.map(c => c.useCount), 1);
+              return pool.cartridges.map((c, i) => {
+                const st  = STATUS_LABEL[c.status];
+                const vr  = verifyResults?.find(v => v.maskedKey === c.maskedKey && v.provider === c.provider);
+                const usePct = Math.round((c.useCount / maxUses) * 100);
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+                      c.status === 'exhausted'
+                        ? 'border-red-500/30 bg-red-500/5'
+                        : c.status === 'active'
+                        ? 'border-success/30 bg-success/5'
+                        : 'border-border-default bg-surface-elevated'
+                    }`}
+                  >
+                    <span className="w-6 h-6 rounded-full bg-surface-overlay flex items-center justify-center text-[10px] font-bold text-txt-tertiary flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-txt-primary capitalize">{c.provider}</span>
+                        <span className="font-mono text-xs text-txt-tertiary">{c.maskedKey}</span>
+                      </div>
+                      <p className="text-[10px] text-txt-tertiary truncate">{c.model}</p>
+                      {/* Barra de uso relativa */}
+                      {pool.totalUses > 0 && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="w-20 h-1 bg-surface-overlay rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-lime/60 transition-all"
+                              style={{ width: `${usePct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-txt-tertiary">{c.useCount} uso{c.useCount !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[10px] text-txt-tertiary truncate">{c.model}</p>
+                    <div className="flex flex-col items-end gap-1.5">
+                      {/* Pool status badge */}
+                      <div
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${st.text}`}
+                        style={{ backgroundColor: c.status === 'active' ? 'rgba(34,197,94,0.12)' : c.status === 'exhausted' ? 'rgba(239,68,68,0.1)' : 'rgba(100,116,139,0.1)' }}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
+                        {st.label}
+                      </div>
+                      {/* Verify badge (si ya se verificó) */}
+                      {vr && (() => {
+                        const vl = VERIFY_LABEL[vr.status];
+                        return (
+                          <div
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${vl.text}`}
+                            style={{ backgroundColor: vr.status === 'valid' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)' }}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${vl.dot}`} />
+                            {vl.label}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
-                  {/* Status badge */}
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${st.text} bg-current/10`}
-                       style={{ backgroundColor: c.status === 'active' ? 'rgba(var(--color-success-rgb,34,197,94),0.12)' : c.status === 'exhausted' ? 'rgba(239,68,68,0.1)' : 'rgba(100,116,139,0.1)' }}>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
-                    {st.label}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
 
-            {/* Timer de reset */}
             {pool.cartridges.some(c => c.status === 'exhausted') && pool.resetAt && (
               <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/8 border border-red-500/20 text-xs">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
@@ -746,6 +830,42 @@ export default function AiConfig() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Verify results cuando pool está vacío ── */}
+        {verifyResults && verifyResults.length > 0 && (!pool || !pool.hasPool) && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs font-medium text-txt-secondary mb-2">Resultado de verificación:</p>
+            {verifyResults.map((vr, i) => {
+              const vl = VERIFY_LABEL[vr.status];
+              return (
+                <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border-default bg-surface-elevated">
+                  <span className="w-6 h-6 rounded-full bg-surface-overlay flex items-center justify-center text-[10px] font-bold text-txt-tertiary flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-txt-primary capitalize">{vr.provider}</span>
+                      <span className="font-mono text-xs text-txt-tertiary">{vr.maskedKey}</span>
+                    </div>
+                    <p className="text-[10px] text-txt-tertiary truncate">{vr.model}</p>
+                    {vr.detail && <p className="text-[10px] text-red-400 mt-0.5">{vr.detail}</p>}
+                  </div>
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${vl.text}`}
+                    style={{ backgroundColor: vr.status === 'valid' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.1)' }}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${vl.dot}`} />
+                    {vl.label}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {verifyResults && verifyResults.length === 0 && (
+          <p className="mt-3 text-xs text-txt-tertiary px-1">No hay claves configuradas para verificar.</p>
         )}
       </div>
 
