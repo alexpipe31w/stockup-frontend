@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPublicStore, getPublicAvailability, bookPublicAppointment } from '../services/api';
 
-interface StaffSlots { staffId: string | null; name: string; slots: string[]; }
+interface StaffSlots { staffId: string | null; name: string; slots: string[]; occupiedSlots?: string[]; }
 interface ServiceVariantOption { variantId: string; name: string; priceOverride?: number | null; estimatedMinutes?: number | null; }
 interface ServiceOption {
   serviceId: string; name: string; basePrice?: number | null; priceType?: string;
@@ -162,7 +162,7 @@ export default function PublicCalendar() {
                   <span className="text-[#D4FF00] text-lg">✂</span>
                   {s.name}
                 </p>
-                {s.slots.length === 0 ? (
+                {s.slots.length === 0 && (!s.occupiedSlots || s.occupiedSlots.length === 0) ? (
                   <p className="text-xs text-gray-500 italic">Sin disponibilidad este día</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
@@ -171,10 +171,19 @@ export default function PublicCalendar() {
                         key={slot}
                         type="button"
                         onClick={() => setSlotChoice({ staffId: s.staffId, staffName: s.name, date: toISO(date), time: slot })}
-                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-white hover:bg-[#D4FF00]/10 hover:border-[#D4FF00]/40 hover:text-[#D4FF00] transition"
+                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 hover:border-green-500/50 transition"
                       >
                         {slot}
                       </button>
+                    ))}
+                    {s.occupiedSlots?.map(slot => (
+                      <span
+                        key={`occ-${slot}`}
+                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/20 text-red-400/60 cursor-not-allowed"
+                        title="Horario ocupado"
+                      >
+                        {slot}
+                      </span>
                     ))}
                   </div>
                 )}
