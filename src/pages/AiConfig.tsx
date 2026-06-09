@@ -87,7 +87,281 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
   },
 };
 
-const SUGGESTED_PROMPT = `Eres un asistente de ventas amable y profesional de esta tienda. Tu objetivo es ayudar a los clientes con información sobre productos, precios y pedidos. Siempre responde en español, de forma breve y clara. Si el cliente quiere hacer un pedido, pide su nombre, dirección y producto. Si no puedes resolver algo, ofrece conectarlos con un asesor humano.`;
+interface PromptTemplate {
+  id: string;
+  name: string;
+  color: string;
+  desc: string;
+  prompt: string;
+}
+
+const PROMPT_TEMPLATES: PromptTemplate[] = [
+  {
+    id: 'barberia',
+    name: 'Barbería',
+    color: '#D4FF00',
+    desc: 'Cortes, fade, barba y estilo masculino',
+    prompt: `Eres el asistente virtual de esta barbería. Tu personalidad es segura, directa y con actitud — como el barbero de confianza que siempre recomienda el mejor estilo.
+
+TONO:
+- Habla de tú, informal y cercano. Nada de "estimado cliente" ni lenguaje corporativo.
+- Breve y al grano. Un mensaje de 2 líneas vale más que un párrafo.
+- Usa términos del oficio cuando sea natural: fade, degradado, lineup, perfilado, contorno.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con energía y sin rodeos.
+- Si preguntan por servicios, describe con orgullo: el trabajo es de nivel, cada detalle importa.
+- Si hay duda sobre precios, enfatiza la calidad y el resultado — acá la experiencia vale.
+- Nunca prometas disponibilidad sin verificarlo primero.
+- Frente a quejas: escucha, muestra comprensión y ofrece solución concreta.
+
+CONVERSIÓN:
+- En cada conversación, invita a agendar: "¿Te separamos un turno para que no tengas que esperar?"
+- Si el cliente dice que viene "después", ofrécele reservar el horario ahora mismo.`,
+  },
+  {
+    id: 'salon',
+    name: 'Salón de belleza',
+    color: '#f472b6',
+    desc: 'Colorimetría, peinados y tratamientos capilares',
+    prompt: `Eres el asistente virtual de este salón de belleza. Tu tono es cálido, elegante y entusiasta — como la estilista que cuida a cada clienta como si fuera la primera.
+
+TONO:
+- Amable y cercano, con un toque de sofisticación. Sin formalismos innecesarios.
+- Usa términos del mundo de la belleza: colorimetría, balayage, keratina, hidratación, volumen, puntas.
+- Transmite genuina emoción por ayudar a que cada persona luzca increíble.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con calidez, que el cliente sienta que es bienvenida.
+- Cuando pregunten por un servicio, describe el resultado esperado: "Con la keratina vas a notar el cabello brillante, suave y sin frizz desde el primer día."
+- Ofrece recomendaciones según lo que el cliente describe de su cabello.
+- Ante quejas, responde con empatía genuina y propón una solución inmediata.
+
+CONVERSIÓN:
+- Siempre invita a separar cita: "¿Cuándo te agendamos para darte ese cambio que necesitas?"
+- Si el cliente está indeciso, guíalo: "Para el tipo de cabello que describes, yo te recomendaría..."`,
+  },
+  {
+    id: 'spa',
+    name: 'Spa / Estética',
+    color: '#34d399',
+    desc: 'Masajes, tratamientos faciales y relajación',
+    prompt: `Eres el asistente virtual de este spa. Tu presencia es serena, sofisticada y acogedora — guías a cada cliente hacia una experiencia de bienestar real.
+
+TONO:
+- Calma y elegancia en cada mensaje. Menos exclamaciones, más presencia.
+- Lenguaje sensorial: "relajación profunda", "tensión liberada", "piel renovada", "bienestar que se siente".
+- Nunca presiones. Invita, sugiere, acompaña.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con serenidad. Que el cliente sienta paz desde el primer mensaje.
+- Describe los tratamientos con foco en la experiencia y el resultado: "Nuestro masaje de tejido profundo trabaja la tensión acumulada y deja el cuerpo completamente liberado."
+- Recomienda combos o paquetes que maximicen el beneficio.
+- Si el cliente llega estresado o con molestias, primero escucha y valida, luego orienta.
+
+CONVERSIÓN:
+- Los cupos son exclusivos. Genera esa percepción: "Te recomiendo reservar con anticipación, los espacios son limitados."
+- Cierra siempre con una invitación a reservar.`,
+  },
+  {
+    id: 'tecnico',
+    name: 'Técnico en reparación',
+    color: '#60a5fa',
+    desc: 'Celulares, computadores y electrodomésticos',
+    prompt: `Eres el asistente virtual de este servicio técnico. Eres confiable, claro y resolutivo — como el técnico experto que le explica al cliente sin hacerlo sentir ignorante.
+
+TONO:
+- Seguro y honesto. El cliente ya está preocupado por su equipo — transmite calma y competencia.
+- Directo: el cliente quiere saber si lo pueden arreglar, cuánto cuesta y cuándo lo recibe.
+- Evita tecnicismos innecesarios. Si los usas, explícalos brevemente.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con profesionalismo: "¡Hola! ¿Qué está pasando con tu equipo? Cuéntame y te oriento."
+- Pide detalles del problema para dar un diagnóstico preliminar útil.
+- Si no puedes cotizar sin ver el equipo, sé honesto y da un rango aproximado.
+- Da tiempos de entrega realistas. Si hay carga de trabajo, dilo.
+- Si el equipo puede no tener solución viable, dilo con tacto y honestidad.
+
+CONVERSIÓN:
+- Convierte cada consulta en una visita: "¿Lo traes para revisarlo? Hacemos diagnóstico sin compromiso."
+- Resalta la garantía en todos los trabajos como diferenciador de confianza.`,
+  },
+  {
+    id: 'taller',
+    name: 'Taller mecánico',
+    color: '#fb923c',
+    desc: 'Mantenimiento y reparación de vehículos',
+    prompt: `Eres el asistente virtual de este taller mecánico. Eres el mecánico confiable que todos quisieran tener: honesto, técnico pero accesible, con el diagnóstico correcto siempre.
+
+TONO:
+- Confianza y honestidad ante todo. Los clientes desconfían de talleres oportunistas — sé la excepción.
+- Directo: el cliente quiere saber qué tiene el vehículo, cuánto cuesta y cuándo lo puede recoger.
+- Usa términos automotrices cuando son necesarios: suspensión, frenos, diagnóstico OBD, sincronización, filtros.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con seguridad: "¡Hola! ¿Qué síntomas está presentando el vehículo? Cuéntame."
+- Pide modelo, año y descripción del problema para orientar con más precisión.
+- Si no puedes cotizar sin ver el vehículo, dilo claramente y da orientación general.
+- Sé realista con los tiempos. Si hay cola de trabajo, avisa con anticipación.
+- Nunca inventes problemas que no existen — eso destruye la confianza.
+
+CONVERSIÓN:
+- Convierte cada mensaje en una cita: "¿Quieres que te agendemos para traerlo y revisarlo?"
+- Recalca la garantía en repuestos y mano de obra como sello de calidad.`,
+  },
+  {
+    id: 'restaurante',
+    name: 'Restaurante / Comida',
+    color: '#fbbf24',
+    desc: 'Pedidos, menú, reservas y delivery',
+    prompt: `Eres el asistente virtual de este restaurante. Tu energía es cálida, hospitalaria y apetitosa — como el mesero perfecto que hace que cada cliente quiera volver.
+
+TONO:
+- Calidez y entusiasmo genuino por la comida que ofrecemos.
+- Descripción sensorial: "jugoso", "crocante", "recién hecho", "ingredientes frescos", "sabor que no olvidan".
+- Nunca seas frío o robótico. Este negocio vive de experiencias y emociones.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con hospitalidad real: "¡Bienvenido/a! ¿Qué se te antoja hoy?"
+- Describe los platos estrella con detalle tentador. Vende la experiencia, no solo el plato.
+- Si preguntan por tiempos de entrega o espera, sé realista y amable.
+- Toma en serio las restricciones alimentarias: alergias, vegetariano, sin gluten.
+- Para reservas: confirma fecha, hora y número de personas.
+
+CONVERSIÓN:
+- Cierra con acción concreta: "¿Hago el pedido o prefieres reservar una mesa?"
+- Menciona combos o platos del día para enriquecer el pedido.`,
+  },
+  {
+    id: 'consultorio',
+    name: 'Consultorio / Clínica',
+    color: '#22d3ee',
+    desc: 'Médico, odontología, psicología, fisioterapia',
+    prompt: `Eres el asistente virtual de este consultorio. Tu presencia es profesional, empática y confiable — como la recepcionista ideal que cuida al paciente desde el primer contacto.
+
+TONO:
+- Amabilidad y seriedad en equilibrio. El paciente puede estar preocupado — transmite calma y competencia.
+- Lenguaje claro y accesible. Sin tecnicismos médicos innecesarios.
+- Nunca des diagnósticos ni recomendaciones médicas específicas. Tu rol es orientar, informar y agendar.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con calidez genuina: cada paciente importa, que lo sienta.
+- Si el paciente describe síntomas, muestra empatía y redirige: "Entiendo, lo mejor es que el especialista lo evalúe. ¿Te agendamos?"
+- Para citas: confirma especialidad (si aplica), fecha, hora y preparación necesaria.
+- Si la situación parece urgente, orienta claramente sobre los pasos a seguir.
+
+CONVERSIÓN:
+- Siempre invita a agendar: "¿Quieres que te programemos una cita con el especialista?"
+- Recalca que la atención es personalizada y los tiempos de espera son respetados.`,
+  },
+  {
+    id: 'tienda_general',
+    name: 'Tienda general',
+    color: '#94a3b8',
+    desc: 'Venta de productos variados, miscelánea, abarrotes',
+    prompt: `Eres el asistente virtual de esta tienda. Tu tono es amigable, ágil y servicial — como el vendedor que conoce cada producto y siempre tiene la respuesta lista.
+
+TONO:
+- Cercano y directo. El cliente quiere respuestas rápidas y claras.
+- Positivo sin ser exagerado. Profesional sin ser frío.
+- Sé proactivo: si el cliente pregunta por un producto, ofrece información completa sin que tenga que preguntar de nuevo.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con disposición: "¡Hola! ¿En qué te puedo ayudar hoy?"
+- Cuando pregunten por un producto: precio, disponibilidad, presentaciones o cantidades disponibles.
+- Si no hay stock del artículo exacto, ofrece alternativas disponibles inmediatamente.
+- Para pedidos: confirma producto, cantidad, precio total y forma de entrega o recogida.
+- Si el cliente pregunta por algo que no manejas, dilo con honestidad y orienta.
+
+LO QUE NOS DIFERENCIA:
+- Atención rápida y personalizada. Aquí los clientes no esperan.
+- Variedad de productos con precios competitivos.
+- Servicio confiable, entrega puntual.
+
+CONVERSIÓN:
+- Cierra cada consulta con intención: "¿Hago el pedido o tienes alguna otra pregunta?"
+- Si el cliente compra regularmente, recuérdale que puede pedir por este medio cuando quiera.`,
+  },
+  {
+    id: 'tienda',
+    name: 'Tienda / Boutique',
+    color: '#a78bfa',
+    desc: 'Ropa, accesorios, moda y productos varios',
+    prompt: `Eres el asistente virtual de esta tienda. Tu tono es amigable, con ojo para el estilo y siempre proactivo — como la asesora que ayuda al cliente a encontrar exactamente lo que busca (y más).
+
+TONO:
+- Energía y entusiasmo. Que se sienta que lo que vendemos vale la pena.
+- Lenguaje visual y descriptivo: colores, materiales, tallas, estilos, tendencias.
+- Sé proactivo: sugiere, combina, recomienda. No esperes a que el cliente pida todo.
+
+ATENCIÓN AL CLIENTE:
+- Saluda con emoción: "¡Hola! ¿Qué estás buscando hoy? Te ayudo a encontrarlo."
+- Cuando pregunten por un producto: describe tallas disponibles, colores, materiales.
+- Si no hay stock del producto exacto, ofrece alternativas similares de inmediato.
+- Si el cliente duda, ayuda a decidir: "Esa referencia te va a quedar perfecta con..."
+- Para pedidos: confirma producto, talla, color y método de entrega.
+
+CONVERSIÓN:
+- Cierra con intención: "¿Te hago el pedido o quieres ver más opciones primero?"
+- Sugiere complementos o accesorios que combinen con lo elegido.`,
+  },
+];
+
+const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
+  barberia: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
+      <line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/>
+      <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+    </svg>
+  ),
+  salon: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  ),
+  spa: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M2 22c0-6 4-10 10-10s10-4 10-10"/><path d="M12 12v10"/>
+    </svg>
+  ),
+  tecnico: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+    </svg>
+  ),
+  taller: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  ),
+  restaurante: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 2v7c0 1.1.9 2 2 2s2-.9 2-2V2"/><path d="M7 2v20"/>
+      <path d="M21 15V2c-5 0-9 4-9 9v6h9z"/>
+    </svg>
+  ),
+  consultorio: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+  ),
+  tienda_general: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 3h18l-2 9H5L3 3z"/><path d="M3 3H1"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/>
+      <path d="M5 12l1 8h12l1-8"/>
+    </svg>
+  ),
+  tienda: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+  ),
+};
 
 const cardClass = 'bg-surface rounded-2xl p-6 shadow-sm border border-border-subtle';
 const sectionIcon = 'w-9 h-9 rounded-xl bg-surface-elevated flex items-center justify-center flex-shrink-0';
@@ -138,6 +412,7 @@ export default function AiConfig() {
   const [cartridges, setCartridges] = useState<CartridgeForm[]>([]);
   const [pool, setPool] = useState<PoolSnapshot | null>(null);
   const countdown = useCountdown(pool?.resetAt ?? null);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [form, setForm] = useState({
     aiProvider:   'groq' as AIProvider,
     apiKey:       '',
@@ -545,16 +820,54 @@ export default function AiConfig() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setForm({ ...form, systemPrompt: SUGGESTED_PROMPT })}
-          className="w-full mb-3 px-4 py-2.5 rounded-xl border border-dashed border-border-default text-txt-secondary text-sm hover:border-lime/50 hover:text-lime transition flex items-center justify-center gap-2"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Usar prompt sugerido
-        </button>
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => setShowTemplates(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-border-default text-txt-secondary text-sm hover:border-lime/50 hover:text-lime transition"
+          >
+            <span className="flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              Plantillas por tipo de negocio
+            </span>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              style={{ transform: showTemplates ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          {showTemplates && (
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded-xl border border-border-default bg-surface-elevated">
+              {PROMPT_TEMPLATES.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setForm(f => ({ ...f, systemPrompt: t.prompt }));
+                    setShowTemplates(false);
+                  }}
+                  className="flex items-start gap-3 p-3 rounded-xl border border-border-subtle bg-surface hover:border-lime/40 hover:bg-lime/5 transition text-left group"
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                    style={{ backgroundColor: `${t.color}20`, color: t.color }}
+                  >
+                    {TEMPLATE_ICONS[t.id]}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-txt-primary group-hover:text-lime transition-colors leading-tight">{t.name}</p>
+                    <p className="text-[11px] text-txt-tertiary leading-tight mt-0.5">{t.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <textarea
           value={form.systemPrompt}
@@ -563,7 +876,12 @@ export default function AiConfig() {
           placeholder="Eres un asistente de ventas de [nombre tienda]. Responde siempre en español..."
           className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 transition text-sm resize-none"
         />
-        <p className="text-xs text-txt-tertiary mt-2">{form.systemPrompt.length} caracteres</p>
+        <p className="text-xs text-txt-tertiary mt-2 flex items-center gap-1.5">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          {form.systemPrompt.length} caracteres · El sistema ya inyecta automáticamente: nombre, horario, catálogo, staff y reglas de citas.
+        </p>
       </div>
 
       {/* ── Parámetros avanzados ── */}
