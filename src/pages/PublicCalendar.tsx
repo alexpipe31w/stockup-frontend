@@ -14,6 +14,12 @@ interface StoreInfo  { name: string; staffLabel: string; hasStaff: boolean; serv
 interface SlotChoice { staffId: string | null; staffName: string; date: string; time: string; }
 
 const toISO    = (d: Date) => d.toISOString().slice(0, 10);
+const fmtSlot  = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const h12  = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+};
 const fmtCOP   = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 const fmtPrice = (s: ServiceOption): string | null => {
@@ -223,7 +229,7 @@ export default function PublicCalendar() {
                         onClick={() => setSlotChoice({ staffId: s.staffId, staffName: s.name, date: toISO(date), time: slot })}
                         className="px-3 py-1.5 rounded-xl text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 hover:border-green-500/50 transition"
                       >
-                        {slot}
+                        {fmtSlot(slot)}
                       </button>
                     ))}
                     {s.occupiedSlots?.map(slot => (
@@ -232,7 +238,7 @@ export default function PublicCalendar() {
                         className="px-3 py-1.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/20 text-red-400/60 cursor-not-allowed"
                         title="Horario ocupado"
                       >
-                        {slot}
+                        {fmtSlot(slot)}
                       </span>
                     ))}
                   </div>
