@@ -29,7 +29,7 @@ export default function LandingNavbar() {
       isScrolled ? 'bg-stockup-bg/80 backdrop-blur-[20px] border-b border-white/[0.06]' : 'bg-transparent border-b border-transparent'
     }`}>
       <div className="container-stockup h-full flex items-center justify-between">
-        <a href="#" className="flex items-center gap-3">
+        <a href="/" className="flex items-center gap-3">
           <div className="w-9 h-9 bg-stockup-card border border-white/[0.06] rounded-[10px] flex items-center justify-center">
             <span className="text-stockup-lime font-extrabold text-lg">S</span>
           </div>
