@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getOrders, updateOrderStatus, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
 import { exportCashReport } from '../utils/exportExcel';
+import { HelpCircle } from 'lucide-react';
+import GuidedTour, { TourStep } from '../components/GuidedTour';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
@@ -139,7 +141,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-xl max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
@@ -156,7 +158,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
         <div className="px-6 py-5 space-y-5">
 
           {/* Cliente */}
-          <div>
+          <div data-tour="manual-cliente">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">Cliente</label>
               <div className="flex gap-1 bg-surface-overlay rounded-lg p-0.5">
@@ -173,12 +175,12 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
             {customerMode === 'search' ? (
               selectedCustomer ? (
-                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between bg-surface-elevated border border-border-default rounded-xl px-4 py-3">
                   <div>
                     <p className="font-medium text-txt-primary text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
                     <p className="text-xs text-txt-secondary font-mono">{selectedCustomer.phone}</p>
                   </div>
-                  <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-blue-600 hover:underline">Cambiar</button>
+                  <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-lime hover:underline">Cambiar</button>
                 </div>
               ) : (
                 <div className="relative">
@@ -221,7 +223,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
           </div>
 
           {/* Ítems */}
-          <div>
+          <div data-tour="manual-productos">
             <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Productos / Servicios</label>
             <div className="space-y-2">
               {items.map((item, i) => (
@@ -292,7 +294,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
           </div>
 
           {/* Método de pago + descuento */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" data-tour="manual-pago">
             <div>
               <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Método de pago</label>
               <div className="grid grid-cols-2 gap-1.5">
@@ -350,9 +352,9 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
 
           {/* Botones */}
           <div className="flex gap-2 pt-1">
-            <button onClick={submit} disabled={submitting || (customerMode === 'search' ? !selectedCustomer : !newPhone.trim())}
+            <button data-tour="manual-submit" onClick={submit} disabled={submitting || (customerMode === 'search' ? !selectedCustomer : !newPhone.trim())}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
-              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
+              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
               {submitting ? 'Registrando...' : 'Registrar venta'}
             </button>
             <button onClick={onClose}
@@ -584,6 +586,14 @@ function OrderDetail({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
+const ORDERS_TOUR: TourStep[] = [
+  { target: '[data-tour="orders-new"]', title: 'Empieza una venta', body: 'Toca este botón verde para registrar una venta nueva.', advanceOn: 'click' },
+  { target: '[data-tour="manual-cliente"]', title: 'Elige el cliente', body: 'Busca por nombre o teléfono. Si es alguien nuevo, toca "Nuevo" y escribe su teléfono. También puedes dejarlo sin cliente.' },
+  { target: '[data-tour="manual-productos"]', title: 'Elige el producto', body: 'Selecciona el producto de la lista y el precio se llena solo. Si no está en la lista, usa "Ítem personalizado".' },
+  { target: '[data-tour="manual-pago"]', title: '¿Cómo te pagaron?', body: 'Marca el método de pago: efectivo, transferencia, tarjeta...' },
+  { target: '[data-tour="manual-submit"]', title: 'Guarda la venta', body: 'Toca "Registrar venta" y ¡listo! La venta queda guardada.', advanceOn: 'click' },
+];
+
 export default function Orders() {
   const { storeId } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -593,6 +603,11 @@ export default function Orders() {
   const [filterType, setFilterType] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
   const [showManual, setShowManual] = useState(false);
+  const [tourRun, setTourRun] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('tour-orders-done')) setTourRun(true);
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -645,11 +660,19 @@ export default function Orders() {
 
             <div className="flex items-center gap-3">
               <button
+                data-tour="orders-new"
                 onClick={() => setShowManual(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] transition"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 <PlusIcon /> Nueva venta manual
+              </button>
+              <button
+                onClick={() => setTourRun(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border border-border-default text-txt-secondary hover:bg-surface-overlay transition"
+                title="Ver tutorial paso a paso"
+              >
+                <HelpCircle size={15} /> ¿Cómo funciona?
               </button>
               <button
                 onClick={() => exportCashReport(filtered, [], 'Ventas-Productos')}
@@ -744,8 +767,8 @@ export default function Orders() {
         ) : (
           <div className="bg-surface rounded-2xl shadow-sm border border-border-subtle overflow-hidden">
 
-            {/* Tabla header */}
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-3 bg-surface-elevated border-b border-border-subtle text-xs font-semibold text-txt-secondary uppercase tracking-wide">
+            {/* Tabla header — solo desktop */}
+            <div className="hidden md:grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-3 bg-surface-elevated border-b border-border-subtle text-xs font-semibold text-txt-secondary uppercase tracking-wide">
               <span>Cliente</span>
               <span>Tipo</span>
               <span>Estado</span>
@@ -758,7 +781,7 @@ export default function Orders() {
               {filtered.map((order) => (
                 <div
                   key={order.orderId}
-                  className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] px-6 py-4 items-center gap-2 hover:bg-surface-elevated transition"
+                  className="flex flex-col gap-2.5 px-4 py-4 md:grid md:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] md:items-center md:gap-2 md:px-6 hover:bg-surface-elevated transition"
                 >
                   {/* Cliente */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -779,23 +802,35 @@ export default function Orders() {
                   </div>
 
                   {/* Tipo */}
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-overlay text-txt-secondary font-medium w-fit">
-                    {TYPE_CONFIG[order.type] ?? order.type}
-                  </span>
+                  <div className="flex items-center justify-between md:block">
+                    <span className="md:hidden text-xs text-txt-tertiary">Tipo</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-surface-overlay text-txt-secondary font-medium w-fit">
+                      {TYPE_CONFIG[order.type] ?? order.type}
+                    </span>
+                  </div>
 
                   {/* Estado */}
-                  <StatusBadge status={order.status} />
+                  <div className="flex items-center justify-between md:block">
+                    <span className="md:hidden text-xs text-txt-tertiary">Estado</span>
+                    <StatusBadge status={order.status} />
+                  </div>
 
                   {/* Total */}
-                  <p className="font-semibold text-txt-primary text-sm">{fmt(order.total)}</p>
+                  <div className="flex items-center justify-between md:block">
+                    <span className="md:hidden text-xs text-txt-tertiary">Total</span>
+                    <p className="font-semibold text-txt-primary text-sm">{fmt(order.total)}</p>
+                  </div>
 
                   {/* Fecha */}
-                  <p className="text-xs text-txt-tertiary">{fmtDate(order.createdAt)}</p>
+                  <div className="flex items-center justify-between md:block">
+                    <span className="md:hidden text-xs text-txt-tertiary">Fecha</span>
+                    <p className="text-xs text-txt-tertiary">{fmtDate(order.createdAt)}</p>
+                  </div>
 
                   {/* Botón detalle */}
                   <button
                     onClick={() => setSelected(order)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition whitespace-nowrap"
+                    className="w-full md:w-auto mt-1 md:mt-0 px-3 py-2 md:py-1.5 rounded-lg text-xs font-medium text-lime bg-lime/10 hover:bg-lime/20 transition whitespace-nowrap"
                   >
                     Ver detalle
                   </button>
@@ -839,6 +874,12 @@ export default function Orders() {
           onCreated={load}
         />
       )}
+
+      <GuidedTour
+        steps={ORDERS_TOUR}
+        run={tourRun}
+        onFinish={() => { setTourRun(false); localStorage.setItem('tour-orders-done', '1'); }}
+      />
     </div>
   );
 }

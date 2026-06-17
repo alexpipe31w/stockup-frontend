@@ -1,8 +1,17 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getServiceOrders, createManualOrder, createCustomer, getCustomers } from '../services/api';
-import { Briefcase, Calendar, CreditCard, TrendingUp, Search, Download, Plus, X } from 'lucide-react';
+import { getServiceOrders, createManualOrder, createCustomer, getCustomers, getServices } from '../services/api';
+import { Briefcase, Calendar, CreditCard, TrendingUp, Search, Download, Plus, X, HelpCircle } from 'lucide-react';
 import { exportCashReport } from '../utils/exportExcel';
+import GuidedTour, { TourStep } from '../components/GuidedTour';
+
+const SVC_TOUR: TourStep[] = [
+  { target: '[data-tour="svc-new"]', title: 'Empieza una venta', body: 'Toca este botón verde para registrar un servicio cobrado.', advanceOn: 'click' },
+  { target: '[data-tour="svc-cliente"]', title: 'Elige el cliente', body: 'Busca por nombre o teléfono. Si es alguien nuevo, toca "Nuevo" y escribe su teléfono.' },
+  { target: '[data-tour="svc-servicio"]', title: 'Elige el servicio', body: 'Selecciona el servicio de la lista y el precio se llena solo. Si no está, usa "Servicio personalizado".' },
+  { target: '[data-tour="svc-pago"]', title: '¿Cómo te pagaron?', body: 'Marca el método de pago: efectivo, transferencia, tarjeta...' },
+  { target: '[data-tour="svc-submit"]', title: 'Guarda la venta', body: 'Toca "Registrar servicio" y ¡listo! Queda guardado.', advanceOn: 'click' },
+];
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -40,6 +49,7 @@ interface ServiceOrder {
 }
 
 interface CustomerOption { customerId: string; name: string | null; phone: string; }
+interface ServiceOption { serviceId: string; name: string; basePrice: string | null; isActive?: boolean; }
 
 // ── Manual Service Modal ──────────────────────────────────────────────────────
 function ManualServiceModal({ storeId, onClose, onCreated }: {
@@ -51,6 +61,8 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
   const [custMode,      setCustMode]   = useState<'search' | 'new'>('search');
   const [newPhone,      setNewPhone]   = useState('');
   const [newName,       setNewName]    = useState('');
+  const [services,      setServices]   = useState<ServiceOption[]>([]);
+  const [serviceId,     setServiceId]  = useState('');   // '' | 'custom' | serviceId real
   const [description,   setDesc]       = useState('');
   const [price,         setPrice]      = useState('');
   const [payMethod,     setPayMethod]  = useState('CASH');
@@ -60,7 +72,21 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
 
   useEffect(() => {
     getCustomers(storeId).then(r => setCustomers(r.data ?? []));
+    getServices().then(r => setServices((r.data ?? []).filter((s: any) => s.isActive !== false)));
   }, [storeId]);
+
+  const selectService = (id: string) => {
+    setServiceId(id);
+    if (!id || id === 'custom') {
+      setDesc(''); setPrice('');
+    } else {
+      const s = services.find(x => x.serviceId === id);
+      if (s) {
+        setDesc(s.name);
+        setPrice(s.basePrice != null && Number(s.basePrice) > 0 ? String(Number(s.basePrice)) : '');
+      }
+    }
+  };
 
   const filtered = customers.filter(c => {
     const q = custSearch.toLowerCase();
@@ -82,7 +108,12 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
       await createManualOrder({
         customerId,
         type: 'service',
-        items: [{ description: description.trim(), quantity: 1, unitPrice: Number(price) }],
+        items: [{
+          serviceId: (serviceId && serviceId !== 'custom') ? serviceId : undefined,
+          description: description.trim(),
+          quantity: 1,
+          unitPrice: Number(price),
+        }],
         manualPaymentMethod: payMethod,
         notes: notes.trim() || undefined,
         idempotencyKey: `svc-manual-${storeId}-${Date.now()}`,
@@ -104,7 +135,7 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
@@ -121,7 +152,7 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
         <div className="px-6 py-5 space-y-5">
 
           {/* Cliente */}
-          <div>
+          <div data-tour="svc-cliente">
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">Cliente</label>
               <div className="flex gap-1 bg-surface-overlay rounded-lg p-0.5">
@@ -138,12 +169,12 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
 
             {custMode === 'search' ? (
               selCustomer ? (
-                <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between bg-surface-elevated border border-border-default rounded-xl px-4 py-3">
                   <div>
                     <p className="font-medium text-txt-primary text-sm">{selCustomer.name ?? 'Sin nombre'}</p>
                     <p className="text-xs text-txt-secondary font-mono">{selCustomer.phone}</p>
                   </div>
-                  <button onClick={() => { setSelCust(null); setCustSearch(''); }} className="text-xs text-blue-600 hover:underline">Cambiar</button>
+                  <button onClick={() => { setSelCust(null); setCustSearch(''); }} className="text-xs text-lime hover:underline">Cambiar</button>
                 </div>
               ) : (
                 <div className="relative">
@@ -184,14 +215,29 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
             )}
           </div>
 
-          {/* Descripción del servicio */}
-          <div>
+          {/* Servicio */}
+          <div data-tour="svc-servicio">
             <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Servicio</label>
-            <input
-              value={description} onChange={e => setDesc(e.target.value)}
-              placeholder="Ej: Corte de cabello, manicure, mantenimiento..."
-              className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
-            />
+            <select
+              value={serviceId}
+              onChange={e => selectService(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
+            >
+              <option value="">Selecciona un servicio...</option>
+              {services.map(s => (
+                <option key={s.serviceId} value={s.serviceId}>
+                  {s.name}{s.basePrice != null && Number(s.basePrice) > 0 ? ` — ${fmt(Number(s.basePrice))}` : ''}
+                </option>
+              ))}
+              <option value="custom">✏️ Servicio personalizado</option>
+            </select>
+            {(serviceId === '' || serviceId === 'custom') && (
+              <input
+                value={description} onChange={e => setDesc(e.target.value)}
+                placeholder="Ej: Corte de cabello, manicure, mantenimiento..."
+                className="mt-2 w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
+              />
+            )}
           </div>
 
           {/* Precio */}
@@ -208,7 +254,7 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
           </div>
 
           {/* Método de pago */}
-          <div>
+          <div data-tour="svc-pago">
             <label className="block text-xs font-semibold text-txt-secondary uppercase tracking-wide mb-2">Método de pago</label>
             <div className="grid grid-cols-4 gap-2">
               {PAY_METHODS.map(m => (
@@ -238,7 +284,7 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-txt-secondary border border-border-default hover:bg-surface-overlay transition">
             Cancelar
           </button>
-          <button onClick={submit}
+          <button onClick={submit} data-tour="svc-submit"
             disabled={submitting || (custMode === 'search' ? !selCustomer : !newPhone.trim()) || !description.trim() || !price || Number(price) <= 0}
             className="flex-1 py-2.5 rounded-xl text-sm font-bold text-[#0A0A0F] transition disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#D4FF00,#A3CC00)' }}>
@@ -258,6 +304,11 @@ export default function ServiceOrders() {
   const [search,      setSearch]      = useState('');
   const [filterMethod, setFilterMethod] = useState('all');
   const [showModal,   setShowModal]   = useState(false);
+  const [tourRun,     setTourRun]     = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('tour-svc-done')) setTourRun(true);
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -301,6 +352,12 @@ export default function ServiceOrders() {
         />
       )}
 
+      <GuidedTour
+        steps={SVC_TOUR}
+        run={tourRun}
+        onFinish={() => { setTourRun(false); localStorage.setItem('tour-svc-done', '1'); }}
+      />
+
       {/* Header */}
       <div className="bg-surface border-b border-border-subtle px-4 md:px-6 py-4 md:py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">
@@ -316,11 +373,19 @@ export default function ServiceOrders() {
             </div>
             <div className="flex items-center gap-2">
               <button
+                data-tour="svc-new"
                 onClick={() => setShowModal(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#0A0A0F] transition"
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 <Plus size={15} /> Nueva venta manual
+              </button>
+              <button
+                onClick={() => setTourRun(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border border-border-default text-txt-secondary hover:bg-surface-overlay transition"
+                title="Ver tutorial paso a paso"
+              >
+                <HelpCircle size={15} /> ¿Cómo funciona?
               </button>
               <button
                 onClick={() => exportCashReport(orders, [], 'Servicios')}
@@ -436,7 +501,7 @@ export default function ServiceOrders() {
 
                 return (
                   <div key={o.orderId}
-                    className="grid grid-cols-1 md:grid-cols-[1.5fr_1.2fr_1fr_1fr_1fr_100px] px-5 py-4 items-center gap-2 md:gap-3 hover:bg-surface-elevated transition">
+                    className="flex flex-col gap-2.5 px-5 py-4 md:grid md:grid-cols-[1.5fr_1.2fr_1fr_1fr_1fr_100px] md:items-center md:gap-3 hover:bg-surface-elevated transition">
 
                     {/* Cliente */}
                     <div className="flex items-center gap-3 min-w-0">
@@ -452,30 +517,43 @@ export default function ServiceOrders() {
                     </div>
 
                     {/* Servicio */}
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Briefcase size={14} className="text-lime flex-shrink-0" />
-                      <span className="text-sm text-txt-primary truncate">{serviceName}</span>
+                    <div className="flex items-center justify-between md:block min-w-0">
+                      <span className="md:hidden text-xs text-txt-tertiary flex-shrink-0 mr-2">Servicio</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Briefcase size={14} className="text-lime flex-shrink-0" />
+                        <span className="text-sm text-txt-primary truncate">{serviceName}</span>
+                      </div>
                     </div>
 
                     {/* Fecha */}
-                    <div>
-                      <p className="text-sm text-txt-primary">{fmtDate(o.createdAt)}</p>
-                      <p className="text-xs text-txt-tertiary">{fmtTime(o.createdAt)}</p>
+                    <div className="flex items-center justify-between md:block">
+                      <span className="md:hidden text-xs text-txt-tertiary">Fecha</span>
+                      <div className="text-right md:text-left">
+                        <p className="text-sm text-txt-primary">{fmtDate(o.createdAt)}</p>
+                        <p className="text-xs text-txt-tertiary">{fmtTime(o.createdAt)}</p>
+                      </div>
                     </div>
 
                     {/* Método */}
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${PAY_COLORS[method] ?? PAY_COLORS[o.manualPaymentMethod ?? ''] ?? 'bg-surface-overlay text-txt-tertiary'}`}>
-                      <CreditCard size={11} className="inline mr-1" />
-                      {PAY_LABELS[method] ?? PAY_LABELS[o.manualPaymentMethod ?? ''] ?? o.manualPaymentMethod ?? 'N/A'}
-                    </span>
+                    <div className="flex items-center justify-between md:block">
+                      <span className="md:hidden text-xs text-txt-tertiary">Pago</span>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${PAY_COLORS[method] ?? PAY_COLORS[o.manualPaymentMethod ?? ''] ?? 'bg-surface-overlay text-txt-tertiary'}`}>
+                        <CreditCard size={11} className="inline mr-1" />
+                        {PAY_LABELS[method] ?? PAY_LABELS[o.manualPaymentMethod ?? ''] ?? o.manualPaymentMethod ?? 'N/A'}
+                      </span>
+                    </div>
 
                     {/* Total */}
-                    <p className="text-base font-bold text-txt-primary md:text-right">
-                      {fmt(Number(o.total))}
-                    </p>
+                    <div className="flex items-center justify-between md:block">
+                      <span className="md:hidden text-xs text-txt-tertiary">Total</span>
+                      <p className="text-base font-bold text-txt-primary md:text-right">
+                        {fmt(Number(o.total))}
+                      </p>
+                    </div>
 
                     {/* Ref cita */}
-                    <div className="md:text-right">
+                    <div className="flex items-center justify-between md:block md:text-right">
+                      <span className="md:hidden text-xs text-txt-tertiary">Ref. cita</span>
                       {o.appointmentId ? (
                         <span className="text-xs font-mono text-txt-tertiary bg-surface-elevated px-2 py-0.5 rounded-lg">
                           #{o.appointmentId.slice(-6).toUpperCase()}
