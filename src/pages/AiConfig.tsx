@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getAiConfig, saveAiConfig, getAiPoolStatus, verifyAiKeys } from '../services/api';
+import FloatingSaveBar from '../components/FloatingSaveBar';
 
 type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic' | 'gemini';
 
@@ -428,6 +429,7 @@ export default function AiConfig() {
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
+  const [initial, setInitial] = useState('');
   const [cartridges, setCartridges] = useState<CartridgeForm[]>([]);
   const [pool, setPool] = useState<PoolSnapshot | null>(null);
   const countdown = useCountdown(pool?.resetAt ?? null);
@@ -465,21 +467,24 @@ export default function AiConfig() {
         if (res.data) {
           const d        = res.data;
           const provider = (d.aiProvider ?? 'groq') as AIProvider;
-          setForm({
+          const loadedForm = {
             aiProvider:   provider,
             apiKey:       d.apiKey ?? d.groqApiKey ?? '',
             model:        d.model ?? PROVIDERS[provider].models[0].value,
             systemPrompt: d.systemPrompt ?? '',
             temperature:  d.temperature ?? 0.7,
             maxTokens:    d.maxTokens ?? 500,
-          });
-          if (d.cartridges && Array.isArray(d.cartridges)) {
-            setCartridges(d.cartridges.map((c: any) => ({
-              provider: c.provider as AIProvider,
-              apiKey:   c.apiKey ?? '',
-              model:    c.model  ?? '',
-            })));
-          }
+          };
+          setForm(loadedForm);
+          const loadedCartridges = (d.cartridges && Array.isArray(d.cartridges))
+            ? d.cartridges.map((c: any) => ({
+                provider: c.provider as AIProvider,
+                apiKey:   c.apiKey ?? '',
+                model:    c.model  ?? '',
+              }))
+            : [];
+          setCartridges(loadedCartridges);
+          setInitial(JSON.stringify({ form: loadedForm, cartridges: loadedCartridges }));
         }
       })
       .catch(() => {})
@@ -494,8 +499,8 @@ export default function AiConfig() {
     setForm(f => ({ ...f, aiProvider: p, model: PROVIDERS[p].models[0].value, apiKey: '' }));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setSaving(true);
     try {
       await saveAiConfig({
@@ -506,6 +511,7 @@ export default function AiConfig() {
           model:    c.model || PROVIDERS[c.provider]?.models[0]?.value || '',
         })),
       });
+      setInitial(JSON.stringify({ form, cartridges }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } finally {
@@ -1078,6 +1084,14 @@ export default function AiConfig() {
           </span>
         ) : 'Guardar configuración'}
       </button>
+
+      <FloatingSaveBar
+        dirty={initial !== '' && JSON.stringify({ form, cartridges }) !== initial}
+        saving={saving}
+        saved={saved}
+        onSave={() => handleSave()}
+        label="Guardar configuración"
+      />
     </form>
   );
 }

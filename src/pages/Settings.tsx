@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getStoreTheme, updateStoreTheme } from '../services/api';
+import FloatingSaveBar from '../components/FloatingSaveBar';
 
 interface ThemeColors {
   primaryColor: string;
@@ -39,17 +40,20 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initial, setInitial] = useState('');
 
   useEffect(() => {
     if (!storeId) { setLoading(false); return; }
     getStoreTheme(storeId)
       .then(res => {
         const { primaryColor, secondaryColor, accentColor } = res.data;
-        setColors({
+        const loaded = {
           primaryColor:   primaryColor   ?? '#2563eb',
           secondaryColor: secondaryColor ?? '#9333ea',
           accentColor:    accentColor    ?? '#f59e0b',
-        });
+        };
+        setColors(loaded);
+        setInitial(JSON.stringify(loaded));
       })
       .catch(() => { /* Usa paleta por defecto si el endpoint aún no existe */ })
       .finally(() => setLoading(false));
@@ -73,6 +77,7 @@ export default function Settings() {
     setSaveError(false);
     try {
       await updateStoreTheme(storeId, colors);
+      setInitial(JSON.stringify(colors));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
@@ -231,6 +236,13 @@ export default function Settings() {
           </span>
         )}
       </div>
+
+      <FloatingSaveBar
+        dirty={initial !== '' && JSON.stringify(colors) !== initial}
+        saving={saving}
+        saved={saved}
+        onSave={handleSave}
+      />
     </div>
   );
 }

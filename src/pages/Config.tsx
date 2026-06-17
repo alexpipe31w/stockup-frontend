@@ -5,6 +5,7 @@ import AiConfigPage from './AiConfig';
 import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
 } from '../utils/businessHours';
+import FloatingSaveBar from '../components/FloatingSaveBar';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -143,11 +144,12 @@ function NegocioSection({ storeId }: { storeId: string }) {
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState('');
+  const [initial, setInitial] = useState('');   // snapshot del form cargado para detectar cambios
 
   useEffect(() => {
     getStore(storeId).then(res => {
       const d = res.data;
-      setForm({
+      const loaded = {
         name:               d.name               ?? '',
         phone:              d.phone              ?? '',
         ownerName:          d.ownerName          ?? '',
@@ -176,7 +178,9 @@ function NegocioSection({ storeId }: { storeId: string }) {
         businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
         slug:               d.slug               ?? '',
-      });
+      };
+      setForm(loaded);
+      setInitial(JSON.stringify(loaded));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [storeId]);
 
@@ -187,8 +191,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
       ? form.paymentMethods.filter(v => v !== val)
       : [...form.paymentMethods, val]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setSaving(true); setError('');
     try {
       await updateStore(storeId, {
@@ -515,6 +519,13 @@ function NegocioSection({ storeId }: { storeId: string }) {
         style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
         {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar cambios'}
       </button>
+
+      <FloatingSaveBar
+        dirty={initial !== '' && JSON.stringify(form) !== initial}
+        saving={saving}
+        saved={saved}
+        onSave={() => handleSave()}
+      />
     </form>
   );
 }
@@ -685,7 +696,7 @@ function ExcluidosSection() {
 
       {/* Modal agregar */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60] p-4">
           <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-txt-primary">Excluir número</h2>
@@ -702,7 +713,7 @@ function ExcluidosSection() {
                 <input
                   value={form.phone}
                   onChange={handlePhoneChange}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="+573001234567"
                 />
                 <p className="text-xs text-txt-tertiary mt-1.5">Incluye el código de país. Ej: <strong>+57</strong>3001234567</p>
@@ -1148,7 +1159,7 @@ function StaffModal({
   const ic = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm text-txt-primary placeholder:text-txt-tertiary';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle sticky top-0 bg-surface z-10">
           <h2 className="text-base font-bold text-txt-primary">
