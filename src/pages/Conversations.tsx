@@ -478,7 +478,7 @@ export default function Conversations() {
                     }}
                     placeholder="Escribe un mensaje..."
                     rows={2}
-                    className="flex-1 px-4 py-3 rounded-xl border border-border-default focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none text-sm"
+                    className="flex-1 px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 transition resize-none text-sm"
                   />
                   <button
                     onClick={handleSend}
@@ -522,7 +522,7 @@ export default function Conversations() {
 
       {/* ── Modal confirmar eliminar ───────────────────────────────────────── */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
           <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="font-bold text-txt-primary mb-2">¿Eliminar conversación?</h3>
             <p className="text-sm text-txt-secondary mb-1">

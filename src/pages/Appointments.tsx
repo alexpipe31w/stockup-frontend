@@ -192,7 +192,7 @@ function TimelinePanel({ id, onClose }: { id: string; onClose: () => void }) {
 function CancelModal({ onConfirm, onClose, saving }: { onConfirm:(r:string)=>void; onClose:()=>void; saving:boolean }) {
   const [r, setR] = useState('');
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
       <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-sm w-full">
         <h3 className="font-bold text-txt-primary mb-1">Cancelar cita</h3>
         <p className="text-sm text-txt-secondary mb-3">Motivo de cancelación (requerido)</p>
@@ -787,7 +787,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   const ic = 'w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30 text-txt-primary';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle sticky top-0 bg-surface z-10">
           <h2 className="text-base font-bold text-txt-primary">Nueva cita manual</h2>

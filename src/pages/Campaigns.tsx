@@ -268,7 +268,7 @@ export default function Campaigns() {
 
       {/* Confirm send */}
       {confirmSend && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
           <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="font-bold text-txt-primary mb-2">Enviar campaña masiva</h3>
             <p className="text-sm text-txt-secondary mb-1">

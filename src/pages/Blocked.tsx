@@ -184,7 +184,7 @@ export default function Blocked() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60] p-4">
           <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-txt-primary">Excluir número</h2>
@@ -203,7 +203,7 @@ export default function Blocked() {
                 <input
                   value={form.phone}
                   onChange={handlePhoneChange}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="+573001234567"
                 />
                 <p className="text-xs text-txt-tertiary mt-1.5">

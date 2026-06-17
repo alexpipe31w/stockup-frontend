@@ -321,7 +321,7 @@ function BookingModal({ slug, slot, serviceId, serviceName, variantId, variantNa
   const ic = 'w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#0A0A0F] text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/30';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 px-0 sm:px-4">
       <div className="bg-[#111117] rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[92vh] overflow-y-auto border border-white/10">
         {done ? (
           <div className="p-8 text-center">

@@ -623,7 +623,7 @@ export default function SuperAdmin() {
 
       {/* Modal confirmar eliminación */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
           <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-sm shadow-2xl">
             <h3 className="text-white font-semibold text-lg mb-2">Confirmar eliminación</h3>
             <p className="text-txt-tertiary text-sm mb-6">

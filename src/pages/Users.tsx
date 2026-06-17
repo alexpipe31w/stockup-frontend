@@ -186,7 +186,7 @@ export default function Users() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60] p-4">
           <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-txt-primary">Nuevo usuario</h2>
@@ -205,7 +205,7 @@ export default function Users() {
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="Nombre completo"
                 />
               </div>
@@ -215,7 +215,7 @@ export default function Users() {
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="correo@ejemplo.com"
                 />
               </div>
@@ -225,7 +225,7 @@ export default function Users() {
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
@@ -250,7 +250,7 @@ export default function Users() {
                     <input
                       value={form.storeName}
                       onChange={(e) => setForm({ ...form, storeName: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                       placeholder="Ej: Tienda de Juan"
                     />
                   </div>
@@ -259,7 +259,7 @@ export default function Users() {
                     <input
                       value={form.storePhone}
                       onChange={(e) => setForm({ ...form, storePhone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
+                      className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
                       placeholder="+573001234567"
                     />
                   </div>
