@@ -5,6 +5,15 @@ import {
   getCategories, createCategory,
 } from '../services/api';
 import { ImageUploadField } from '../components/ImageUploadField';
+import { HelpCircle } from 'lucide-react';
+import GuidedTour, { TourStep } from '../components/GuidedTour';
+
+const PRODUCTS_TOUR: TourStep[] = [
+  { target: '[data-tour="product-new"]', title: 'Crea un producto', body: 'Toca este botón verde para agregar un producto nuevo a tu catálogo.', advanceOn: 'click' },
+  { target: '[data-tour="product-nombre"]', title: 'Ponle un nombre', body: 'Escribe el nombre del producto. Ej: "Camiseta básica", "Cera para cabello".' },
+  { target: '[data-tour="product-precio"]', title: 'Precio de venta', body: 'Pon a cuánto lo vendes. Es lo que la IA le dirá al cliente y lo que se cobra.' },
+  { target: '[data-tour="product-crear"]', title: 'Guarda el producto', body: 'Toca "Crear producto" y ¡listo! Ya queda en tu catálogo.', advanceOn: 'click' },
+];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon  = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
@@ -625,7 +634,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 label="Imagen del producto"
               />
 
-              <div>
+              <div data-tour="product-nombre">
                 <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Nombre *</label>
                 <input ref={nameRef} type="text" value={form.name}
                   onChange={e => set('name', e.target.value)}
@@ -692,7 +701,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
               {!form.hasVariants && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
-                    <div>
+                    <div data-tour="product-precio">
                       <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Precio venta *</label>
                       <input type="number" value={form.salePrice}
                         onChange={e => set('salePrice', e.target.value)}
@@ -783,9 +792,9 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
               {error && <p className="text-sm text-red-500">{error}</p>}
 
-              <button onClick={handleSubmit} disabled={saving}
+              <button onClick={handleSubmit} disabled={saving} data-tour="product-crear"
                 className="w-full py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
-                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
                 {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear producto'}
               </button>
             </>
@@ -912,6 +921,11 @@ export default function Products() {
   const [modalProduct,   setModalProduct]   = useState<Product | null | 'new'>(null);
   const [deleteTarget,   setDeleteTarget]   = useState<Product | null>(null);
   const [deleting,       setDeleting]       = useState(false);
+  const [tourRun,        setTourRun]        = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('tour-product-done')) setTourRun(true);
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -991,11 +1005,18 @@ export default function Products() {
                 {loading ? '...' : `${statsTotal} producto${statsTotal !== 1 ? 's' : ''} activo${statsTotal !== 1 ? 's' : ''}`}
               </p>
             </div>
-            <button onClick={() => setModalProduct('new')}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F]"
-              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
-              <PlusIcon /> Nuevo producto
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setModalProduct('new')} data-tour="product-new"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F]"
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
+                <PlusIcon /> Nuevo producto
+              </button>
+              <button onClick={() => setTourRun(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border border-border-default text-txt-secondary hover:bg-surface-overlay transition"
+                title="Ver tutorial paso a paso">
+                <HelpCircle size={15} /> ¿Cómo funciona?
+              </button>
+            </div>
           </div>
 
           {!loading && (
@@ -1087,8 +1108,14 @@ export default function Products() {
         />
       )}
 
+      <GuidedTour
+        steps={PRODUCTS_TOUR}
+        run={tourRun}
+        onFinish={() => { setTourRun(false); localStorage.setItem('tour-product-done', '1'); }}
+      />
+
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
           <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="font-bold text-txt-primary mb-2">¿Eliminar producto?</h3>
             <p className="text-sm text-txt-secondary mb-5">

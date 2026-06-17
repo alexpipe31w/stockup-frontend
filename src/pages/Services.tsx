@@ -5,6 +5,15 @@ import {
 } from '../services/api';
 import type { PriceType, ServiceVariantPayload } from '../services/api';
 import { ImageUploadField } from '../components/ImageUploadField';
+import { HelpCircle } from 'lucide-react';
+import GuidedTour, { TourStep } from '../components/GuidedTour';
+
+const SERVICES_TOUR: TourStep[] = [
+  { target: '[data-tour="service-new"]', title: 'Crea un servicio', body: 'Toca este botón verde para agregar un servicio nuevo a tu catálogo.', advanceOn: 'click' },
+  { target: '[data-tour="service-nombre"]', title: 'Ponle un nombre', body: 'Escribe el nombre del servicio. Ej: "Corte de cabello", "Manicure", "Mantenimiento".' },
+  { target: '[data-tour="service-precio"]', title: 'Precio base', body: 'Pon a cuánto cobras el servicio. Es lo que la IA le dirá al cliente.' },
+  { target: '[data-tour="service-crear"]', title: 'Guarda el servicio', body: 'Toca "Crear servicio" y ¡listo! Ya queda en tu catálogo.', advanceOn: 'click' },
+];
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PlusIcon   = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
@@ -316,25 +325,25 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Nombre *"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
           placeholder="Descripción (opcional)"
-          className="col-span-2 px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="col-span-2 px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
         <div>
           <label className="text-xs text-txt-secondary block mb-0.5">Precio fijo (override)</label>
           <input value={form.priceOverride} onChange={e => setForm(f => ({ ...f, priceOverride: e.target.value, priceModifier: '' }))}
             type="number" placeholder="Ej: 80000"
-            className={`w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30 ${bothPrices ? 'border-red-300' : 'border-blue-300'}`} />
+            className={`w-full px-2 py-1.5 text-xs border bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30 ${bothPrices ? 'border-red-400' : 'border-border-default'}`} />
         </div>
         <div>
           <label className="text-xs text-txt-secondary block mb-0.5">% sobre precio base</label>
           <input value={form.priceModifier} onChange={e => setForm(f => ({ ...f, priceModifier: e.target.value, priceOverride: '' }))}
             type="number" placeholder="Ej: 30 (+30%)"
-            className={`w-full px-2 py-1.5 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30 ${bothPrices ? 'border-red-300' : 'border-blue-300'}`} />
+            className={`w-full px-2 py-1.5 text-xs border bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30 ${bothPrices ? 'border-red-400' : 'border-border-default'}`} />
         </div>
         <input value={form.estimatedMinutes} onChange={e => setForm(f => ({ ...f, estimatedMinutes: e.target.value }))}
           type="number" placeholder="Duración (minutos)"
-          className="px-2 py-1.5 text-xs border border-blue-300 bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
+          className="px-2 py-1.5 text-xs border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-1 focus:ring-lime/30" />
       </div>
       {bothPrices && (
         <p className="text-xs text-red-500">Solo usa precio fijo O porcentaje, no ambos.</p>
@@ -552,7 +561,7 @@ function ServiceModal({ service, onClose, onSaved }: {
               />
 
               {/* Nombre */}
-              <div>
+              <div data-tour="service-nombre">
                 <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Nombre *</label>
                 <input ref={nameRef} type="text" value={form.name}
                   onChange={e => set('name', e.target.value)}
@@ -608,7 +617,7 @@ function ServiceModal({ service, onClose, onSaved }: {
               {/* Precio base + unidad */}
               {form.priceType !== 'VARIABLE' && (
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
+                  <div data-tour="service-precio">
                     <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
                       Precio base *
                       {form.priceType !== 'FIXED' && form.unitLabel && (
@@ -739,9 +748,9 @@ function ServiceModal({ service, onClose, onSaved }: {
 
               {error && <p className="text-sm text-red-500">{error}</p>}
 
-              <button onClick={handleSubmit} disabled={saving}
+              <button onClick={handleSubmit} disabled={saving} data-tour="service-crear"
                 className="w-full py-2.5 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
-                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
                 {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear servicio'}
               </button>
             </>
@@ -829,6 +838,11 @@ export default function Services() {
   const [modalService,   setModalService]  = useState<Service | null | 'new'>(null);
   const [deleteTarget,   setDeleteTarget]  = useState<Service | null>(null);
   const [deleting,       setDeleting]      = useState(false);
+  const [tourRun,        setTourRun]       = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('tour-service-done')) setTourRun(true);
+  }, []);
   const [showTemplates,    setShowTemplates]    = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
 
@@ -915,10 +929,15 @@ export default function Services() {
               </svg>
               Plantillas
             </button>
-            <button onClick={() => setModalService('new')}
+            <button onClick={() => setModalService('new')} data-tour="service-new"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F]"
-              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
+              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
               <PlusIcon /> Nuevo servicio
+            </button>
+            <button onClick={() => setTourRun(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border border-border-default text-txt-secondary hover:bg-surface-overlay transition"
+              title="Ver tutorial paso a paso">
+              <HelpCircle size={15} /> ¿Cómo funciona?
             </button>
           </div>
 
@@ -996,9 +1015,15 @@ export default function Services() {
         />
       )}
 
+      <GuidedTour
+        steps={SERVICES_TOUR}
+        run={tourRun}
+        onFinish={() => { setTourRun(false); localStorage.setItem('tour-service-done', '1'); }}
+      />
+
       {/* Confirm eliminar */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
           <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="font-bold text-txt-primary mb-2">¿Eliminar servicio?</h3>
             <p className="text-sm text-txt-secondary mb-5">
@@ -1019,7 +1044,7 @@ export default function Services() {
       )}
 
       {showTemplates && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
           <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div>
