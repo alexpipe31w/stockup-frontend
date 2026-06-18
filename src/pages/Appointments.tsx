@@ -1176,10 +1176,9 @@ function WalkInModal({ storeId, onClose, onDone }: { storeId: string; onClose: (
             <div className="grid grid-cols-2 gap-2">
               <input className={ic} type="number" placeholder="Precio *" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
               <select className={ic} value={form.paymentMethod} onChange={e => setForm(f => ({ ...f, paymentMethod: e.target.value }))}>
-                <option value="efectivo">Efectivo</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="tarjeta">Tarjeta</option>
-                <option value="nequi">Nequi</option>
+                {['efectivo','transferencia','tarjeta','nequi','daviplata','otro'].map(m => (
+                  <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                ))}
               </select>
             </div>
 
