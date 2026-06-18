@@ -7,6 +7,7 @@ import {
 import { ImageUploadField } from '../components/ImageUploadField';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
+import FloatingSaveBar from '../components/FloatingSaveBar';
 
 const PRODUCTS_TOUR: TourStep[] = [
   { target: '[data-tour="product-new"]', title: 'Crea un producto', body: 'Toca este botón verde para agregar un producto nuevo a tu catálogo.', advanceOn: 'click' },
@@ -422,6 +423,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
   const [newAttrValue,  setNewAttrValue]= useState('');
   const [addingVariant, setAddingVariant] = useState(false);
   const [saving,        setSaving]      = useState(false);
+  const [saved,         setSaved]       = useState(false);
   const [error,         setError]       = useState('');
   const [tab,           setTab]         = useState<'info' | 'variants'>('info');
   const [newCatName,    setNewCatName]  = useState('');
@@ -431,7 +433,12 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
   useEffect(() => { setTimeout(() => nameRef.current?.focus(), 50); }, []);
 
-  const set = (k: keyof FormState, v: any) => setForm(f => ({ ...f, [k]: v }));
+  // Snapshot inicial para detectar cambios sin guardar (botón flotante)
+  const baselineRef = useRef('');
+  useEffect(() => { baselineRef.current = JSON.stringify({ form, variants }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = baselineRef.current !== '' && JSON.stringify({ form, variants }) !== baselineRef.current;
+
+  const set = (k: keyof FormState, v: any) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); };
 
   // ── Crear categoría rápida ────────────────────────────────────────────────
   const handleCreateCategory = async () => {
@@ -601,7 +608,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
     : null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
@@ -905,6 +912,16 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           )}
         </div>
       </div>
+
+      {tab === 'info' && (
+        <FloatingSaveBar
+          dirty={dirty}
+          saving={saving}
+          saved={saved}
+          onSave={handleSubmit}
+          label={isEdit ? 'Guardar cambios' : 'Crear producto'}
+        />
+      )}
     </div>
   );
 }

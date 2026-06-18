@@ -7,6 +7,7 @@ import type { PriceType, ServiceVariantPayload } from '../services/api';
 import { ImageUploadField } from '../components/ImageUploadField';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
+import FloatingSaveBar from '../components/FloatingSaveBar';
 
 const SERVICES_TOUR: TourStep[] = [
   { target: '[data-tour="service-new"]', title: 'Crea un servicio', body: 'Toca este botón verde para agregar un servicio nuevo a tu catálogo.', advanceOn: 'click' },
@@ -415,6 +416,7 @@ function ServiceModal({ service, onClose, onSaved }: {
   const [newVariant,    setNewVariant]   = useState(EMPTY_VARIANT_FORM);
   const [addingVar,     setAddingVar]    = useState(false);
   const [saving,        setSaving]       = useState(false);
+  const [saved,         setSaved]        = useState(false);
   const [error,         setError]        = useState('');
   const [tab,           setTab]          = useState<'info' | 'variants'>('info');
 
@@ -430,7 +432,12 @@ function ServiceModal({ service, onClose, onSaved }: {
   const nameRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => nameRef.current?.focus(), 50); }, []);
 
-  const set = (k: keyof ServiceForm, v: any) => setForm(f => ({ ...f, [k]: v }));
+  // Snapshot inicial para detectar cambios sin guardar (botón flotante)
+  const baselineRef = useRef('');
+  useEffect(() => { baselineRef.current = JSON.stringify({ form, cfFields }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = baselineRef.current !== '' && JSON.stringify({ form, cfFields }) !== baselineRef.current;
+
+  const set = (k: keyof ServiceForm, v: any) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); };
 
   const selectedPriceType = PRICE_TYPE_OPTIONS.find(o => o.value === form.priceType);
 
@@ -526,7 +533,7 @@ function ServiceModal({ service, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
       <div className="bg-surface rounded-2xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between sticky top-0 bg-surface z-10">
@@ -597,7 +604,7 @@ function ServiceModal({ service, onClose, onSaved }: {
                 <div className="grid grid-cols-1 gap-1.5">
                   {PRICE_TYPE_OPTIONS.map(opt => (
                     <label key={opt.value}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition ${form.priceType === opt.value ? 'border-blue-500 bg-blue-50' : 'border-border-default hover:border-slate-300'}`}>
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition ${form.priceType === opt.value ? 'border-blue-500 bg-blue-500/10' : 'border-border-default hover:border-border-default/70'}`}>
                       <input type="radio" name="priceType" value={opt.value}
                         checked={form.priceType === opt.value}
                         onChange={() => set('priceType', opt.value)}
@@ -824,6 +831,16 @@ function ServiceModal({ service, onClose, onSaved }: {
           )}
         </div>
       </div>
+
+      {tab === 'info' && (
+        <FloatingSaveBar
+          dirty={dirty}
+          saving={saving}
+          saved={saved}
+          onSave={handleSubmit}
+          label={isEdit ? 'Guardar cambios' : 'Crear servicio'}
+        />
+      )}
     </div>
   );
 }
