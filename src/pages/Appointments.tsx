@@ -262,6 +262,25 @@ function DetailPanel({ appt, onUpdate, onClose }: {
     setSaving(false); setShowCancel(false);
   };
 
+  const moveTo = async (when: Date) => {
+    setSaving(true);
+    try {
+      await onUpdate(appt.appointmentId, { scheduledAt: when.toISOString() });
+    } catch (err: any) {
+      // el backend rechaza si choca con otra cita del profesional
+      alert(err?.response?.data?.message || 'No se pudo mover la cita (¿choca con otra?).');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const nowRounded5 = () => {
+    const d = new Date();
+    d.setSeconds(0, 0);
+    d.setMinutes(Math.round(d.getMinutes() / 5) * 5);
+    return d;
+  };
+  const plusMin = (m: number) => new Date(new Date(appt.scheduledAt).getTime() + m * 60_000);
+
   const handleConfirmPayment = async () => {
     setSaving(true);
     try {
@@ -379,6 +398,26 @@ function DetailPanel({ appt, onUpdate, onClose }: {
                 {appt.durationMinutes && <span className="text-txt-tertiary ml-1.5">({fmtMins(appt.durationMinutes)})</span>}
               </p>
             </div>
+
+            {['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(appt.status) && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-txt-tertiary flex items-center gap-1">Mover cita (llegó tarde)</p>
+                <div className="flex gap-1.5">
+                  <button onClick={() => moveTo(nowRounded5())} disabled={saving}
+                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-txt-primary border border-border-default hover:border-lime/50 disabled:opacity-50 transition">
+                    A ahora
+                  </button>
+                  <button onClick={() => moveTo(plusMin(15))} disabled={saving}
+                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-txt-primary border border-border-default hover:border-lime/50 disabled:opacity-50 transition">
+                    +15 min
+                  </button>
+                  <button onClick={() => moveTo(plusMin(30))} disabled={saving}
+                    className="flex-1 px-2 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-txt-primary border border-border-default hover:border-lime/50 disabled:opacity-50 transition">
+                    +30 min
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* cliente */}
             <div>
