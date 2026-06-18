@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api, { getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff } from '../services/api';
+import api, { getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, getServices } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
@@ -139,12 +139,20 @@ function NegocioSection({ storeId }: { storeId: string }) {
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
     staffLabel: 'Barbero',
     slug: '',
+    defaultServiceId: '',
   });
+  const [services, setServices] = useState<Array<{ serviceId: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState('');
   const [initial, setInitial] = useState('');   // snapshot del form cargado para detectar cambios
+
+  useEffect(() => {
+    getServices()
+      .then(res => setServices(res.data.filter((s: any) => s.isActive !== false)))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     getStore(storeId).then(res => {
@@ -178,6 +186,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
         slug:               d.slug               ?? '',
+        defaultServiceId:   d.defaultServiceId   ?? '',
       };
       setForm(loaded);
       setInitial(JSON.stringify(loaded));
@@ -223,6 +232,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         businessHours:      form.businessHours,
         staffLabel:         form.staffLabel      || undefined,
         slug:               form.slug            || undefined,
+        defaultServiceId:   form.defaultServiceId || null,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -465,6 +475,32 @@ function NegocioSection({ storeId }: { storeId: string }) {
           placeholder="O escribe otro (ej: Colorista, Nutricionista...)"
           className={ic}
         />
+      </div>
+
+      {/* Card 5.5 — Servicio predeterminado */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>}
+          title="Servicio predeterminado" sub="La IA lo usará si el cliente no especifica el servicio al agendar"
+        />
+        <div>
+          <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">
+            Servicio predeterminado
+          </label>
+          <select
+            value={form.defaultServiceId}
+            onChange={e => setf('defaultServiceId', e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition"
+          >
+            <option value="">Ninguno (la IA preguntará el servicio)</option>
+            {services.map(s => (
+              <option key={s.serviceId} value={s.serviceId}>{s.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-txt-tertiary mt-1">
+            Se usará cuando un cliente pida turno sin especificar el servicio, para no alargar la conversación.
+          </p>
+        </div>
       </div>
 
       {/* Link público del calendario */}
