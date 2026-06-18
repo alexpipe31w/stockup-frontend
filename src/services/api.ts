@@ -319,6 +319,15 @@ export const createAppointment = (data: {
   forceSchedule?: boolean;
 }) => api.post('/appointments', data);
 
+export const createWalkIn = (data: {
+  customerId: string;
+  serviceId?: string;
+  staffId?: string;
+  durationMinutes?: number;
+  price: number;
+  paymentMethod: string;
+}) => api.post('/appointments/walk-in', data);
+
 export const updateAppointment = (id: string, data: Record<string, any>) =>
   api.patch(`/appointments/${id}`, data);
 
