@@ -3,7 +3,7 @@ import {
   getAppointments, getAppointmentStats,
   updateAppointment, getAppointmentTimeline,
   createAppointment, createCustomer, getCustomers, getServices,
-  getStore, getStaff,
+  getStore, getStaff, createWalkIn,
 } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -1073,6 +1073,130 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   );
 }
 
+// ─── Walk-In Modal ─────────────────────────────────────────────────────────────
+
+function WalkInModal({ storeId, onClose, onDone }: { storeId: string; onClose: () => void; onDone: () => void }) {
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [services,  setServices]  = useState<ServiceOption[]>([]);
+  const [staff,     setStaff]     = useState<StaffInfo[]>([]);
+  const [loadingOpts, setLoadingOpts] = useState(true);
+  const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
+  const [newCustomer, setNewCustomer] = useState({ phone: '', name: '' });
+  const [form, setForm] = useState({ customerId: '', serviceId: '', staffId: '', price: '', durationMinutes: '', paymentMethod: 'efectivo' });
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState('');
+
+  useEffect(() => {
+    Promise.all([getCustomers(storeId), getServices(), getStaff()])
+      .then(([cr, sr, st]) => { setCustomers(cr.data); setServices(sr.data); setStaff(st.data ?? []); })
+      .catch(() => {})
+      .finally(() => setLoadingOpts(false));
+  }, [storeId]);
+
+  const onService = (serviceId: string) => {
+    const svc = services.find(s => s.serviceId === serviceId);
+    setForm(f => ({
+      ...f,
+      serviceId,
+      price:           svc?.basePrice != null ? String(svc.basePrice) : f.price,
+      durationMinutes: svc?.estimatedMinutes != null ? String(svc.estimatedMinutes) : f.durationMinutes,
+    }));
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customerMode === 'new' && !newCustomer.phone.trim()) { setError('El teléfono del cliente es obligatorio.'); return; }
+    if (customerMode === 'existing' && !form.customerId)     { setError('Selecciona un cliente.'); return; }
+    if (!form.price || Number(form.price) <= 0)              { setError('El precio es obligatorio.'); return; }
+    setSaving(true); setError('');
+    try {
+      let customerId = form.customerId;
+      if (customerMode === 'new') {
+        const res = await createCustomer({ phone: newCustomer.phone.trim(), name: newCustomer.name.trim() || undefined });
+        customerId = res.data.customerId;
+      }
+      await createWalkIn({
+        customerId,
+        serviceId:       form.serviceId || undefined,
+        staffId:         form.staffId   || undefined,
+        durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
+        price:           Number(form.price),
+        paymentMethod:   form.paymentMethod,
+      });
+      onDone();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Error al registrar el walk-in.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const ic = 'w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated text-sm focus:outline-none focus:ring-2 focus:ring-lime/30 text-txt-primary';
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle sticky top-0 bg-surface z-10">
+          <h2 className="text-base font-bold text-txt-primary">Atender ahora (walk-in)</h2>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-txt-tertiary hover:bg-surface-overlay">✕</button>
+        </div>
+        {loadingOpts ? (
+          <div className="py-16 text-center text-txt-tertiary text-sm">Cargando...</div>
+        ) : (
+          <form onSubmit={submit} className="p-6 space-y-4">
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setCustomerMode('existing')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium border transition ${customerMode === 'existing' ? 'border-lime bg-lime/10 text-txt-primary' : 'border-border-default text-txt-secondary'}`}>Cliente existente</button>
+              <button type="button" onClick={() => setCustomerMode('new')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium border transition ${customerMode === 'new' ? 'border-lime bg-lime/10 text-txt-primary' : 'border-border-default text-txt-secondary'}`}>Cliente nuevo</button>
+            </div>
+
+            {customerMode === 'existing' ? (
+              <select className={ic} value={form.customerId} onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}>
+                <option value="">Selecciona un cliente</option>
+                {customers.map(c => <option key={c.customerId} value={c.customerId}>{c.name ? `${c.name} — ${c.phone}` : c.phone}</option>)}
+              </select>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <input className={ic} placeholder="Teléfono *" value={newCustomer.phone} onChange={e => setNewCustomer(n => ({ ...n, phone: e.target.value }))} />
+                <input className={ic} placeholder="Nombre (opcional)" value={newCustomer.name} onChange={e => setNewCustomer(n => ({ ...n, name: e.target.value }))} />
+              </div>
+            )}
+
+            <select className={ic} value={form.staffId} onChange={e => setForm(f => ({ ...f, staffId: e.target.value }))}>
+              <option value="">Sin asignar profesional</option>
+              {staff.map(s => <option key={s.staffId} value={s.staffId}>{s.name}</option>)}
+            </select>
+
+            <select className={ic} value={form.serviceId} onChange={e => onService(e.target.value)}>
+              <option value="">Servicio (opcional)</option>
+              {services.map(s => <option key={s.serviceId} value={s.serviceId}>{s.name}</option>)}
+            </select>
+
+            <div className="grid grid-cols-2 gap-2">
+              <input className={ic} type="number" placeholder="Precio *" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+              <select className={ic} value={form.paymentMethod} onChange={e => setForm(f => ({ ...f, paymentMethod: e.target.value }))}>
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="nequi">Nequi</option>
+              </select>
+            </div>
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
+            <button type="submit" disabled={saving}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#0A0A0F] disabled:opacity-50 transition"
+              style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
+              {saving ? 'Registrando...' : 'Registrar atención'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── List View ────────────────────────────────────────────────────────────────
 
 function ListView({ appointments, selected, onSelect }: {
@@ -1340,6 +1464,7 @@ export default function Appointments() {
   const [selected,           setSelected]           = useState<Appointment | null>(null);
   const [view,               setView]               = useState<ViewMode>('list');
   const [showNewAppt, setShowNewAppt] = useState(false);
+  const [showWalkIn, setShowWalkIn] = useState(false);
   const { storeId } = useAuth();
 
   const [businessHours, setBusinessHours] = useState<BusinessHoursJson | null>(null);
@@ -1423,6 +1548,10 @@ export default function Appointments() {
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
                 Nueva cita
+              </button>
+              <button onClick={() => setShowWalkIn(true)}
+                className="px-3 py-2 rounded-xl text-sm font-medium bg-surface-elevated text-txt-primary border border-border-default hover:border-lime/50 transition">
+                Atender ahora
               </button>
               {/* view toggle */}
               <div className="flex items-center bg-surface-overlay rounded-xl p-1">
@@ -1555,6 +1684,13 @@ export default function Appointments() {
           onClose={() => setShowNewAppt(false)}
           staff={staffList}
           staffLabel={staffLabel}
+        />
+      )}
+      {showWalkIn && (
+        <WalkInModal
+          storeId={storeId as string}
+          onClose={() => setShowWalkIn(false)}
+          onDone={() => { setShowWalkIn(false); load(); }}
         />
       )}
     </div>
