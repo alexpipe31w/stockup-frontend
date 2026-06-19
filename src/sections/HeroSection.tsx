@@ -24,6 +24,33 @@ export default function HeroSection() {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+
+  // Parallax del fondo robot: combina scroll (profundidad) + mouse (sutil), batched con rAF.
+  useEffect(() => {
+    const bg = bgRef.current;
+    if (!bg) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let sy = 0, mx = 0, my = 0, raf = 0;
+    const apply = () => {
+      raf = 0;
+      bg.style.transform = `translate3d(${mx}px, ${sy * 0.1 + my}px, 0)`;
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    const onScroll = () => { sy = window.scrollY; schedule(); };
+    const onMove = (e: MouseEvent) => {
+      mx = (e.clientX / window.innerWidth - 0.5) * 16;
+      my = (e.clientY / window.innerHeight - 0.5) * 10;
+      schedule();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('mousemove', onMove);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -41,7 +68,20 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center pt-[72px] pb-16 overflow-hidden">
-      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'url(/images/hero-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      {/* Fondo robot con parallax (scroll + mouse) + Ken Burns lento */}
+      <div ref={bgRef} className="absolute inset-0 will-change-transform">
+        <div className="hero-robot-bg" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/images/hero-robot.png)` }} />
+      </div>
+      {/* Overlay horizontal: oscurece la izquierda para que el texto sea legible y deja respirar al robot a la derecha */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(90deg, #0A0A0F 0%, rgba(10,10,15,0.92) 30%, rgba(10,10,15,0.5) 62%, rgba(10,10,15,0.78) 100%)' }}
+      />
+      {/* Overlay vertical: funde con el navbar arriba y con la siguiente sección abajo */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(180deg, rgba(10,10,15,0.7) 0%, transparent 26%, transparent 68%, #0A0A0F 100%)' }}
+      />
       <ParticleCanvas />
       <GradientOrbs />
 

@@ -96,3 +96,27 @@
   }
 }
 
+
+/* ── Hero parallax robot background (solo home) ───────────────────────────── */
+.hero-robot-bg {
+  position: absolute;
+  inset: -6% -4%;
+  /* background-image se aplica inline en HeroSection (CRA no resuelve url() de /public en CSS) */
+  background-size: cover;
+  background-position: center right;
+  opacity: 0.55;
+  transform: scale(1.2);
+  animation: heroKenBurns 26s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes heroKenBurns {
+  0%   { transform: scale(1.2)  translate3d(0, 0, 0); }
+  50%  { transform: scale(1.26) translate3d(-1%, -0.8%, 0); }
+  100% { transform: scale(1.2)  translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-robot-bg { animation: none; }
+}
+@media (max-width: 1023px) {
+  .hero-robot-bg { background-position: center; opacity: 0.32; }
+}
