@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api, { getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, getServices } from '../services/api';
+import api, { getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
@@ -1063,6 +1063,19 @@ function EquipoSection({ storeId }: { storeId: string }) {
     }
   };
 
+  const handleDeletePermanent = async (id: string) => {
+    if (!window.confirm(`¿Borrar PERMANENTEMENTE a este ${staffLabel}? Esta acción no se puede deshacer. Las citas pasadas se conservan (quedan sin ${staffLabel}).`)) return;
+    setDeleting(id);
+    try {
+      await deleteStaffPermanent(id);
+      setStaff(p => p.filter(s => s.staffId !== id));
+    } catch {
+      setError('Error al borrar');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   if (loading) return <div className="text-sm text-txt-secondary p-4">Cargando equipo...</div>;
 
   return (
@@ -1119,6 +1132,14 @@ function EquipoSection({ storeId }: { storeId: string }) {
                         className="px-3 py-1.5 rounded-lg text-xs border border-red-800/50 text-red-400 hover:bg-red-900/20 transition disabled:opacity-50"
                       >
                         {deleting === s.staffId ? '...' : 'Desactivar'}
+                      </button>
+                      <button
+                        onClick={() => handleDeletePermanent(s.staffId)}
+                        disabled={deleting === s.staffId}
+                        title="Borrar permanentemente de la base de datos"
+                        className="px-3 py-1.5 rounded-lg text-xs border border-red-500/70 text-red-300 bg-red-900/20 hover:bg-red-900/40 transition disabled:opacity-50"
+                      >
+                        {deleting === s.staffId ? '...' : 'Borrar'}
                       </button>
                     </div>
                   </td>

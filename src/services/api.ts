@@ -376,6 +376,10 @@ export const updateStaff = (id: string, data: { name?: string; isActive?: boolea
 export const deleteStaff = (id: string) =>
   api.delete(`/staff/${id}`);
 
+// Borrado permanente (hard delete) — elimina el registro de la BD.
+export const deleteStaffPermanent = (id: string) =>
+  api.delete(`/staff/${id}/permanent`);
+
 export const getDailyReports = (limit = 30) =>
   api.get(`/reports/daily?limit=${limit}`);
 
