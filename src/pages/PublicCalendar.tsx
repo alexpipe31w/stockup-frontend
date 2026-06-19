@@ -230,25 +230,34 @@ export default function PublicCalendar() {
                   <p className="text-xs text-gray-500 italic">Sin disponibilidad este día</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {s.slots.map(slot => (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSlotChoice({ staffId: s.staffId, staffName: s.name, date: toISO(date), time: slot })}
-                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 hover:border-green-500/50 transition"
-                      >
-                        {fmtSlot(slot)}
-                      </button>
-                    ))}
-                    {s.occupiedSlots?.map(slot => (
-                      <span
-                        key={`occ-${slot}`}
-                        className="px-3 py-1.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/20 text-red-400/60 cursor-not-allowed"
-                        title="Horario ocupado"
-                      >
-                        {fmtSlot(slot)}
-                      </span>
-                    ))}
+                    {[
+                      ...s.slots.map(t => ({ t, occupied: false })),
+                      ...(s.occupiedSlots ?? []).map(t => ({ t, occupied: true })),
+                    ]
+                      .sort((a, b) => {
+                        const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
+                        return toMin(a.t) - toMin(b.t);
+                      })
+                      .map(({ t: slot, occupied }) =>
+                        occupied ? (
+                          <span
+                            key={`occ-${slot}`}
+                            className="px-3 py-1.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/20 text-red-400/60 cursor-not-allowed"
+                            title="Horario ocupado"
+                          >
+                            {fmtSlot(slot)}
+                          </span>
+                        ) : (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => setSlotChoice({ staffId: s.staffId, staffName: s.name, date: toISO(date), time: slot })}
+                            className="px-3 py-1.5 rounded-xl text-sm font-medium bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 hover:border-green-500/50 transition"
+                          >
+                            {fmtSlot(slot)}
+                          </button>
+                        )
+                      )}
                   </div>
                 )}
               </div>
