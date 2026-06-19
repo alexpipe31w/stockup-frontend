@@ -158,9 +158,9 @@ export default function PublicStore() {
               const qty = cart[p.productId] ?? 0;
               return (
                 <div key={p.productId} className="bg-[#111117] rounded-2xl p-4 border border-white/10 flex flex-col">
-                  {p.imageUrl && (
+                  {(p.imageUrl || p.images?.[0]) && (
                     <img
-                      src={p.imageUrl}
+                      src={p.imageUrl || p.images[0]}
                       alt={p.name}
                       className="h-36 w-full object-cover rounded-xl mb-3 bg-[#0A0A0F]"
                     />

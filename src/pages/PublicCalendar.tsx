@@ -8,6 +8,7 @@ interface ServiceOption {
   serviceId: string; name: string; description?: string | null; basePrice?: number | null;
   minPrice?: number | null; maxPrice?: number | null; priceType?: string;
   unitLabel?: string | null; estimatedMinutes?: number | null;
+  imageUrl?: string | null;
   hasVariants: boolean; variants: ServiceVariantOption[];
 }
 interface StoreInfo  { name: string; staffLabel: string; hasStaff: boolean; services: ServiceOption[]; }
@@ -143,6 +144,13 @@ export default function PublicCalendar() {
                         : 'border-white/10 bg-[#0A0A0F] hover:border-white/20'
                     }`}
                   >
+                    {s.imageUrl && (
+                      <img
+                        src={s.imageUrl}
+                        alt={s.name}
+                        className="h-28 w-full object-cover rounded-lg mb-2 bg-[#0A0A0F]"
+                      />
+                    )}
                     <p className={`font-semibold leading-tight ${isSelected ? 'text-[#D4FF00]' : 'text-white'}`}>{s.name}</p>
                     {s.description && (
                       <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{s.description}</p>
