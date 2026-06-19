@@ -602,10 +602,10 @@ export default function AiConfig() {
           <div>
             <h3 className="font-semibold text-txt-primary text-sm">Cartuchos adicionales</h3>
             <p className="text-xs text-txt-tertiary mt-0.5">
-              Se usan 2 en paralelo. Cuando uno agota su límite, el siguiente entra automáticamente.
+              Se usan todas en paralelo (hasta 12). Si una agota su límite, sigue con las demás y revive en 2 minutos.
             </p>
           </div>
-          {cartridges.length < 5 && (
+          {cartridges.length < 11 && (
             <button
               type="button"
               onClick={() => setCartridges(c => [...c, { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }])}
