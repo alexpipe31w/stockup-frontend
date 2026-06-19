@@ -26,6 +26,7 @@ import PaymentStatus from './pages/PaymentStatus';
 import More from './pages/More';
 import ServiceOrders from './pages/ServiceOrders';
 import PublicCalendar from './pages/PublicCalendar';
+import PublicStore from './pages/PublicStore';
 import Landing from './pages/Landing';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
@@ -134,6 +135,7 @@ function App() {
             <Route path="/superadmin/login" element={<SuperAdminLogin />} />
             <Route path="/superadmin"       element={<SuperAdmin />} />
             <Route path="/cal/:slug"        element={<PublicCalendar />} />
+            <Route path="/tienda/:slug"     element={<PublicStore />} />
             <Route path="*"                element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>

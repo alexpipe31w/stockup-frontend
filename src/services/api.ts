@@ -351,6 +351,18 @@ export const bookPublicAppointment = (slug: string, data: {
   notes?: string;
 }) => api.post(`/public/${slug}/book`, data);
 
+// ── Tienda pública (no auth) ───────────────────────────────────────────────────
+export const getPublicStoreProducts = (slug: string) =>
+  api.get(`/public/${slug}/products`);
+
+export const createPublicOrder = (slug: string, data: {
+  customerName: string;
+  customerPhone: string;
+  items: { productId: string; variantId?: string; quantity: number }[];
+  paymentMethod?: string;
+  notes?: string;
+}) => api.post(`/public/${slug}/order`, data);
+
 // ── Staff ─────────────────────────────────────────────────────────────────────
 export const getStaff = () =>
   api.get('/staff');
