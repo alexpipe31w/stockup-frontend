@@ -140,6 +140,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     staffLabel: 'Barbero',
     slug: '',
     defaultServiceId: '',
+    autoConfirmAppointments: true,
   });
   const [services, setServices] = useState<Array<{ serviceId: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -187,6 +188,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         staffLabel:         d.staffLabel         ?? 'Barbero',
         slug:               d.slug               ?? '',
         defaultServiceId:   d.defaultServiceId   ?? '',
+        autoConfirmAppointments: d.autoConfirmAppointments ?? true,
       };
       setForm(loaded);
       setInitial(JSON.stringify(loaded));
@@ -233,6 +235,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         staffLabel:         form.staffLabel      || undefined,
         slug:               form.slug            || undefined,
         defaultServiceId:   form.defaultServiceId || null,
+        autoConfirmAppointments: form.autoConfirmAppointments,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -394,6 +397,15 @@ function NegocioSection({ storeId }: { storeId: string }) {
           <select value={form.minAdvanceMinutes} onChange={e => setf('minAdvanceMinutes', Number(e.target.value))} className={ic}>
             {ADVANCE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.autoConfirmAppointments} onChange={() => setf('autoConfirmAppointments', !form.autoConfirmAppointments)} />
+            <span className="text-sm text-txt-primary">Auto-confirmar citas a los 15 min</span>
+          </div>
+          <p className="text-xs text-txt-tertiary ml-12">
+            Si nadie confirma la cita en 15 minutos, se confirma sola y al cliente le llega la confirmación por WhatsApp. Apágalo si prefieres confirmar cada cita manualmente.
+          </p>
         </div>
         <div>
           <label className="block text-xs font-medium text-txt-secondary mb-1">Política de cancelación</label>
