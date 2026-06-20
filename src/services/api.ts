@@ -343,7 +343,7 @@ export const getPublicAvailability = (slug: string, date: string) =>
 
 export const bookPublicAppointment = (slug: string, data: {
   customerName: string;
-  customerPhone: string;
+  customerPhone?: string;
   serviceId?: string;
   serviceVariantId?: string;
   staffId?: string;

@@ -428,6 +428,14 @@ function DetailPanel({ appt, onUpdate, onClose }: {
               {appt.customer.city   && <p className="text-xs text-txt-tertiary">{appt.customer.city}</p>}
             </div>
 
+            {/* profesional / barbero */}
+            {appt.staff && (
+              <div>
+                <p className="text-[10px] font-bold text-txt-tertiary uppercase tracking-wider mb-1.5">Profesional</p>
+                <p className="font-medium text-txt-primary flex items-center gap-1">✂ {appt.staff.name}</p>
+              </div>
+            )}
+
             {/* detalles */}
             {[
               appt.description && ['Descripción', appt.description],
@@ -1271,7 +1279,7 @@ function ListView({ appointments, selected, onSelect }: {
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           {appt.address    && <span className="text-[10px] text-txt-tertiary">📍 {appt.address.slice(0,30)}{appt.address.length>30?'…':''}</span>}
                           {appt.agreedPrice && <span className="text-[10px] text-txt-tertiary flex items-center gap-0.5"><DollarSign size={9} />{fmtCOP(appt.agreedPrice)}</span>}
-                          {appt.staff && <span className="text-[10px] text-txt-secondary hidden md:inline">{appt.staff.name}</span>}
+                          {appt.staff && <span className="text-[10px] text-txt-secondary inline-flex items-center gap-0.5">✂ {appt.staff.name}</span>}
                           <span className="text-[10px] text-txt-disabled">{SRC_LABEL[appt.source] ?? appt.source}</span>
                           {appt.priority !== 'NORMAL' && (
                             <span className="text-[10px] font-semibold" style={{ color: PC[appt.priority].dot }}>
