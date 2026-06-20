@@ -309,15 +309,14 @@ function BookingModal({ slug, slot, serviceId, serviceName, variantId, variantNa
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || name.trim().length < 2) { setError('Ingresa tu nombre completo.'); return; }
-    // Teléfono opcional: solo se valida el formato si el cliente escribió algo.
-    if (phone.trim() && phone.replace(/\D/g, '').length < 7) { setError('Ingresa un número de teléfono válido.'); return; }
+    if (!phone.trim() || phone.replace(/\D/g, '').length < 7) { setError('Ingresa un número de teléfono válido.'); return; }
 
     setSaving(true); setError('');
     try {
       const scheduledAt = `${slot.date}T${slot.time}:00-05:00`;
       const res = await bookPublicAppointment(slug, {
         customerName:  name.trim(),
-        customerPhone: phone.trim() || undefined,
+        customerPhone: phone.trim(),
         serviceId,
         serviceVariantId: variantId,
         staffId:       slot.staffId ?? undefined,
@@ -387,8 +386,8 @@ function BookingModal({ slug, slot, serviceId, serviceName, variantId, variantNa
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Tu número de WhatsApp <span className="text-gray-600 font-normal">(opcional)</span></label>
-                <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej: 300 123 4567" className={ic} />
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Tu número de WhatsApp *</label>
+                <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej: 300 123 4567" className={ic} required />
               </div>
 
               <div>
