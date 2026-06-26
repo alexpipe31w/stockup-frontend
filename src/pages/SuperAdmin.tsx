@@ -489,7 +489,7 @@ export default function SuperAdmin() {
                         {priceLoading ? 'Guardando...' : 'Guardar'}
                       </button>
                       <button
-                        onClick={() => { setEditingPrice(false); setEditPrice(String(subConfig?.priceAmount ?? 24000)); }}
+                        onClick={() => { setEditingPrice(false); setEditPrice(String(subConfig?.priceAmount ?? 52000)); }}
                         className="px-4 py-2.5 rounded-xl bg-slate-700 text-txt-disabled text-sm font-medium hover:bg-slate-600 transition"
                       >
                         Cancelar
@@ -498,7 +498,7 @@ export default function SuperAdmin() {
                   ) : (
                     <div className="flex items-center gap-4 mt-4">
                       <span className="text-4xl font-bold text-white">
-                        ${Number(subConfig?.priceAmount ?? 24000).toLocaleString('es-CO')}
+                        ${Number(subConfig?.priceAmount ?? 52000).toLocaleString('es-CO')}
                       </span>
                       <span className="text-txt-tertiary text-sm">COP / mes</span>
                       <button
