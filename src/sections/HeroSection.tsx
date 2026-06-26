@@ -113,7 +113,7 @@ export default function HeroSection() {
             </h1>
 
             <p ref={subtitleRef} className="text-base sm:text-lg text-white/55 leading-relaxed mb-8 max-w-[480px] opacity-0">
-              Un bot con inteligencia artificial atiende clientes, toma pedidos y agenda citas automáticamente, los 7 días de la semana. Por solo $24.000/mes.
+              Un bot con inteligencia artificial atiende clientes, toma pedidos y agenda citas automáticamente, los 7 días de la semana. Por solo $52.000/mes.
             </p>
 
             <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-4 opacity-0">
