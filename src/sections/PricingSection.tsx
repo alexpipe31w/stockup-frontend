@@ -30,7 +30,7 @@ export default function PricingSection() {
             </div>
             <p className="text-center text-white/55 font-semibold text-lg mb-2">Plan Completo</p>
             <div className="text-center mb-6">
-              <span className="text-5xl sm:text-[56px] font-black text-white tracking-tight">$24.000</span>
+              <span className="text-5xl sm:text-[56px] font-black text-white tracking-tight">$52.000</span>
               <span className="text-white/55 text-lg ml-1">COP/mes</span>
             </div>
             <div className="border-t border-white/[0.06] my-6" />

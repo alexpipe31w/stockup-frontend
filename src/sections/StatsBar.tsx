@@ -4,7 +4,7 @@ interface Stat { value: string; numericValue: number; prefix: string; suffix: st
 
 const STATS: Stat[] = [
   { value: '24/7', numericValue: 24, prefix: '',  suffix: '/7', label: 'Siempre disponible',   isDecimal: false },
-  { value: '$24K', numericValue: 24, prefix: '$', suffix: 'K',  label: 'Al mes, todo incluido', isDecimal: false },
+  { value: '$52K', numericValue: 52, prefix: '$', suffix: 'K',  label: 'Al mes, todo incluido', isDecimal: false },
   { value: '<1s',  numericValue: 1,  prefix: '<', suffix: 's',  label: 'Tiempo de respuesta',  isDecimal: true  },
   { value: '4+',   numericValue: 4,  prefix: '',  suffix: '+',  label: 'Negocios activos',      isDecimal: false },
 ];
