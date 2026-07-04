@@ -70,6 +70,17 @@ export default function WhatsAppPage() {
     }
   };
 
+  const handleCancel = async () => {
+    setDisconnecting(true);
+    try {
+      // Limpia QR/socket/reintentos en el backend para que el QR no reaparezca con el polling
+      await disconnectWhatsApp(storeId);
+    } catch {} finally {
+      setQr(null);
+      setDisconnecting(false);
+    }
+  };
+
   const handleReconnect = async () => {
     setDisconnecting(true);
     try {
@@ -188,6 +199,14 @@ export default function WhatsAppPage() {
                   </svg>
                   Actualizando automáticamente...
                 </div>
+
+                <button
+                  onClick={handleCancel}
+                  disabled={disconnecting}
+                  className="px-5 py-2.5 rounded-xl border border-border-default text-txt-secondary text-sm font-semibold hover:bg-surface-elevated transition disabled:opacity-50"
+                >
+                  {disconnecting ? 'Cancelando...' : 'Cancelar'}
+                </button>
               </>
             )}
           </>
