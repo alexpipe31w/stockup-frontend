@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api, { getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices } from '../services/api';
+import api, {
+  getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices,
+  generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
+} from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
@@ -9,7 +12,7 @@ import FloatingSaveBar from '../components/FloatingSaveBar';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Tab = 'negocio' | 'ia' | 'excluidos' | 'suscripcion' | 'equipo';
+type Tab = 'negocio' | 'ia' | 'excluidos' | 'suscripcion' | 'equipo' | 'stockup';
 
 interface BlockedContact {
   blockedId: string;
@@ -1303,6 +1306,164 @@ function StaffModal({
   );
 }
 
+// ── TAB: STOCKUP ───────────────────────────────────────────────────────────
+
+function StockupIntegrationSection() {
+  const [status, setStatus] = useState<StockupConnectionStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [code, setCode] = useState<StockupLinkCode | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = () => {
+    getStockupConnection()
+      .then(res => setStatus(res.data))
+      .catch(() => setError('No se pudo cargar el estado de la conexión con StockUp'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleGenerate = async () => {
+    setGenerating(true); setError(''); setCopied(false);
+    try {
+      const res = await generateStockupLinkCode();
+      setCode(res.data);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Error al generar el código de conexión');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!code) return;
+    navigator.clipboard.writeText(code.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDisconnect = async () => {
+    if (!window.confirm('¿Desconectar StockUp? Se detendrá la sincronización de inventario con tu tienda StockUp.')) return;
+    setDisconnecting(true); setError('');
+    try {
+      await disconnectStockup();
+      setCode(null);
+      setStatus({ connected: false, stockupTenantId: null, lastSyncAt: null });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Error al desconectar StockUp');
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  if (loading) return <Spinner />;
+
+  const card = 'bg-surface rounded-2xl shadow-sm border border-border-subtle p-6 space-y-4';
+
+  return (
+    <div className="space-y-5">
+      <div className={card}>
+        <div className="flex items-center gap-3 pb-3 border-b border-border-subtle">
+          <div className="w-9 h-9 rounded-xl bg-surface-overlay flex items-center justify-center flex-shrink-0 text-lime">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-semibold text-txt-primary text-sm">Integración StockUp</h2>
+            <p className="text-xs text-txt-tertiary">Sincroniza tu inventario con tu cuenta de StockUp</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        {status?.connected ? (
+          <div className="space-y-4">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Inventario sincronizado con StockUp
+            </span>
+
+            <div className="bg-surface-elevated rounded-xl p-4">
+              <p className="text-xs text-txt-tertiary mb-0.5">Última sincronización</p>
+              <p className="text-sm font-medium text-txt-primary">
+                {status.lastSyncAt
+                  ? new Date(status.lastSyncAt).toLocaleString('es-CO', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  : 'Aún no se ha sincronizado'}
+              </p>
+            </div>
+
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="px-4 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-60"
+            >
+              {disconnecting ? 'Desconectando...' : 'Desconectar'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-txt-secondary">
+              Conecta tu cuenta de StockUp (plan ENTERPRISE) para unificar tu inventario.
+            </p>
+
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <p className="text-amber-700 text-sm">
+                <strong>Importante:</strong> al conectar, tu catálogo actual será reemplazado por el de StockUp
+                (los productos que solo existen aquí se desactivarán).
+              </p>
+            </div>
+
+            {code ? (
+              <div className="bg-surface-elevated rounded-2xl border border-border-default p-6 text-center space-y-2">
+                <p className="text-xs text-txt-tertiary uppercase tracking-wide font-semibold">Código de conexión</p>
+                <p className="text-4xl font-bold tracking-[0.3em] text-txt-primary font-mono">{code.code}</p>
+                <button onClick={handleCopy} className="text-xs text-lime hover:underline font-medium">
+                  {copied ? '✓ Copiado' : 'Copiar código'}
+                </button>
+                <p className="text-xs text-txt-tertiary">Vence en {code.expiresInMinutes} minutos</p>
+                <p className="text-sm text-txt-secondary pt-3 mt-2 border-t border-border-subtle">
+                  Pégalo en <strong>StockUp → Configuración → StockUp Mensajes</strong>
+                </p>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="text-xs text-txt-tertiary hover:text-txt-secondary underline disabled:opacity-60"
+                >
+                  {generating ? 'Generando...' : 'Generar un nuevo código'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="w-full py-3 rounded-2xl font-semibold text-[#0A0A0F] transition disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
+              >
+                {generating ? 'Generando...' : 'Generar código de conexión'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main: Config ───────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -1357,6 +1518,17 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'stockup',
+    label: 'StockUp',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function Config() {
@@ -1394,6 +1566,7 @@ export default function Config() {
       {activeTab === 'excluidos'   && <ExcluidosSection />}
       {activeTab === 'suscripcion' && <SuscripcionSection />}
       {activeTab === 'equipo'      && <EquipoSection     storeId={storeId} />}
+      {activeTab === 'stockup'     && <StockupIntegrationSection />}
     </div>
   );
 }

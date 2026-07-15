@@ -496,3 +496,24 @@ export const createCheckout = () =>
 
 export const processPaymentManually = (paymentId: string) =>
   api.post(`/subscriptions/process-payment/${paymentId}`, {});
+
+// ── Integración StockUp ──────────────────────────────────────────────────
+export interface StockupLinkCode {
+  code: string;
+  expiresInMinutes: number;
+}
+
+export interface StockupConnectionStatus {
+  connected: boolean;
+  stockupTenantId: string | null;
+  lastSyncAt: string | null;
+}
+
+export const generateStockupLinkCode = () =>
+  api.post<StockupLinkCode>('/integrations/stockup/link-code');
+
+export const getStockupConnection = () =>
+  api.get<StockupConnectionStatus>('/integrations/stockup/connection');
+
+export const disconnectStockup = () =>
+  api.delete<{ ok: boolean }>('/integrations/stockup/connection');
