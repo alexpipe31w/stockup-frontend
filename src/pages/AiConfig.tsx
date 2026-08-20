@@ -20,10 +20,9 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     docsUrl: 'console.groq.com',
     keyHint: 'gsk_xxxxxxxxxxxxxxxxxxxx',
     models: [
-      { value: 'llama-3.3-70b-versatile',                    name: 'Llama 3.3 70B',  tag: 'BALANCEADO',     tagColor: '#D4FF00', speed: '280 t/s', desc: 'Modelo probado. Buen equilibrio calidad/velocidad.' },
-      { value: 'llama-3.1-8b-instant',                       name: 'Llama 3.1 8B',   tag: 'ECONÓMICO',      tagColor: '#64748b', speed: '560 t/s', desc: 'Ultra rápido y de bajo costo. Alto volumen.' },
-      { value: 'meta-llama/llama-4-scout-17b-16e-instruct',  name: 'Llama 4 Scout',  tag: 'NUEVO',          tagColor: '#ea580c', speed: '750 t/s', desc: 'Llama 4 multimodal. Muy rápido.' },
-      { value: 'qwen/qwen3-32b',                             name: 'Qwen3 32B',       tag: 'PREVIEW',        tagColor: '#0891b2', speed: '400 t/s', desc: 'Excelente en idiomas y razonamiento.' },
+      { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', tag: 'RECOMENDADO', tagColor: '#D4FF00', speed: 'Muy rápido', desc: 'El más capaz de Groq. Reemplaza a Llama 3.3 70B.' },
+      { value: 'openai/gpt-oss-20b',  name: 'GPT-OSS 20B',  tag: 'ECONÓMICO',   tagColor: '#64748b', speed: 'Ultra',      desc: 'Ligero y muy barato. Ideal para alto volumen.' },
+      { value: 'qwen/qwen3.6-27b',    name: 'Qwen3.6 27B',  tag: 'ALTERNATIVA', tagColor: '#0891b2', speed: 'Rápido',     desc: 'Fuerte en idiomas y razonamiento.' },
     ],
   },
   openai: {
@@ -80,10 +79,9 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     docsUrl: 'aistudio.google.com/app/apikey',
     keyHint: 'AIzaSy...',
     models: [
-      { value: 'gemini-2.0-flash',       name: 'Gemini 2.0 Flash',    tag: 'GRATIS',       tagColor: '#22c55e', speed: 'Muy rápido', desc: 'El más rápido de Google. Generoso tier gratuito.' },
-      { value: 'gemini-1.5-flash',       name: 'Gemini 1.5 Flash',    tag: 'GRATIS',       tagColor: '#22c55e', speed: 'Rápido',     desc: 'Flash de primera generación. Muy confiable.' },
-      { value: 'gemini-1.5-flash-8b',    name: 'Gemini 1.5 Flash 8B', tag: 'ULTRA GRATIS', tagColor: '#16a34a', speed: 'Ultra',      desc: 'Más ligero. Ideal para volumen extremo.' },
-      { value: 'gemini-1.5-pro',         name: 'Gemini 1.5 Pro',      tag: 'CAPAZ',        tagColor: '#4285F4', speed: 'Normal',     desc: 'Modelo pro de Google. Más inteligente.' },
+      { value: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',      tag: 'GRATIS',       tagColor: '#22c55e', speed: 'Muy rápido', desc: 'El de mejor cuota gratuita. Recomendado.' },
+      { value: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', tag: 'ULTRA GRATIS', tagColor: '#16a34a', speed: 'Ultra',      desc: 'Más ligero. Ideal para volumen extremo.' },
+      { value: 'gemini-2.5-pro',        name: 'Gemini 2.5 Pro',        tag: 'CAPAZ',        tagColor: '#4285F4', speed: 'Normal',     desc: 'Modelo pro de Google. Más inteligente.' },
     ],
   },
 };
@@ -439,7 +437,7 @@ export default function AiConfig() {
   const [form, setForm] = useState({
     aiProvider:   'groq' as AIProvider,
     apiKey:       '',
-    model:        'llama-3.3-70b-versatile',
+    model:        'openai/gpt-oss-120b',
     systemPrompt: '',
     temperature:  0.7,
     maxTokens:    500,
