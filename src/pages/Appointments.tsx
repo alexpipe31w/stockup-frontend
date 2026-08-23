@@ -117,6 +117,69 @@ function getMonday(d: Date): Date {
 }
 function addDays(d: Date, n: number): Date { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 
+// ─── Rango de fechas de la lista ──────────────────────────────────────────────
+// La lista arrancaba mostrando TODAS las citas, presentes y pasadas, en un solo
+// larguero. Por defecto se acota a la semana en curso y lo demás se busca aquí.
+
+type DatePreset = 'week' | 'today' | 'next30' | 'past' | 'all' | 'custom';
+
+const DATE_PRESETS: { k: DatePreset; label: string }[] = [
+  { k: 'week',   label: 'Esta semana'      },
+  { k: 'today',  label: 'Hoy'              },
+  { k: 'next30', label: 'Próximos 30 días' },
+  { k: 'past',   label: 'Anteriores'       },
+  { k: 'all',    label: 'Todas'            },
+  { k: 'custom', label: 'Personalizado'    },
+];
+
+const startOfDay = (d: Date): Date => { const r = new Date(d); r.setHours(0, 0, 0, 0);       return r; };
+const endOfDay   = (d: Date): Date => { const r = new Date(d); r.setHours(23, 59, 59, 999);  return r; };
+/** "2026-08-23" (input date) → Date local, no UTC: new Date("2026-08-23") se corre un día. */
+const fromInput  = (s: string): Date => new Date(`${s}T00:00:00`);
+
+function rangeFromPreset(
+  preset: DatePreset, customFrom: string, customTo: string,
+): { from?: string; to?: string } {
+  const now = new Date();
+  switch (preset) {
+    case 'today':
+      return { from: startOfDay(now).toISOString(), to: endOfDay(now).toISOString() };
+    case 'week': {
+      const monday = getMonday(now);
+      return { from: monday.toISOString(), to: endOfDay(addDays(monday, 6)).toISOString() };
+    }
+    case 'next30':
+      return { from: startOfDay(now).toISOString(), to: endOfDay(addDays(now, 30)).toISOString() };
+    case 'past':
+      return { to: endOfDay(addDays(now, -1)).toISOString() };
+    case 'custom':
+      return {
+        ...(customFrom ? { from: startOfDay(fromInput(customFrom)).toISOString() } : {}),
+        ...(customTo   ? { to:   endOfDay(fromInput(customTo)).toISOString()      } : {}),
+      };
+    case 'all':
+    default:
+      return {};
+  }
+}
+
+/** Texto del rango activo, para que nunca se oculten citas sin decirlo. */
+function rangeLabel(preset: DatePreset, customFrom: string, customTo: string): string {
+  const fmt = (s: string) => fromInput(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  if (preset === 'custom') {
+    if (customFrom && customTo) return `${fmt(customFrom)} – ${fmt(customTo)}`;
+    if (customFrom)             return `desde el ${fmt(customFrom)}`;
+    if (customTo)               return `hasta el ${fmt(customTo)}`;
+    return 'elige un rango';
+  }
+  if (preset === 'week') {
+    const monday = getMonday(new Date());
+    const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+    return `${monday.toLocaleDateString('es-CO', opts)} – ${addDays(monday, 6).toLocaleDateString('es-CO', opts)}`;
+  }
+  return (DATE_PRESETS.find(p => p.k === preset)?.label ?? '').toLowerCase();
+}
+
 // ─── Small components ─────────────────────────────────────────────────────────
 
 const StatusBadge = ({ status }: { status: AppointmentStatus }) => {
@@ -1206,14 +1269,17 @@ function WalkInModal({ storeId, onClose, onDone }: { storeId: string; onClose: (
 
 // ─── List View ────────────────────────────────────────────────────────────────
 
-function ListView({ appointments, selected, onSelect }: {
+function ListView({ appointments, selected, onSelect, emptyHint }: {
   appointments: Appointment[]; selected: Appointment | null; onSelect:(a:Appointment|null)=>void;
+  emptyHint?: string;
 }) {
   if (appointments.length === 0) return (
     <div className="flex-1 bg-surface border border-border-subtle rounded-2xl flex flex-col items-center justify-center gap-3 text-txt-tertiary py-24">
       <CalendarDays size={48} className="text-txt-disabled mx-auto" strokeWidth={1} />
       <p className="text-sm font-medium">Sin agendamientos</p>
-      <p className="text-xs max-w-xs text-center">La IA los crea automáticamente cuando un cliente agenda por WhatsApp.</p>
+      <p className="text-xs max-w-xs text-center">
+        {emptyHint ?? 'La IA los crea automáticamente cuando un cliente agenda por WhatsApp.'}
+      </p>
     </div>
   );
 
@@ -1465,6 +1531,10 @@ export default function Appointments() {
   const [filterType,         setFilterType]         = useState('');
   const [filterPendingAction, setFilterPendingAction] = useState('');
   const [filterStaffId, setFilterStaffId] = useState('');
+  // La lista arranca en la semana en curso; el resto se busca con el filtro.
+  const [datePreset, setDatePreset] = useState<DatePreset>('week');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo,   setCustomTo]   = useState('');
   const [staffList,     setStaffList]     = useState<StaffInfo[]>([]);
   const [staffLabel,    setStaffLabel]    = useState('Profesional');
   const [search,             setSearch]             = useState('');
@@ -1496,11 +1566,18 @@ export default function Appointments() {
       if (filterType)          p.type             = filterType;
       if (filterPendingAction) p.hasPendingAction = filterPendingAction;
       if (filterStaffId)       p.staffId          = filterStaffId;
+      // Solo en la lista: el calendario navega semanas por su cuenta y con un rango
+      // fijo se quedaría vacío al pasar de semana.
+      if (view === 'list') {
+        const { from, to } = rangeFromPreset(datePreset, customFrom, customTo);
+        if (from) p.from = from;
+        if (to)   p.to   = to;
+      }
       const [aR, sR] = await Promise.all([getAppointments(p), getAppointmentStats()]);
       setAppointments(aR.data); setStats(sR.data);
     } catch { setError('Error cargando agendamientos.'); }
     finally { setLoading(false); }
-  }, [filterStatus, filterType, filterPendingAction, filterStaffId]);
+  }, [filterStatus, filterType, filterPendingAction, filterStaffId, view, datePreset, customFrom, customTo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1543,7 +1620,12 @@ export default function Appointments() {
             <div>
               <h1 className="text-xl font-bold text-txt-primary">Agendamientos</h1>
               <p className="text-sm text-txt-tertiary mt-0.5">
-                {loading ? '...' : `${appointments.length} cita${appointments.length !== 1 ? 's' : ''}`}
+                {loading
+                  ? '...'
+                  : `${appointments.length} cita${appointments.length !== 1 ? 's' : ''}`
+                    + (view === 'list' && datePreset !== 'all'
+                        ? ` · ${rangeLabel(datePreset, customFrom, customTo)}`
+                        : '')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -1623,6 +1705,28 @@ export default function Appointments() {
               <option value="corte">Corte</option>
               <option value="otro">Otro</option>
             </select>
+            {/* Rango de fechas — solo aplica a la lista */}
+            {view === 'list' && (
+              <>
+                <select value={datePreset} onChange={e => setDatePreset(e.target.value as DatePreset)}
+                  className="px-3 py-2 text-sm border border-border-default rounded-xl bg-surface text-txt-secondary focus:outline-none focus:ring-2 focus:ring-lime/30">
+                  {DATE_PRESETS.map(({ k, label }) => (
+                    <option key={k} value={k}>{label}</option>
+                  ))}
+                </select>
+                {datePreset === 'custom' && (
+                  <div className="flex items-center gap-1.5">
+                    <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                      max={customTo || undefined} aria-label="Desde"
+                      className="px-2 py-2 text-sm border border-border-default rounded-xl bg-surface-elevated text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30" />
+                    <span className="text-xs text-txt-tertiary">a</span>
+                    <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                      min={customFrom || undefined} aria-label="Hasta"
+                      className="px-2 py-2 text-sm border border-border-default rounded-xl bg-surface-elevated text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30" />
+                  </div>
+                )}
+              </>
+            )}
             {staffList.length > 0 && (
               <select
                 value={filterStaffId}
@@ -1651,8 +1755,11 @@ export default function Appointments() {
                 Solicitudes pendientes
               </button>
             )}
-            {(search || filterStatus || filterType || filterPendingAction || filterStaffId) && (
-              <button onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); setFilterPendingAction(''); setFilterStaffId(''); }}
+            {(search || filterStatus || filterType || filterPendingAction || filterStaffId || datePreset !== 'week') && (
+              <button onClick={() => {
+                setSearch(''); setFilterStatus(''); setFilterType(''); setFilterPendingAction(''); setFilterStaffId('');
+                setDatePreset('week'); setCustomFrom(''); setCustomTo('');
+              }}
                 className="text-xs text-blue-600 hover:underline">Limpiar</button>
             )}
           </div>
@@ -1674,7 +1781,10 @@ export default function Appointments() {
         ) : (
           <div className="flex gap-4 items-start flex-1" style={{ minHeight: 600 }}>
             {view === 'list'
-              ? <ListView     appointments={filtered} selected={selected} onSelect={setSelected} />
+              ? <ListView     appointments={filtered} selected={selected} onSelect={setSelected}
+                  emptyHint={datePreset === 'all'
+                    ? undefined
+                    : `No hay citas en el rango seleccionado (${rangeLabel(datePreset, customFrom, customTo)}). Cambia el filtro de fechas para ver otras.`} />
               : <CalendarView appointments={filtered} selected={selected} onSelect={setSelected} businessHours={businessHours} />
             }
             {selected && (
