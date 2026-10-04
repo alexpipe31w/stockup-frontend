@@ -22,7 +22,7 @@ const PROVIDERS: Record<AIProvider, ProviderInfo> = {
     models: [
       { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', tag: 'RECOMENDADO', tagColor: '#D4FF00', speed: 'Muy rápido', desc: 'El más capaz de Groq. Reemplaza a Llama 3.3 70B.' },
       { value: 'openai/gpt-oss-20b',  name: 'GPT-OSS 20B',  tag: 'ECONÓMICO',   tagColor: '#64748b', speed: 'Ultra',      desc: 'Ligero y muy barato. Ideal para alto volumen.' },
-      { value: 'qwen/qwen3.6-27b',    name: 'Qwen3.6 27B',  tag: 'ALTERNATIVA', tagColor: '#0891b2', speed: 'Rápido',     desc: 'Fuerte en idiomas y razonamiento.' },
+      { value: 'qwen/qwen3.8-27b',    name: 'Qwen3.8 27B',  tag: 'ALTERNATIVA', tagColor: '#0891b2', speed: 'Rápido',     desc: 'Fuerte en idiomas y razonamiento.' },
     ],
   },
   openai: {
