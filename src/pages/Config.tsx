@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api, {
-  getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices,
+  getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices, getProducts,
   generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
 } from '../services/api';
 import AiConfigPage from './AiConfig';
@@ -141,6 +141,13 @@ function NegocioSection({ storeId }: { storeId: string }) {
     hasParking: false,
     requiresCustomerAddress: false,
     requiresCustomerCedula: false,
+    // Pedidos de productos (los de arriba son de citas)
+    orderShipping: false,
+    orderShippingZone: '',
+    orderRequiresDeposit: false,
+    orderDepositAmount: '',
+    orderPolicy: '',
+    orderRequiresCedula: false,
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
     staffLabel: 'Barbero',
     slug: '',
@@ -148,6 +155,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     autoConfirmAppointments: true,
   });
   const [services, setServices] = useState<Array<{ serviceId: string; name: string }>>([]);
+  const [productCount, setProductCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -157,6 +165,9 @@ function NegocioSection({ storeId }: { storeId: string }) {
   useEffect(() => {
     getServices()
       .then(res => setServices(res.data.filter((s: any) => s.isActive !== false)))
+      .catch(() => {});
+    getProducts()
+      .then(res => setProductCount(Array.isArray(res.data) ? res.data.length : null))
       .catch(() => {});
   }, []);
 
@@ -189,7 +200,13 @@ function NegocioSection({ storeId }: { storeId: string }) {
         hasParking:         d.hasParking         ?? false,
         requiresCustomerAddress: d.requiresCustomerAddress ?? false,
         requiresCustomerCedula:  d.requiresCustomerCedula  ?? false,
-        businessHours:      d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
+        orderShipping:        d.orderShipping        ?? false,
+        orderShippingZone:    d.orderShippingZone    ?? '',
+        orderRequiresDeposit: d.orderRequiresDeposit ?? false,
+        orderDepositAmount:   d.orderDepositAmount   ?? '',
+        orderPolicy:          d.orderPolicy          ?? '',
+        orderRequiresCedula:  d.orderRequiresCedula  ?? false,
+        businessHours:     d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
         slug:               d.slug               ?? '',
         defaultServiceId:   d.defaultServiceId   ?? '',
@@ -236,7 +253,13 @@ function NegocioSection({ storeId }: { storeId: string }) {
         hasParking:         form.hasParking,
         requiresCustomerAddress: form.requiresCustomerAddress,
         requiresCustomerCedula:  form.requiresCustomerCedula,
-        businessHours:      form.businessHours,
+        orderShipping:        form.orderShipping,
+        orderShippingZone:    form.orderShippingZone,
+        orderRequiresDeposit: form.orderRequiresDeposit,
+        orderDepositAmount:   form.orderDepositAmount,
+        orderPolicy:          form.orderPolicy,
+        orderRequiresCedula:  form.orderRequiresCedula,
+        businessHours:     form.businessHours,
         staffLabel:         form.staffLabel      || undefined,
         slug:               form.slug            || undefined,
         defaultServiceId:   form.defaultServiceId || null,
@@ -267,8 +290,19 @@ function NegocioSection({ storeId }: { storeId: string }) {
     </div>
   );
 
+  // Separa la config en General / Productos / Servicios: cada bloque solo afecta su flujo.
+  const GroupTitle = ({ title, sub, empty }: { title: string; sub: string; empty?: string }) => (
+    <div className="pt-4 first:pt-0">
+      <h2 className="text-base font-semibold text-txt-primary">{title}</h2>
+      <p className="text-xs text-txt-tertiary">{sub}</p>
+      {empty && <p className="mt-2 text-xs text-amber-500">{empty}</p>}
+    </div>
+  );
+
   return (
     <form onSubmit={handleSave} className="space-y-5">
+
+      <GroupTitle title="General" sub="Aplica a pedidos y a citas" />
 
       {/* Card 1 — Información básica */}
       <div className={card}>
@@ -381,21 +415,78 @@ function NegocioSection({ storeId }: { storeId: string }) {
               placeholder="3001234567 — Bancolombia 123-456789" className={ic} />
           </div>
         )}
-        <div className="flex items-center gap-3">
-          <Toggle value={form.requiresDeposit} onChange={() => setf('requiresDeposit', !form.requiresDeposit)} />
-          <span className="text-sm text-txt-primary">Requiere anticipo para confirmar cita</span>
-        </div>
-        {form.requiresDeposit && (
-          <input value={form.depositAmount} onChange={e => setf('depositAmount', e.target.value)}
-            placeholder="Monto del anticipo (ej: 50000 o 30%)" className={ic} />
-        )}
       </div>
+
+      {/* Card 6 — Horarios de atención */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+          title="Horarios de atención" sub="El calendario y la IA respetarán estos horarios"
+        />
+        <BusinessHoursEditor
+          hours={form.businessHours}
+          onChange={h => setf('businessHours', h)}
+        />
+      </div>
+
+      <GroupTitle
+        title="Productos" sub="Cómo atiende la IA los pedidos por WhatsApp"
+        empty={productCount === 0 ? 'Aún no tienes productos cargados; esto se aplicará cuando los tengas.' : undefined}
+      />
+
+      {/* Card P1 — Envíos y pedidos */}
+      <div className={card}>
+        <CardHeader
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>}
+          title="Envíos y pedidos" sub="Qué pide y qué responde la IA al tomar un pedido"
+        />
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.orderShipping} onChange={() => setf('orderShipping', !form.orderShipping)} />
+            <span className="text-sm text-txt-primary">Hacemos envíos de productos</span>
+          </div>
+          <p className="text-xs text-txt-tertiary ml-12">
+            {form.orderShipping
+              ? 'La IA pedirá dirección con barrio y ciudad para el envío.'
+              : 'La IA no pedirá dirección: le dirá al cliente que recoge en la dirección de la tienda.'}
+          </p>
+        </div>
+        {form.orderShipping && (
+          <input value={form.orderShippingZone} onChange={e => setf('orderShippingZone', e.target.value)}
+            placeholder="Ciudades o zonas de envío (vacío = a todo el país)" className={ic} />
+        )}
+        <div className="flex items-center gap-3">
+          <Toggle value={form.orderRequiresDeposit} onChange={() => setf('orderRequiresDeposit', !form.orderRequiresDeposit)} />
+          <span className="text-sm text-txt-primary">Requiere anticipo para despachar el pedido</span>
+        </div>
+        {form.orderRequiresDeposit && (
+          <input value={form.orderDepositAmount} onChange={e => setf('orderDepositAmount', e.target.value)}
+            placeholder="Monto del anticipo (ej: 50000 o 50%)" className={ic} />
+        )}
+        <div>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Política de cambios, devoluciones y cancelación de pedidos</label>
+          <textarea value={form.orderPolicy} onChange={e => setf('orderPolicy', e.target.value)}
+            placeholder="Cambios dentro de los 5 días siguientes a la entrega, con el producto sin abrir..." rows={2} className={ta} />
+          <p className="text-xs text-txt-tertiary mt-1">Si lo dejas vacío, la IA dirá que un asesor lo revisa y no inventará plazos.</p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.orderRequiresCedula} onChange={() => setf('orderRequiresCedula', !form.orderRequiresCedula)} />
+            <span className="text-sm text-txt-primary">Pedir cédula para la guía de envío</span>
+          </div>
+        </div>
+      </div>
+
+      <GroupTitle
+        title="Servicios" sub="Cómo agenda la IA las citas"
+        empty={services.length === 0 ? 'Aún no tienes servicios cargados; esto se aplicará cuando los tengas.' : undefined}
+      />
 
       {/* Card 4 — Políticas */}
       <div className={card}>
         <CardHeader
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}
-          title="Políticas del negocio" sub="Reglas de cancelación, anticipación y servicios extra"
+          title="Políticas de citas" sub="Anticipación, anticipo, cancelación y atención a domicilio"
         />
         <div>
           <label className="block text-xs font-medium text-txt-secondary mb-1">Anticipación mínima para agendar</label>
@@ -412,15 +503,23 @@ function NegocioSection({ storeId }: { storeId: string }) {
             Si nadie confirma la cita en 15 minutos, se confirma sola y al cliente le llega la confirmación por WhatsApp. Apágalo si prefieres confirmar cada cita manualmente.
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          <Toggle value={form.requiresDeposit} onChange={() => setf('requiresDeposit', !form.requiresDeposit)} />
+          <span className="text-sm text-txt-primary">Requiere anticipo para confirmar la cita</span>
+        </div>
+        {form.requiresDeposit && (
+          <input value={form.depositAmount} onChange={e => setf('depositAmount', e.target.value)}
+            placeholder="Monto del anticipo (ej: 50000 o 30%)" className={ic} />
+        )}
         <div>
-          <label className="block text-xs font-medium text-txt-secondary mb-1">Política de cancelación</label>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Política de cancelación de citas</label>
           <textarea value={form.cancellationPolicy} onChange={e => setf('cancellationPolicy', e.target.value)}
             placeholder="Cancela con al menos 2 horas de anticipación..." rows={2} className={ta} />
         </div>
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <Toggle value={form.hasDelivery} onChange={() => setf('hasDelivery', !form.hasDelivery)} />
-            <span className="text-sm text-txt-primary">Servicio a domicilio disponible</span>
+            <span className="text-sm text-txt-primary">Atención a domicilio (el profesional va a la casa del cliente)</span>
           </div>
           {form.hasDelivery && (
             <input value={form.deliveryZone} onChange={e => setf('deliveryZone', e.target.value)}
@@ -437,12 +536,12 @@ function NegocioSection({ storeId }: { storeId: string }) {
       <div className={card}>
         <CardHeader
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
-          title="Datos del cliente" sub="¿Qué información debe pedir la IA al agendar una cita?"
+          title="Datos del cliente al agendar" sub="¿Qué información debe pedir la IA al agendar una cita?"
         />
         <p className="text-xs text-txt-secondary -mt-1">
-          Actívalo solo si tu negocio realmente necesita ese dato (ej: visitas a domicilio, instalaciones,
-          entregas o trámites). Si tus clientes asisten a tu local, déjalo apagado — así la IA nunca
-          lo pedirá ni lo guardará por error.
+          Actívalo solo si tu negocio realmente necesita ese dato para las citas (ej: visitas a domicilio,
+          instalaciones o trámites). Si tus clientes asisten a tu local, déjalo apagado — así la IA nunca
+          lo pedirá ni lo guardará por error. Los datos de los pedidos se configuran en Productos.
         </p>
         <div className="space-y-3">
           <div className="flex items-center gap-3">
@@ -552,18 +651,6 @@ function NegocioSection({ storeId }: { storeId: string }) {
             </button>
           </div>
         )}
-      </div>
-
-      {/* Card 6 — Horarios de atención */}
-      <div className={card}>
-        <CardHeader
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
-          title="Horarios de atención" sub="El calendario y la IA respetarán estos horarios"
-        />
-        <BusinessHoursEditor
-          hours={form.businessHours}
-          onChange={h => setf('businessHours', h)}
-        />
       </div>
 
       {error && <p className="text-sm text-red-400 px-1">{error}</p>}
