@@ -39,8 +39,9 @@ const DownloadIcon = () => (
 );
 
 // ── Manual Order Modal ────────────────────────────────────────────────────────
-interface ProductOption { productId: string; name: string; salePrice: number; stock: number | null; }
-interface ManualItem { productId: string; description: string; quantity: number; unitPrice: number; }
+interface VariantOption { variantId: string; name: string; salePrice: number | null; stock: number; }
+interface ProductOption { productId: string; name: string; salePrice: number; stock: number | null; variants?: VariantOption[]; }
+interface ManualItem { productId: string; variantId: string; description: string; quantity: number; unitPrice: number; }
 interface CustomerOption { customerId: string; name: string | null; phone: string; }
 
 function ManualOrderModal({ storeId, onClose, onCreated }: {
@@ -54,7 +55,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const [customerMode, setCustMode]     = useState<'search' | 'new'>('search');
   const [newPhone, setNewPhone]         = useState('');
   const [newName, setNewName]           = useState('');
-  const [items, setItems]               = useState<ManualItem[]>([{ productId: '', description: '', quantity: 1, unitPrice: 0 }]);
+  const [items, setItems]               = useState<ManualItem[]>([{ productId: '', variantId: '', description: '', quantity: 1, unitPrice: 0 }]);
   const [payMethod, setPayMethod]       = useState('CASH');
   const [discountPct, setDiscountPct]   = useState(0);
   const [notes, setNotes]               = useState('');
@@ -79,7 +80,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const discountAmt   = Math.round(subtotal * (discountPct / 100) * 100) / 100;
   const total         = subtotal - discountAmt;
 
-  const addItem    = () => setItems((p) => [...p, { productId: '', description: '', quantity: 1, unitPrice: 0 }]);
+  const addItem    = () => setItems((p) => [...p, { productId: '', variantId: '', description: '', quantity: 1, unitPrice: 0 }]);
   const removeItem = (i: number) => setItems((p) => p.filter((_, idx) => idx !== i));
   const updateItem = (i: number, field: keyof ManualItem, val: string | number) =>
     setItems((p) => p.map((it, idx) => idx === i ? { ...it, [field]: val } : it));
@@ -87,22 +88,36 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const selectProduct = (idx: number, productId: string) => {
     if (!productId || productId === 'custom') {
       setItems(p => p.map((it, i) => i === idx
-        ? { ...it, productId: productId === 'custom' ? 'custom' : '', description: '', unitPrice: 0 }
+        ? { ...it, productId: productId === 'custom' ? 'custom' : '', variantId: '', description: '', unitPrice: 0 }
         : it));
     } else {
       const prod = products.find(p => p.productId === productId);
       if (prod) {
         setItems(p => p.map((it, i) => i === idx
-          ? { ...it, productId: prod.productId, description: prod.name, unitPrice: prod.salePrice }
+          ? { ...it, productId: prod.productId, variantId: '', description: prod.name, unitPrice: prod.salePrice }
           : it));
       }
     }
+  };
+
+  // Con variantes el stock vive en cada una: hay que elegir cuál se vende.
+  const variantsOf = (productId: string) => products.find(p => p.productId === productId)?.variants ?? [];
+
+  const selectVariant = (idx: number, variantId: string) => {
+    setItems(p => p.map((it, i) => {
+      if (i !== idx) return it;
+      const prod = products.find(pr => pr.productId === it.productId);
+      const v    = prod?.variants?.find(x => x.variantId === variantId);
+      if (!prod || !v) return { ...it, variantId: '', description: prod?.name ?? it.description };
+      return { ...it, variantId: v.variantId, description: `${prod.name} - ${v.name}`, unitPrice: Number(v.salePrice ?? prod.salePrice) };
+    }));
   };
 
   const submit = async () => {
     if (customerMode === 'search' && !selectedCustomer) return setError('Selecciona un cliente.');
     if (customerMode === 'new' && !newPhone.trim()) return setError('El teléfono del cliente es obligatorio.');
     if (items.some((i) => !i.productId && !i.description.trim())) return setError('Selecciona un producto o escribe una descripción para cada ítem.');
+    if (items.some((i) => variantsOf(i.productId).length > 0 && !i.variantId)) return setError('Elige la opción (sabor, talla...) de cada producto.');
     if (items.some((i) => i.unitPrice <= 0)) return setError('El precio de cada ítem debe ser mayor a 0.');
     setError(''); setSubmitting(true);
     try {
@@ -115,6 +130,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
         customerId,
         items:               items.map((i) => ({
           productId:   (i.productId && i.productId !== 'custom') ? i.productId : undefined,
+          variantId:   i.variantId || undefined,
           description: i.description.trim() || undefined,
           quantity:    i.quantity,
           unitPrice:   i.unitPrice,
@@ -238,7 +254,9 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                       {products.map(p => (
                         <option key={p.productId} value={p.productId}>
                           {p.name}
-                          {p.stock !== null ? ` (stock: ${p.stock})` : ''}
+                          {p.variants?.length
+                            ? ` (${p.variants.length} opciones)`
+                            : p.stock !== null ? ` (stock: ${p.stock})` : ''}
                         </option>
                       ))}
                       <option value="custom">✏️ Ítem personalizado</option>
@@ -259,6 +277,21 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                       placeholder="Descripción del ítem..."
                       className="w-full px-3 py-2 text-sm border border-border-default bg-surface text-txt-primary placeholder:text-txt-tertiary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
                     />
+                  )}
+
+                  {variantsOf(item.productId).length > 0 && (
+                    <select
+                      value={item.variantId}
+                      onChange={(e) => selectVariant(i, e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-border-default bg-surface text-txt-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-lime/30"
+                    >
+                      <option value="">Elige una opción...</option>
+                      {variantsOf(item.productId).map(v => (
+                        <option key={v.variantId} value={v.variantId} disabled={v.stock <= 0}>
+                          {v.name} (stock: {v.stock})
+                        </option>
+                      ))}
+                    </select>
                   )}
 
                   {item.productId && item.productId !== 'custom' && item.description && (
