@@ -150,9 +150,11 @@ export default function Campaigns() {
   const handleSend = async (campaign: Campaign) => {
     setSending(campaign.campaignId);
     try {
-      await sendCampaign(campaign.campaignId);
+      // El envío sale en segundo plano: el servidor responde 'sending' ("Enviando")
+      // y la campaña pasa a 'sent' cuando termina.
+      const res = await sendCampaign(campaign.campaignId);
       setCampaigns((prev) =>
-        prev.map((c) => c.campaignId === campaign.campaignId ? { ...c, status: 'sent' } : c)
+        prev.map((c) => c.campaignId === campaign.campaignId ? { ...c, status: res.data?.status ?? 'sending' } : c)
       );
     } catch {
       // mantener estado actual
