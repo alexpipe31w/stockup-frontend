@@ -396,8 +396,10 @@ export const getWhatsAppQR = (storeId: string) =>
 export const getWhatsAppStatus = (storeId: string) =>
   api.get(`/whatsapp/status/${storeId}`);
 
-export const disconnectWhatsApp = (storeId: string) =>
-  api.delete(`/whatsapp/disconnect/${storeId}`);
+// Por defecto cierra SIN desvincular el teléfono; logout: true lo desvincula (hay que
+// escanear un QR nuevo para volver).
+export const disconnectWhatsApp = (storeId: string, opts: { logout?: boolean } = {}) =>
+  api.delete(`/whatsapp/disconnect/${storeId}`, { params: opts.logout ? { logout: 'true' } : undefined });
 
 // ── Store Theme ───────────────────────────────────────────────────────────
 export const getStoreTheme = (storeId: string) =>

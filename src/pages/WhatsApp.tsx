@@ -10,11 +10,17 @@ export default function WhatsAppPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [pausedReason, setPausedReason] = useState<string | null>(null);
+  const [unlinkHint, setUnlinkHint] = useState<string | null>(null);
 
   const checkStatus = useCallback(async () => {
     try {
       const res = await getWhatsAppStatus(storeId);
       setConnected(res.data.connected);
+      setStatus(res.data.status ?? null);
+      setPausedReason(res.data.pausedReason ?? null);
       if (res.data.connected) setQr(null);
     } catch {}
   }, [storeId]);
@@ -48,6 +54,7 @@ export default function WhatsAppPage() {
 
   const handleConnect = async () => {
     setConnecting(true);
+    setUnlinkHint(null);
     try {
       await connectWhatsApp(storeId);
       await fetchQR();
@@ -56,10 +63,13 @@ export default function WhatsAppPage() {
     }
   };
 
-  const handleDisconnect = async () => {
+  // Solo tras confirmar: desvincula el teléfono (el único botón que lo hace).
+  const handleUnlink = async () => {
+    setConfirmUnlink(false);
     setDisconnecting(true);
     try {
-      await disconnectWhatsApp(storeId);
+      const res = await disconnectWhatsApp(storeId, { logout: true });
+      setUnlinkHint(res.data?.hint ?? null);
       setConnected(false);
       setQr(null);
       // Esperar que el backend limpie la sesión antes de re-verificar
@@ -73,7 +83,8 @@ export default function WhatsAppPage() {
   const handleCancel = async () => {
     setDisconnecting(true);
     try {
-      // Limpia QR/socket/reintentos en el backend para que el QR no reaparezca con el polling
+      // Cierra el intento sin desvincular: limpia QR/socket/reintentos en el backend para que
+      // el QR no reaparezca con el polling
       await disconnectWhatsApp(storeId);
     } catch {} finally {
       setQr(null);
@@ -84,6 +95,7 @@ export default function WhatsAppPage() {
   const handleReconnect = async () => {
     setDisconnecting(true);
     try {
+      // Cierra y vuelve a abrir con la misma vinculación: no hace falta escanear otro QR
       await disconnectWhatsApp(storeId);
       setConnected(false);
       setQr(null);
@@ -144,11 +156,11 @@ export default function WhatsAppPage() {
                 {disconnecting ? 'Procesando...' : '🔄 Reconectar'}
               </button>
               <button
-                onClick={handleDisconnect}
+                onClick={() => setConfirmUnlink(true)}
                 disabled={disconnecting}
                 className="px-5 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 transition disabled:opacity-50"
               >
-                {disconnecting ? 'Desconectando...' : 'Desconectar'}
+                {disconnecting ? 'Desvinculando...' : 'Desvincular este teléfono'}
               </button>
             </div>
           </>
@@ -156,6 +168,16 @@ export default function WhatsAppPage() {
           <>
             {!qr ? (
               <>
+                {status === 'paused_risk' && (
+                  <p className="text-sm text-orange-600 bg-orange-50 rounded-xl px-4 py-3 text-center">
+                    Conexión en pausa para proteger tu número{pausedReason ? `: ${pausedReason}` : ''}. Revisa el teléfono y pulsa Reconectar cuando esté bien.
+                  </p>
+                )}
+                {unlinkHint && (
+                  <p className="text-sm text-txt-secondary bg-surface-elevated rounded-xl px-4 py-3 text-center">
+                    {unlinkHint}
+                  </p>
+                )}
                 <div className="flex flex-col items-center gap-2 text-center">
                   <div className="w-20 h-20 rounded-full bg-surface-elevated flex items-center justify-center">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
@@ -179,7 +201,7 @@ export default function WhatsAppPage() {
                       </svg>
                       Generando QR...
                     </span>
-                  ) : 'Conectar WhatsApp'}
+                  ) : status === 'paused_risk' ? 'Reconectar' : 'Conectar WhatsApp'}
                 </button>
               </>
             ) : (
@@ -212,6 +234,33 @@ export default function WhatsAppPage() {
           </>
         )}
       </div>
+
+      {/* Confirmar desvincular */}
+      {confirmUnlink && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">Desvincular este teléfono</h3>
+            <p className="text-sm text-txt-secondary mb-5">
+              Vas a desvincular este teléfono. El bot dejará de responder y tendrás que escanear un QR nuevo para volver a conectarlo.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmUnlink(false)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUnlink}
+                disabled={disconnecting}
+                className="flex-1 py-2 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition"
+              >
+                Desvincular
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
