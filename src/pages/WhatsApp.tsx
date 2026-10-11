@@ -168,6 +168,11 @@ export default function WhatsAppPage() {
           <>
             {!qr ? (
               <>
+                {status === 'blocked' && (
+                  <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 text-center">
+                    {pausedReason ?? 'Tu suscripción está vencida. Renueva el plan para reactivar WhatsApp.'}
+                  </p>
+                )}
                 {status === 'paused_risk' && (
                   <p className="text-sm text-orange-600 bg-orange-50 rounded-xl px-4 py-3 text-center">
                     Conexión en pausa para proteger tu número{pausedReason ? `: ${pausedReason}` : ''}. Revisa el teléfono y pulsa Reconectar cuando esté bien.
@@ -188,21 +193,23 @@ export default function WhatsAppPage() {
                   <p className="text-txt-tertiary text-sm">Haz clic en conectar para generar el código QR</p>
                 </div>
 
-                <button
-                  onClick={handleConnect}
-                  disabled={connecting}
-                  className="px-6 py-3 rounded-xl text-[#0A0A0F] text-sm font-semibold transition disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
-                >
-                  {connecting ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                        <path d="M21 12a9 9 0 11-6.219-8.56"/>
-                      </svg>
-                      Generando QR...
-                    </span>
-                  ) : status === 'paused_risk' ? 'Reconectar' : 'Conectar WhatsApp'}
-                </button>
+                {status !== 'blocked' && (
+                  <button
+                    onClick={handleConnect}
+                    disabled={connecting}
+                    className="px-6 py-3 rounded-xl text-[#0A0A0F] text-sm font-semibold transition disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
+                  >
+                    {connecting ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                          <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                        </svg>
+                        Generando QR...
+                      </span>
+                    ) : status === 'paused_risk' ? 'Reconectar' : 'Conectar WhatsApp'}
+                  </button>
+                )}
               </>
             ) : (
               <>
