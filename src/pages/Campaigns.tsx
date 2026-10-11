@@ -191,7 +191,8 @@ export default function Campaigns() {
       );
       // Sale poco a poco: tope diario por número y solo en horario permitido.
       const { recipients, estimatedDays, startsAt } = res.data ?? {};
-      if (typeof recipients === 'number') {
+      // Sin estimación (el servidor no pudo calcularla) no se inventa una cifra.
+      if (typeof recipients === 'number' && typeof estimatedDays === 'number') {
         const start = startsAt && new Date(startsAt).getTime() > Date.now() + 60_000 ? ` Empieza el ${fmtWhen(startsAt)}` : '';
         const plural = estimatedDays === 1 ? 'día hábil' : 'días hábiles';
         setNotice({
