@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getCampaigns, createCampaign, sendCampaign } from '../services/api';
+import { getCampaigns, createCampaign, sendCampaign, resumeCampaigns, getWhatsAppHealth, type WhatsAppHealth } from '../services/api';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PlusIcon = () => (
@@ -37,6 +37,15 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   sending:   { label: 'Enviando',  cls: 'bg-yellow-100 text-yellow-700' },
   sent:      { label: 'Enviada',   cls: 'bg-green-100 text-green-700' },
   failed:    { label: 'Fallida',   cls: 'bg-red-100 text-red-600' },
+};
+
+const fmtWhen = (d: string) =>
+  new Date(d).toLocaleString('es-CO', { weekday: 'long', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+/** Mensaje del servidor (409 pausa, 400 sin destinatarios…) o uno genérico. */
+const errorMessage = (err: unknown, fallback: string) => {
+  const msg = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  return typeof msg === 'string' ? msg : fallback;
 };
 
 const fmtDate = (d: string) =>
@@ -139,6 +148,30 @@ export default function Campaigns() {
   const [showModal, setShowModal] = useState(false);
   const [sending, setSending]     = useState<string | null>(null);
   const [confirmSend, setConfirmSend] = useState<Campaign | null>(null);
+  const [health, setHealth]       = useState<WhatsAppHealth | null>(null);
+  const [notice, setNotice]       = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [confirmResume, setConfirmResume] = useState(false);
+  const [resuming, setResuming]   = useState(false);
+
+  const loadHealth = useCallback(() => {
+    getWhatsAppHealth(storeId).then((r) => setHealth(r.data)).catch(() => {});
+  }, [storeId]);
+
+  useEffect(() => { loadHealth(); }, [loadHealth]);
+
+  const handleResume = async () => {
+    setResuming(true);
+    try {
+      await resumeCampaigns();
+      setNotice({ kind: 'ok', text: 'Campañas reanudadas. Lo pendiente sigue saliendo con el ritmo y el tope diario.' });
+    } catch (err) {
+      setNotice({ kind: 'error', text: errorMessage(err, 'No se pudieron reanudar las campañas') });
+    } finally {
+      setResuming(false);
+      setConfirmResume(false);
+      loadHealth();
+    }
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -156,8 +189,20 @@ export default function Campaigns() {
       setCampaigns((prev) =>
         prev.map((c) => c.campaignId === campaign.campaignId ? { ...c, status: res.data?.status ?? 'sending' } : c)
       );
-    } catch {
-      // mantener estado actual
+      // Sale poco a poco: tope diario por número y solo en horario permitido.
+      const { recipients, estimatedDays, startsAt } = res.data ?? {};
+      // Sin estimación (el servidor no pudo calcularla) no se inventa una cifra.
+      if (typeof recipients === 'number' && typeof estimatedDays === 'number') {
+        const start = startsAt && new Date(startsAt).getTime() > Date.now() + 60_000 ? ` Empieza el ${fmtWhen(startsAt)}` : '';
+        const plural = estimatedDays === 1 ? 'día hábil' : 'días hábiles';
+        setNotice({
+          kind: 'ok',
+          text: `Enviando a ${recipients} cliente${recipients === 1 ? '' : 's'}. Saldrá en ~${estimatedDays} ${plural}.${start}`,
+        });
+      }
+    } catch (err) {
+      setNotice({ kind: 'error', text: errorMessage(err, 'No se pudo enviar la campaña') });
+      loadHealth();
     } finally {
       setSending(null);
       setConfirmSend(null);
@@ -188,6 +233,30 @@ export default function Campaigns() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-6">
+        {health?.campaignsPaused && (
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between text-sm text-orange-700 bg-orange-50 rounded-xl px-4 py-3">
+            <span>
+              Campañas en pausa para proteger tu número{health.campaignsPaused.reason ? `: ${health.campaignsPaused.reason}` : ''}.
+              Revisa que WhatsApp esté bien antes de reanudar.
+            </span>
+            <button
+              onClick={() => setConfirmResume(true)}
+              className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium border border-orange-300 hover:bg-orange-100 transition"
+            >
+              Reanudar campañas
+            </button>
+          </div>
+        )}
+        {notice && (
+          <div className={`mb-4 flex items-start justify-between gap-3 text-sm rounded-xl px-4 py-3 ${
+            notice.kind === 'ok' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'
+          }`}>
+            <span>{notice.text}</span>
+            <button onClick={() => setNotice(null)} aria-label="Cerrar aviso" className="flex-shrink-0 opacity-70 hover:opacity-100">
+              <CloseIcon />
+            </button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <svg className="animate-spin text-blue-600" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -276,6 +345,10 @@ export default function Campaigns() {
             <p className="text-sm text-txt-secondary mb-1">
               Vas a enviar <span className="font-semibold text-txt-primary">"{confirmSend.name}"</span> a todos tus clientes por WhatsApp.
             </p>
+            <p className="text-xs text-txt-tertiary mb-3">
+              Solo a quienes ya te escribieron. Para proteger tu número sale poco a poco: con un tope diario
+              {health ? ` (hoy ${health.campaignDailyCap})` : ''} y en horario permitido (lunes a viernes 7:00–19:00, sábados 8:00–15:00, sin festivos).
+            </p>
             <p className="text-xs text-orange-600 bg-orange-50 rounded-xl px-3 py-2 mb-5">
               Esta acción no se puede deshacer. Asegúrate que el mensaje esté correcto.
             </p>
@@ -293,6 +366,34 @@ export default function Campaigns() {
                 style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
               >
                 {sending ? 'Enviando...' : 'Confirmar envío'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm resume */}
+      {confirmResume && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
+          <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">Reanudar campañas</h3>
+            <p className="text-sm text-txt-secondary mb-5">
+              Se pausaron porque algo fue mal con WhatsApp. Reanúdalas solo si el número está conectado y funcionando con normalidad.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmResume(false)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleResume}
+                disabled={resuming}
+                className="flex-1 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50 transition"
+                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
+              >
+                {resuming ? 'Reanudando...' : 'Reanudar'}
               </button>
             </div>
           </div>

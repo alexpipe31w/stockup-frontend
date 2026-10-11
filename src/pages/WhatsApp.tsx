@@ -1,7 +1,51 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp } from '../services/api';
+import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp, getWhatsAppHealth, type WhatsAppHealth } from '../services/api';
 import { QRCodeCanvas } from 'qrcode.react';
+
+const fmtWindow = (iso: string) =>
+  new Date(iso).toLocaleString('es-CO', { weekday: 'long', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+function HealthPanel({ health }: { health: WhatsAppHealth }) {
+  const capPct = Math.min(100, Math.round((health.campaignSentToday / health.campaignDailyCap) * 100));
+  const windowOpen = health.nextCampaignWindow !== null && new Date(health.nextCampaignWindow).getTime() <= Date.now() + 60_000;
+  const stats = [
+    { label: 'Mensajes enviados hoy', value: health.sentToday },
+    { label: 'Reconexiones (24 h)', value: health.reconnects24h, warn: health.reconnects24h >= 3 },
+    { label: 'Antigüedad del número', value: `${health.linkedDays} ${health.linkedDays === 1 ? 'día' : 'días'}` },
+  ];
+  return (
+    <div className="mt-6 bg-surface rounded-2xl border border-border-subtle shadow-sm p-6">
+      <h2 className="font-semibold text-txt-primary mb-4">Salud del número</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        {stats.map((s) => (
+          <div key={s.label} className="bg-surface-elevated rounded-xl px-4 py-3">
+            <p className={`text-xl font-bold ${s.warn ? 'text-orange-500' : 'text-txt-primary'}`}>{s.value}</p>
+            <p className="text-xs text-txt-tertiary mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between text-sm mb-1.5">
+        <span className="text-txt-secondary">Campañas hoy</span>
+        <span className="font-semibold text-txt-primary tabular-nums">{health.campaignSentToday} / {health.campaignDailyCap}</span>
+      </div>
+      <div className="h-2 rounded-full bg-surface-overlay overflow-hidden">
+        <div className={`h-full rounded-full ${capPct >= 100 ? 'bg-orange-400' : 'bg-green-500'}`} style={{ width: `${capPct}%` }} />
+      </div>
+      <p className="text-xs text-txt-tertiary mt-2">
+        El tope diario de campañas crece con la antigüedad del número y baja si WhatsApp da avisos. Las respuestas a tus clientes nunca tienen tope.
+        {!windowOpen && health.nextCampaignWindow && ` Fuera de horario de campañas: vuelven el ${fmtWindow(health.nextCampaignWindow)}`}
+      </p>
+
+      {health.campaignsPaused && (
+        <p className="text-sm text-orange-600 bg-orange-50 rounded-xl px-4 py-3 mt-4">
+          Campañas en pausa para proteger tu número{health.campaignsPaused.reason ? `: ${health.campaignsPaused.reason}` : ''}. Puedes reanudarlas desde Campañas.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function WhatsAppPage() {
   const { storeId } = useAuth();
@@ -14,6 +58,15 @@ export default function WhatsAppPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [pausedReason, setPausedReason] = useState<string | null>(null);
   const [unlinkHint, setUnlinkHint] = useState<string | null>(null);
+  const [health, setHealth] = useState<WhatsAppHealth | null>(null);
+
+  // Salud del número: cada 30 s basta (cambia despacio; el QR sí va cada 3 s).
+  useEffect(() => {
+    const load = () => getWhatsAppHealth(storeId).then((r) => setHealth(r.data)).catch(() => {});
+    load();
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, [storeId]);
 
   const checkStatus = useCallback(async () => {
     try {
@@ -241,6 +294,8 @@ export default function WhatsAppPage() {
           </>
         )}
       </div>
+
+      {health && <HealthPanel health={health} />}
 
       {/* Confirmar desvincular */}
       {confirmUnlink && (
