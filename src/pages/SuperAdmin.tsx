@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getSuperAdminDashboard,
   getSuperAdminStores,
+  getSuperAdminWaGateways,
   getSuperAdminUsers,
   getSuperAdminAudit,
   toggleSuperAdminStore,
@@ -88,6 +89,15 @@ function isTokenValid(token: string | null): boolean {
   return payload.exp * 1000 > Date.now() && payload.role === 'superadmin';
 }
 
+interface WaGatewayRow {
+  ownerId: string;
+  version: string | null;
+  heartbeatAt: string;
+  ageSeconds: number;
+  sessions: number;
+  rssMb: number;
+}
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', {
     day: '2-digit', month: 'short', year: 'numeric',
@@ -119,6 +129,7 @@ export default function SuperAdmin() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [gateways, setGateways] = useState<WaGatewayRow[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [audit, setAudit] = useState<AuditLog[]>([]);
@@ -145,8 +156,13 @@ export default function SuperAdmin() {
     setError('');
     try {
       if (t === 'dashboard') {
-        const res = await getSuperAdminDashboard();
+        const [res, gw] = await Promise.all([
+          getSuperAdminDashboard(),
+          // El gateway no debe tumbar el resumen si su endpoint falla.
+          getSuperAdminWaGateways().catch(() => ({ data: [] as WaGatewayRow[] })),
+        ]);
         setStats(res.data);
+        setGateways(gw.data);
       } else if (t === 'stores') {
         const res = await getSuperAdminStores();
         setStores(res.data);
@@ -328,6 +344,43 @@ export default function SuperAdmin() {
                     </div>
                   ))}
                 </div>
+
+                <h3 className="text-lg font-semibold text-white mt-8 mb-4">Gateway de WhatsApp</h3>
+                {gateways.length === 0 ? (
+                  <p className="text-txt-tertiary text-sm">Ningún gateway ha dado señales de vida.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {gateways.map(g => {
+                      // Late cada ~10 s: más de 60 s sin latido = caído o colgado.
+                      const alive = g.ageSeconds <= 60;
+                      return (
+                        <div key={g.ownerId} className="bg-slate-800 rounded-2xl p-5 border border-slate-700">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-white font-medium text-sm truncate">{g.ownerId}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${alive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                              {alive ? 'Vivo' : 'Sin latido'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div>
+                              <div className="text-white font-semibold tabular-nums">{g.ageSeconds} s</div>
+                              <div className="text-txt-tertiary text-xs">Último latido</div>
+                            </div>
+                            <div>
+                              <div className="text-white font-semibold tabular-nums">{g.sessions}</div>
+                              <div className="text-txt-tertiary text-xs">Sesiones</div>
+                            </div>
+                            <div>
+                              <div className="text-white font-semibold tabular-nums">{g.rssMb} MB</div>
+                              <div className="text-txt-tertiary text-xs">RAM</div>
+                            </div>
+                          </div>
+                          {g.version && <div className="text-txt-tertiary text-xs mt-3">Versión {g.version}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 

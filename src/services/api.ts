@@ -280,6 +280,10 @@ export const createCampaign = (data: {
 export const sendCampaign = (id: string) =>
   api.post(`/campaigns/${id}/send`);
 
+// Reanuda las campañas que los frenos pausaron (solo admin de la tienda).
+export const resumeCampaigns = () =>
+  api.post('/campaigns/resume');
+
 // ── Appointments ──────────────────────────────────────────────────────────
 export const getAppointments = (params?: {
   status?: string;
@@ -396,6 +400,22 @@ export const getWhatsAppQR = (storeId: string) =>
 export const getWhatsAppStatus = (storeId: string) =>
   api.get(`/whatsapp/status/${storeId}`);
 
+export interface WhatsAppHealth {
+  status: string;
+  pausedReason: string | null;
+  reconnects24h: number;
+  linkedDays: number;
+  sentToday: number;
+  campaignSentToday: number;
+  campaignDailyCap: number;
+  campaignsPaused: { at: string; reason: string | null } | null;
+  nextCampaignWindow: string | null;
+}
+
+// Salud del número: reconexiones, envíos del día y tope de campañas.
+export const getWhatsAppHealth = (storeId: string) =>
+  api.get<WhatsAppHealth>(`/whatsapp/health/${storeId}`);
+
 // Por defecto cierra SIN desvincular el teléfono; logout: true lo desvincula (hay que
 // escanear un QR nuevo para volver).
 export const disconnectWhatsApp = (storeId: string, opts: { logout?: boolean } = {}) =>
@@ -464,6 +484,9 @@ export const getSuperAdminDashboard = () =>
 
 export const getSuperAdminStores = () =>
   api.get('/superadmin/stores', { headers: saHeaders() });
+
+export const getSuperAdminWaGateways = () =>
+  api.get('/superadmin/wa-gateways', { headers: saHeaders() });
 
 export const toggleSuperAdminStore = (storeId: string) =>
   api.patch(`/superadmin/stores/${storeId}/toggle`, {}, { headers: saHeaders() });
