@@ -237,7 +237,6 @@ export default function PublicStore() {
     return (
       <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-5xl mb-4">🔍</p>
           <h1 className="text-xl font-bold text-white mb-2">Negocio no encontrado</h1>
           <p className="text-sm text-gray-400">Verifica que el link sea correcto.</p>
         </div>
@@ -248,7 +247,6 @@ export default function PublicStore() {
     return (
       <div className="min-h-screen bg-[#0A0A0F] text-white flex items-center justify-center px-4">
         <div className="bg-[#111117] rounded-2xl p-8 border border-white/10 max-w-md w-full text-center">
-          <p className="text-5xl mb-4">🎉</p>
           <h1 className="text-xl font-bold mb-2">¡Pedido registrado!</h1>
           <p className="text-sm text-gray-400">
             El negocio te contactará por WhatsApp para coordinar la entrega y el pago.
@@ -340,7 +338,6 @@ export default function PublicStore() {
         {/* Productos */}
         {data.products.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-4xl mb-3">📦</p>
             <p className="text-sm text-gray-500">No hay productos disponibles por ahora</p>
           </div>
         ) : (
@@ -495,7 +492,7 @@ function OptionPicker({ product, onClose, onAdd }: {
             <h2 className="text-lg font-bold leading-tight">{product.name}</h2>
             <p className="text-sm text-[#D4FF00] font-semibold">{fmtCOP(Number(product.salePrice))}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar" className="w-8 h-8 rounded-lg text-gray-400 hover:bg-white/5">✕</button>
+          <button type="button" onClick={onClose} aria-label="Cerrar" className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-white/5"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
         {groups.map(g => {
