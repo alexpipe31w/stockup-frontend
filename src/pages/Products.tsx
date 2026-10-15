@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getProducts, createProduct, updateProduct, deleteProduct,
+  getOptionGroups, assignProductGroups, setProductAvailability,
   addVariant, updateVariant, deleteVariant,
   getCategories, createCategory,
 } from '../services/api';
+import type { OptionGroupDto, ProductKind } from '../services/api';
+import { useStoreFlags } from '../hooks/useStoreFlags';
 import { ImageUploadField } from '../components/ImageUploadField';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
@@ -70,6 +73,11 @@ interface Product {
   categoryId:       string | null;
   category:         Category | null;
   variants:         Variant[];
+  // Módulo restaurante
+  kind?:            ProductKind;
+  available?:       boolean;
+  prepMinutes?:     number | null;
+  optionGroups?:    { groupId: string; sortOrder: number }[];
 }
 
 interface VariantForm {
@@ -103,6 +111,9 @@ interface FormState {
   weight:           string;
   shippingStandard: string;
   shippingExpress:  string;
+  kind:             ProductKind;
+  available:        boolean;
+  prepMinutes:      string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -110,7 +121,17 @@ const EMPTY_FORM: FormState = {
   salePrice: '', costPrice: '', stock: '0',
   hasVariants: false, imageUrl: '',
   hasShipping: false, weight: '', shippingStandard: '', shippingExpress: '',
+  kind: 'stock', available: true, prepMinutes: '',
 };
+
+/** El mensaje del servidor tal cual (class-validator lo manda como lista). */
+function serverMessage(err: any, fallback: string): string {
+  const m = err?.response?.data?.message;
+  if (Array.isArray(m)) return m.join('. ');
+  return typeof m === 'string' && m ? m : fallback;
+}
+
+const isPrepared = (p: Product) => p.kind === 'prepared';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 const fmt = (n: string | number) =>
@@ -131,11 +152,13 @@ function ProfitBadge({ sale, cost }: { sale: string | number; cost: string | num
 }
 
 // ── Product Card ──────────────────────────────────────────────────────────────
-function ProductCard({ product, onEdit, onDelete }: {
+function ProductCard({ product, onEdit, onDelete, onToggleAvailable }: {
   product:  Product;
   onEdit:   (p: Product) => void;
   onDelete: (p: Product) => void;
+  onToggleAvailable?: (p: Product) => void;
 }) {
+  const prepared       = isPrepared(product);
   const activeVariants = product.variants?.filter(v => v.isActive) ?? [];
   const hasVars        = product.hasVariants && activeVariants.length > 0;
   const minPrice       = hasVars ? Math.min(...activeVariants.map(v => Number(v.salePrice ?? product.salePrice))) : Number(product.salePrice);
@@ -191,13 +214,33 @@ function ProductCard({ product, onEdit, onDelete }: {
           {!hasVars && profitM !== null && (
             <ProfitBadge sale={product.salePrice} cost={product.costPrice} />
           )}
-          <div className="ml-auto text-right">
-            <p className="text-xs text-txt-tertiary">Stock</p>
-            <p className={`font-semibold text-sm ${totalStock === 0 ? 'text-red-500' : totalStock < 5 ? 'text-orange-500' : 'text-green-600'}`}>
-              {totalStock}
-            </p>
-          </div>
+          {prepared ? (
+            <div className="ml-auto text-right">
+              <p className="text-xs text-txt-tertiary">Preparado</p>
+              <p className="text-sm text-txt-secondary">{product.prepMinutes ? `${product.prepMinutes} min` : 'Sin inventario'}</p>
+            </div>
+          ) : (
+            <div className="ml-auto text-right">
+              <p className="text-xs text-txt-tertiary">Stock</p>
+              <p className={`font-semibold text-sm ${totalStock === 0 ? 'text-red-500' : totalStock < 5 ? 'text-orange-500' : 'text-green-600'}`}>
+                {totalStock}
+              </p>
+            </div>
+          )}
         </div>
+
+        {prepared && onToggleAvailable && (
+          <div className="flex items-center justify-between gap-2 text-xs text-txt-secondary">
+            <span className={product.available === false ? 'font-semibold text-red-500' : ''}>
+              {product.available === false ? 'Agotado hoy' : 'Disponible'}
+            </span>
+            <button type="button" role="switch" aria-checked={product.available === false} aria-label="Agotado"
+              onClick={() => onToggleAvailable(product)}
+              className={`relative w-10 h-6 rounded-full transition-colors ${product.available === false ? 'bg-red-500' : 'bg-border-default'}`}>
+              <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${product.available === false ? 'translate-x-4' : ''}`} />
+            </button>
+          </div>
+        )}
 
         {hasVars && (
           <div className="flex flex-wrap gap-1">
@@ -392,14 +435,23 @@ function VariantRow({ variant, onUpdate, onRemove }: {
 }
 
 // ── Product Modal ─────────────────────────────────────────────────────────────
-function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated }: {
+function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated, kitchenEnabled, groups }: {
   product:           Product | null;
   categories:        Category[];
   onClose:           () => void;
   onSaved:           (p: Product) => void;
   onCategoryCreated: (c: Category) => void;
+  kitchenEnabled:    boolean;
+  groups:            OptionGroupDto[];
 }) {
+  // Si se creó el producto pero falló la asignación de grupos, el modal sigue abierto
+  // editando ESE producto: un segundo "Guardar" no debe crear un duplicado.
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const targetId = product?.productId ?? createdId;
   const isEdit = !!product;
+  const initialGroupIds = (product?.optionGroups ?? []).slice().sort((a, b) => a.sortOrder - b.sortOrder).map(g => g.groupId);
+  const [groupIds, setGroupIds] = useState<string[]>(initialGroupIds);
+  const [savedGroupIds, setSavedGroupIds] = useState<string[]>(initialGroupIds);
 
   const [form, setForm] = useState<FormState>(product ? {
     name:             product.name,
@@ -415,7 +467,11 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
     weight:           product.weight ?? '',
     shippingStandard: product.shippingStandard ?? '',
     shippingExpress:  product.shippingExpress ?? '',
+    kind:             product.kind ?? 'stock',
+    available:        product.available ?? true,
+    prepMinutes:      product.prepMinutes != null ? String(product.prepMinutes) : '',
   } : EMPTY_FORM);
+  const prepared = kitchenEnabled && form.kind === 'prepared';
 
   const [variants,      setVariants]    = useState<Variant[]>(product?.variants ?? []);
   const [newVariant,    setNewVariant]  = useState<VariantForm>(EMPTY_VARIANT);
@@ -435,8 +491,19 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
 
   // Snapshot inicial para detectar cambios sin guardar (botón flotante)
   const baselineRef = useRef('');
-  useEffect(() => { baselineRef.current = JSON.stringify({ form, variants }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const dirty = baselineRef.current !== '' && JSON.stringify({ form, variants }) !== baselineRef.current;
+  useEffect(() => { baselineRef.current = JSON.stringify({ form, variants, groupIds }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = baselineRef.current !== '' && JSON.stringify({ form, variants, groupIds }) !== baselineRef.current;
+
+  const toggleGroup = (id: string) =>
+    setGroupIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+  const moveGroup = (idx: number, dir: -1 | 1) =>
+    setGroupIds(ids => {
+      const j = idx + dir;
+      if (j < 0 || j >= ids.length) return ids;
+      const next = [...ids];
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
 
   const set = (k: keyof FormState, v: any) => { setForm(f => ({ ...f, [k]: v })); setSaved(false); };
 
@@ -470,15 +537,21 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
         description:      form.description.trim() || undefined,
         salePrice:        Number(form.salePrice),
         costPrice:        form.costPrice ? Number(form.costPrice) : undefined,
-        stock:            form.hasVariants ? undefined : Number(form.stock) || 0,
-        hasVariants:      form.hasVariants,
+        stock:            form.hasVariants || prepared ? undefined : Number(form.stock) || 0,
+        hasVariants:      prepared ? false : form.hasVariants,
         imageUrl:         form.imageUrl.trim() || undefined,
         hasShipping:      form.hasShipping,
         weight:           form.weight ? Number(form.weight) : undefined,
         shippingStandard: form.shippingStandard ? Number(form.shippingStandard) : undefined,
         shippingExpress:  form.shippingExpress  ? Number(form.shippingExpress)  : undefined,
+        // Módulo restaurante: solo se envía con el módulo activo (sin él la API no los acepta)
+        ...(kitchenEnabled && {
+          kind:        form.kind,
+          available:   form.available,
+          prepMinutes: prepared && form.prepMinutes !== '' ? Number(form.prepMinutes) : null,
+        }),
         // CAMBIO 3: en creación, enviar variantes locales en el mismo request
-        ...(!isEdit && form.hasVariants && variants.length > 0 && {
+        ...(!targetId && !prepared && form.hasVariants && variants.length > 0 && {
           variants: variants.map(v => ({
             name:       v.name,
             sku:        v.sku || undefined,
@@ -492,13 +565,27 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
           })),
         }),
       };
-      const res = isEdit
-        ? await updateProduct(product!.productId, payload)
+      const res = targetId
+        ? await updateProduct(targetId, payload)
         : await createProduct(payload);
-      onSaved({ ...res.data, variants });
+      const productId: string = res.data.productId;
+      if (!targetId) setCreatedId(productId);
+
+      // Grupos de opciones: después del producto, y solo si cambiaron.
+      if (kitchenEnabled && JSON.stringify(groupIds) !== JSON.stringify(savedGroupIds)) {
+        try {
+          await assignProductGroups(productId, groupIds);
+          setSavedGroupIds(groupIds);
+        } catch (err) {
+          onSaved({ ...res.data, variants, optionGroups: savedGroupIds.map((groupId, sortOrder) => ({ groupId, sortOrder })) });
+          setError(`El producto se guardó, pero no sus grupos de opciones: ${serverMessage(err, 'inténtalo de nuevo')}`);
+          return;
+        }
+      }
+      onSaved({ ...res.data, variants, optionGroups: groupIds.map((groupId, sortOrder) => ({ groupId, sortOrder })) });
       onClose();
-    } catch {
-      setError('Error al guardar. Verifica los datos.');
+    } catch (err) {
+      setError(serverMessage(err, 'Error al guardar. Verifica los datos.'));
     } finally {
       setSaving(false);
     }
@@ -620,7 +707,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
         </div>
 
         {/* CAMBIO 1: tabs visibles cuando isEdit O cuando hasVariants está activo */}
-        {(isEdit || form.hasVariants) && (
+        {(isEdit || form.hasVariants) && !prepared && (
           <div className="flex border-b border-border-subtle px-6">
             {(['info', 'variants'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
@@ -687,7 +774,28 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                 </div>
               </div>
 
+              {kitchenEnabled && (
+                <div>
+                  <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Tipo</label>
+                  <select value={form.kind}
+                    onChange={e => {
+                      const kind = e.target.value as ProductKind;
+                      setForm(f => ({ ...f, kind, ...(kind === 'prepared' && { hasVariants: false }) }));
+                      setSaved(false);
+                      if (kind === 'prepared') setTab('info');
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 bg-surface text-txt-primary">
+                    <option value="stock">Con inventario</option>
+                    <option value="prepared">Preparado (sin inventario)</option>
+                  </select>
+                  {prepared && variants.some(v => v.isActive) && (
+                    <p className="text-xs text-red-500 mt-1">Este producto tiene variantes: quítalas antes de pasarlo a preparado (usa grupos de opciones).</p>
+                  )}
+                </div>
+              )}
+
               {/* CAMBIO 2: al activar hasVariants → ir automáticamente al tab variantes */}
+              {!prepared && (
               <div className="flex items-center justify-between py-2.5 px-3 rounded-xl border border-border-default bg-surface-elevated">
                 <div className="flex items-center gap-2 text-sm text-txt-primary">
                   <BoxIcon />
@@ -704,6 +812,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                   <span className={`absolute top-0.5 w-5 h-5 bg-surface rounded-full shadow transition-all ${form.hasVariants ? 'left-5' : 'left-0.5'}`} />
                 </button>
               </div>
+              )}
 
               {!form.hasVariants && (
                 <div className="space-y-3">
@@ -722,6 +831,15 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                         placeholder="0"
                         className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
+                    {prepared ? (
+                    <div>
+                      <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Minutos prep.</label>
+                      <input type="number" min={0} max={600} value={form.prepMinutes}
+                        onChange={e => set('prepMinutes', e.target.value)}
+                        placeholder="Ej: 15"
+                        className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
+                    </div>
+                    ) : (
                     <div>
                       <label className="text-xs font-semibold text-txt-secondary uppercase tracking-wide block mb-1">Stock</label>
                       <input type="number" value={form.stock}
@@ -729,7 +847,45 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
                         placeholder="0"
                         className="w-full px-3 py-2 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30 transition" />
                     </div>
+                    )}
                   </div>
+                  {prepared && (
+                    <label className="flex items-center gap-2 text-sm text-txt-primary">
+                      <input type="checkbox" checked={form.available} onChange={() => set('available', !form.available)} />
+                      Disponible hoy (desmárcalo si se agotó)
+                    </label>
+                  )}
+                  {kitchenEnabled && (
+                    <div className="space-y-2 pt-1">
+                      <p className="text-xs font-semibold text-txt-secondary uppercase tracking-wide">Grupos de opciones</p>
+                      {groups.length === 0 ? (
+                        <p className="text-xs text-txt-tertiary">Aún no hay grupos. Créalos en la pantalla Menú.</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {[...groupIds.map(id => groups.find(g => g.groupId === id)).filter((g): g is OptionGroupDto => !!g),
+                            ...groups.filter(g => !groupIds.includes(g.groupId))].map(g => {
+                            const idx = groupIds.indexOf(g.groupId);
+                            const on = idx >= 0;
+                            return (
+                              <li key={g.groupId} className="flex items-center gap-2 rounded-xl border border-border-subtle px-3 py-1.5">
+                                <input type="checkbox" checked={on} onChange={() => toggleGroup(g.groupId)} aria-label={g.name} />
+                                <span className="flex-1 text-sm text-txt-primary">{g.name}</span>
+                                <span className="text-xs text-txt-tertiary">{g.minSelect >= 1 ? 'Obligatorio' : 'Opcional'}</span>
+                                {on && (
+                                  <>
+                                    <button type="button" aria-label="Subir" disabled={idx === 0} onClick={() => moveGroup(idx, -1)}
+                                      className="px-1.5 text-txt-tertiary disabled:opacity-30">↑</button>
+                                    <button type="button" aria-label="Bajar" disabled={idx === groupIds.length - 1} onClick={() => moveGroup(idx, 1)}
+                                      className="px-1.5 text-txt-tertiary disabled:opacity-30">↓</button>
+                                  </>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                   {liveMargin !== null && (
                     <p className={`text-xs font-semibold ${liveMargin >= 40 ? 'text-green-600' : liveMargin >= 20 ? 'text-amber-600' : 'text-red-500'}`}>
                       Margen de ganancia: {liveMargin}%
@@ -939,6 +1095,28 @@ export default function Products() {
   const [deleteTarget,   setDeleteTarget]   = useState<Product | null>(null);
   const [deleting,       setDeleting]       = useState(false);
   const [tourRun,        setTourRun]        = useState(false);
+  const [groups,         setGroups]         = useState<OptionGroupDto[]>([]);
+  const [listError,      setListError]      = useState('');
+  const { kitchenEnabled } = useStoreFlags();
+
+  useEffect(() => {
+    if (!kitchenEnabled) return;
+    getOptionGroups()
+      .then(res => setGroups(res.data))
+      .catch(err => setListError(serverMessage(err, 'No se pudieron cargar los grupos de opciones')));
+  }, [kitchenEnabled]);
+
+  // Agotado rápido (solo preparados): optimista y vuelta atrás si falla.
+  const handleToggleAvailable = async (p: Product) => {
+    const next = p.available === false;
+    setProducts(prev => prev.map(x => x.productId === p.productId ? { ...x, available: next } : x));
+    try {
+      await setProductAvailability(p.productId, next);
+    } catch (err) {
+      setProducts(prev => prev.map(x => x.productId === p.productId ? { ...x, available: !next } : x));
+      setListError(serverMessage(err, `No se pudo cambiar "${p.name}"`));
+    }
+  };
 
   useEffect(() => {
     if (!localStorage.getItem('tour-product-done')) setTourRun(true);
@@ -995,18 +1173,21 @@ export default function Products() {
     const totalStock    = p.hasVariants && p.variants?.length
       ? p.variants.filter(v => v.isActive).reduce((s, v) => s + v.stock, 0)
       : p.stock;
-    const matchStock    = filterStock === 'all' ||
+    // Los preparados no llevan inventario: no cuentan como "sin stock".
+    const matchStock    = filterStock === 'all' || (!isPrepared(p) && (
       (filterStock === 'out' && totalStock === 0) ||
-      (filterStock === 'low' && totalStock > 0 && totalStock < 5);
+      (filterStock === 'low' && totalStock > 0 && totalStock < 5)));
     return matchSearch && matchCat && matchShipping && matchStock;
   });
 
   const statsTotal    = products.length;
   const statsLowStock = products.filter(p => {
+    if (isPrepared(p)) return false;
     const s = p.hasVariants ? p.variants?.filter(v => v.isActive).reduce((a, v) => a + v.stock, 0) : p.stock;
     return (s ?? 0) > 0 && (s ?? 0) < 5;
   }).length;
   const statsOutStock = products.filter(p => {
+    if (isPrepared(p)) return false;
     const s = p.hasVariants ? p.variants?.filter(v => v.isActive).reduce((a, v) => a + v.stock, 0) : p.stock;
     return (s ?? 0) === 0;
   }).length;
@@ -1089,6 +1270,12 @@ export default function Products() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
+        {listError && (
+          <div role="alert" className="mb-4 rounded-2xl border border-error/40 bg-error/10 px-4 py-3 text-sm text-error flex items-start justify-between gap-3">
+            <span>{listError}</span>
+            <button onClick={() => setListError('')} className="text-xs font-semibold">Cerrar</button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <svg className="animate-spin text-blue-600" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1109,7 +1296,8 @@ export default function Products() {
             {filtered.map(p => (
               <ProductCard key={p.productId} product={p}
                 onEdit={prod => setModalProduct(prod)}
-                onDelete={setDeleteTarget} />
+                onDelete={setDeleteTarget}
+                onToggleAvailable={kitchenEnabled ? handleToggleAvailable : undefined} />
             ))}
           </div>
         )}
@@ -1122,6 +1310,8 @@ export default function Products() {
           onClose={() => setModalProduct(null)}
           onSaved={handleSaved}
           onCategoryCreated={handleCategoryCreated}
+          kitchenEnabled={kitchenEnabled}
+          groups={groups}
         />
       )}
 
