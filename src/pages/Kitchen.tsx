@@ -22,11 +22,11 @@ const COLUMNS: { status: KitchenStatus; title: string }[] = [
 const minutesSince = (iso: string, now: number) => Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
 
 function borderFor(t: KitchenTicket, now: number): string {
-  if (!t.estimatedTime) return 'border-sky-500';
+  if (!t.estimatedTime) return 'border-l-sky-500';
   const ratio = minutesSince(t.confirmedAt ?? t.createdAt, now) / t.estimatedTime;
-  if (ratio >= 1) return 'border-red-500';
-  if (ratio >= 0.8) return 'border-amber-400';
-  return 'border-sky-500';
+  if (ratio >= 1) return 'border-l-red-500';
+  if (ratio >= 0.8) return 'border-l-amber-400';
+  return 'border-l-sky-500';
 }
 
 function errorMessage(err: any, fallback: string) {
@@ -152,7 +152,7 @@ export default function Kitchen() {
   const ticketCard = (t: KitchenTicket) => {
     const elapsed = minutesSince(t.confirmedAt ?? t.createdAt, now);
     return (
-      <article key={t.orderId} className={`rounded-2xl bg-[#111117] border-l-4 ${borderFor(t, now)} border border-white/10 p-4 space-y-3`}>
+      <article key={t.orderId} className={`rounded-2xl bg-[#111117] border border-white/10 border-l-4 ${borderFor(t, now)} p-4 space-y-3`}>
         <header className="flex items-start justify-between gap-2">
           <div>
             <p className="text-lg font-bold">{t.number} · {t.customerName}</p>
