@@ -282,7 +282,7 @@ function ReasonModal({ mode, onClose, onConfirm }: { mode: 'reject' | 'cancel'; 
       <div role="dialog" aria-modal="true" className="bg-[#111117] border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-4">
         <h3 className="text-lg font-bold">{required ? 'Rechazar pedido' : 'Cancelar pedido'}</h3>
         <p className="text-sm text-gray-400">
-          {required ? 'El motivo se le envía al cliente.' : 'Si escribes un motivo, se le envía al cliente.'}
+          {required ? 'El motivo se le envía al cliente.' : 'El cliente recibirá un aviso; si escribes un motivo, se lo explicamos.'}
         </p>
         <textarea value={reason} onChange={(e) => setReason(e.target.value.slice(0, 300))} rows={3}
           placeholder="Ej: se acabó la carne" className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#0A0A0F] resize-none" />
