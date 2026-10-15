@@ -91,6 +91,9 @@ export const createCategory = (name: string) =>
 export const deleteCategory = (categoryId: string) =>
   api.delete(`/products/categories/${categoryId}`);
 
+export const updateCategory = (categoryId: string, data: Partial<{ name: string; description: string; sortOrder: number }>) =>
+  api.patch(`/products/categories/${categoryId}`, data);
+
 // ── Products ──────────────────────────────────────────────────────────────
 export const getProducts = () =>
   api.get('/products');
@@ -110,6 +113,9 @@ export const createProduct = (data: {
   shippingStandard?: number;
   shippingExpress?: number;
   variants?: VariantPayload[];
+  kind?: ProductKind;
+  available?: boolean;
+  prepMinutes?: number | null;
 }) => api.post('/products', data);
 
 export const updateProduct = (id: string, data: {
@@ -128,9 +134,33 @@ export const updateProduct = (id: string, data: {
   shippingExpress?: number;
   isActive?: boolean;
   variants?: VariantUpdatePayload[];
+  kind?: ProductKind;
+  available?: boolean;
+  prepMinutes?: number | null;
 }) => api.patch(`/products/${id}`, data);
 
 export const deleteProduct = (id: string) => api.delete(`/products/${id}`);
+
+// ── Menú (módulo restaurante) ─────────────────────────────────────────────────
+export type ProductKind = 'stock' | 'prepared';
+export interface MenuOptionDto { optionId: string; groupId: string; name: string; priceDelta: string | number; available: boolean; sortOrder: number }
+export interface OptionGroupDto { groupId: string; name: string; minSelect: number; maxSelect: number; aiAsks: boolean; sortOrder: number; options: MenuOptionDto[]; productIds: string[] }
+
+export const getOptionGroups = () => api.get<OptionGroupDto[]>('/menu/option-groups');
+export const createOptionGroup = (data: { name: string; minSelect: number; maxSelect: number; aiAsks?: boolean; sortOrder?: number }) =>
+  api.post('/menu/option-groups', data);
+export const updateOptionGroup = (groupId: string, data: Partial<{ name: string; minSelect: number; maxSelect: number; aiAsks: boolean; sortOrder: number }>) =>
+  api.patch(`/menu/option-groups/${groupId}`, data);
+export const deleteOptionGroup = (groupId: string) => api.delete(`/menu/option-groups/${groupId}`);
+export const createOption = (groupId: string, data: { name: string; priceDelta: number; available?: boolean; sortOrder?: number }) =>
+  api.post(`/menu/option-groups/${groupId}/options`, data);
+export const updateOption = (optionId: string, data: Partial<{ name: string; priceDelta: number; available: boolean; sortOrder: number }>) =>
+  api.patch(`/menu/options/${optionId}`, data);
+export const deleteOption = (optionId: string) => api.delete(`/menu/options/${optionId}`);
+export const assignProductGroups = (productId: string, groupIds: string[]) =>
+  api.put(`/menu/products/${productId}/option-groups`, { groupIds });
+export const setProductAvailability = (productId: string, available: boolean) =>
+  api.patch(`/menu/products/${productId}/availability`, { available });
 
 // ── Variantes de producto ─────────────────────────────────────────────────
 export interface VariantPayload {
@@ -362,9 +392,11 @@ export const getPublicStoreProducts = (slug: string) =>
 export const createPublicOrder = (slug: string, data: {
   customerName: string;
   customerPhone: string;
-  items: { productId: string; variantId?: string; quantity: number }[];
+  items: { productId: string; variantId?: string; quantity: number; optionIds?: string[]; note?: string }[];
   paymentMethod?: string;
   notes?: string;
+  expectedTotal?: number;
+  idempotencyKey?: string;
 }) => api.post(`/public/${slug}/order`, data);
 
 // ── Staff ─────────────────────────────────────────────────────────────────────

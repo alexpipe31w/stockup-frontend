@@ -27,6 +27,7 @@ import More from './pages/More';
 import ServiceOrders from './pages/ServiceOrders';
 import PublicCalendar from './pages/PublicCalendar';
 import PublicStore from './pages/PublicStore';
+import Menu from './pages/Menu';
 import Landing from './pages/Landing';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
@@ -125,6 +126,7 @@ function App() {
             <Route path="/orders"           element={<SubscribedRoute><Layout><Orders /></Layout></SubscribedRoute>} />
             <Route path="/products"         element={<SubscribedRoute><Layout><Products /></Layout></SubscribedRoute>} />
             <Route path="/services"         element={<SubscribedRoute><Layout><Services /></Layout></SubscribedRoute>} />
+            <Route path="/menu"             element={<SubscribedRoute><Layout><Menu /></Layout></SubscribedRoute>} />
             <Route path="/appointments"     element={<SubscribedRoute><Layout><Appointments /></Layout></SubscribedRoute>} />
             <Route path="/campaigns"        element={<SubscribedRoute><Layout><Campaigns /></Layout></SubscribedRoute>} />
             <Route path="/analytics"        element={<SubscribedRoute><Layout><Analytics /></Layout></SubscribedRoute>} />
