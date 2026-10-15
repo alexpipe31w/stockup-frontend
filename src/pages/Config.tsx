@@ -9,6 +9,7 @@ import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
 } from '../utils/businessHours';
 import FloatingSaveBar from '../components/FloatingSaveBar';
+import { useStoreFlags } from '../hooks/useStoreFlags';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,9 @@ function NegocioSection({ storeId }: { storeId: string }) {
     orderDepositAmount: '',
     orderPolicy: '',
     orderRequiresCedula: false,
+    // Módulo restaurante (menú con opciones, productos preparados)
+    kitchenEnabled: false,
+    menuTitle: '',
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
     staffLabel: 'Barbero',
     slug: '',
@@ -156,6 +160,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
   });
   const [services, setServices] = useState<Array<{ serviceId: string; name: string }>>([]);
   const [productCount, setProductCount] = useState<number | null>(null);
+  const { reload: reloadFlags } = useStoreFlags();
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
@@ -206,6 +211,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
         orderDepositAmount:   d.orderDepositAmount   ?? '',
         orderPolicy:          d.orderPolicy          ?? '',
         orderRequiresCedula:  d.orderRequiresCedula  ?? false,
+        kitchenEnabled:       d.kitchenEnabled       ?? false,
+        menuTitle:            d.menuTitle            ?? '',
         businessHours:     d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
         slug:               d.slug               ?? '',
@@ -259,6 +266,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
         orderDepositAmount:   form.orderDepositAmount,
         orderPolicy:          form.orderPolicy,
         orderRequiresCedula:  form.orderRequiresCedula,
+        kitchenEnabled:       form.kitchenEnabled,
+        menuTitle:            form.menuTitle.trim() || undefined,
         businessHours:     form.businessHours,
         staffLabel:         form.staffLabel      || undefined,
         slug:               form.slug            || undefined,
@@ -267,6 +276,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      // La barra lateral muestra "Menú" según el módulo: que lo vea sin recargar.
+      reloadFlags();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Error al guardar');
     } finally {
@@ -475,6 +486,24 @@ function NegocioSection({ storeId }: { storeId: string }) {
             <span className="text-sm text-txt-primary">Pedir cédula para la guía de envío</span>
           </div>
         </div>
+        <div className="space-y-1 pt-3 border-t border-border-subtle">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.kitchenEnabled} onChange={() => setf('kitchenEnabled', !form.kitchenEnabled)} />
+            <span className="text-sm text-txt-primary">Módulo de restaurante</span>
+          </div>
+          <p className="text-xs text-txt-tertiary ml-12">
+            {form.kitchenEnabled
+              ? 'Activa la pantalla Menú: productos preparados sin inventario y opciones con precio (término, adiciones, sabores).'
+              : 'Para comida rápida, heladerías y cafeterías: menú con opciones y productos que se preparan al momento.'}
+          </p>
+        </div>
+        {form.kitchenEnabled && (
+          <div>
+            <label className="block text-xs font-medium text-txt-secondary mb-1">Título del menú en la tienda pública</label>
+            <input value={form.menuTitle} onChange={e => setf('menuTitle', e.target.value)}
+              placeholder="Menú" maxLength={60} className={ic} />
+          </div>
+        )}
       </div>
 
       <GroupTitle

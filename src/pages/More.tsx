@@ -2,9 +2,10 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag, Briefcase, Users, BarChart3, Settings,
-  ChevronRight, Smartphone, ShoppingCart, LogOut, ClipboardList,
+  ChevronRight, Smartphone, ShoppingCart, LogOut, ClipboardList, UtensilsCrossed,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useStoreFlags } from '../hooks/useStoreFlags';
 
 const moreItems = [
   { to: '/whatsapp',   label: 'WhatsApp',      icon: Smartphone,   desc: 'Conectar dispositivo' },
@@ -17,9 +18,15 @@ const moreItems = [
   { to: '/config',     label: 'Configuración', icon: Settings,     desc: 'Ajustes del negocio' },
 ];
 
+const menuItem = { to: '/menu', label: 'Menú', icon: UtensilsCrossed, desc: 'Secciones y opciones' };
+
 export default function More() {
   const { user, logout } = useAuth() as any;
   const navigate = useNavigate();
+  const { kitchenEnabled } = useStoreFlags();
+  const items = kitchenEnabled
+    ? moreItems.flatMap((it) => (it.to === '/products' ? [it, menuItem] : [it]))
+    : moreItems;
 
   return (
     <div className="min-h-screen pb-24 md:pb-6">
@@ -42,7 +49,7 @@ export default function More() {
       )}
 
       <div className="px-4 md:px-6 space-y-2">
-        {moreItems.map((item, idx) => (
+        {items.map((item, idx) => (
           <motion.div
             key={item.to}
             initial={{ opacity: 0, x: -12 }}
@@ -68,7 +75,7 @@ export default function More() {
         <motion.button
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: moreItems.length * 0.04, duration: 0.2 }}
+          transition={{ delay: items.length * 0.04, duration: 0.2 }}
           onClick={() => { logout(); navigate('/login'); }}
           className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-subtle rounded-2xl hover:border-error/40 hover:bg-error/5 transition w-full group"
         >
