@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, MessageSquare, CalendarDays, Zap, ShoppingBag,
   Briefcase, Users, BarChart3, Settings, ChevronLeft, ChevronRight,
-  LogOut, Smartphone, ShoppingCart, UserCog, ClipboardList, UtensilsCrossed,
+  LogOut, Smartphone, ShoppingCart, UserCog, ClipboardList, UtensilsCrossed, ChefHat,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useStoreFlags } from '../hooks/useStoreFlags';
@@ -27,6 +27,7 @@ const navItems = [
 
 // Solo con el módulo de restaurante activo; va justo después de "Productos".
 const menuItem = { to: '/menu', label: 'Menú', icon: UtensilsCrossed };
+const kitchenItem = { to: '/cocina', label: 'Cocina', icon: ChefHat };
 
 const adminItems = [
   { to: '/users', label: 'Usuarios', icon: UserCog },
@@ -41,7 +42,7 @@ export default function Sidebar() {
   const { kitchenEnabled } = useStoreFlags();
 
   const base = kitchenEnabled
-    ? navItems.flatMap((it) => (it.to === '/products' ? [it, menuItem] : [it]))
+    ? navItems.flatMap((it) => (it.to === '/products' ? [it, menuItem, kitchenItem] : [it]))
     : navItems;
   const items = user?.role === 'superadmin' ? [...base, ...adminItems] : base;
 

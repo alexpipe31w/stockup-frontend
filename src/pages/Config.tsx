@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import api, {
   getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices, getProducts,
   generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
+  getUsers, deleteUser, createKitchenAccount,
 } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
@@ -20,6 +21,104 @@ interface BlockedContact {
   phone: string;
   label: string | null;
   createdAt: string;
+}
+
+/** Cuenta compartida de cocina: una por tienda, entra directo a la pantalla de cocina. */
+function KitchenAccountCard() {
+  const [account, setAccount] = useState<{ userId: string; email: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const message = (err: any, fallback: string) => {
+    const m = err?.response?.data?.message;
+    return Array.isArray(m) ? m.join('. ') : (m || fallback);
+  };
+
+  const load = async () => {
+    try {
+      const res = await getUsers();
+      const k = (res.data as any[]).find((u) => u.role === 'cocina');
+      setAccount(k ? { userId: k.userId, email: k.email } : null);
+    } catch (err) {
+      setError(message(err, 'No se pudo cargar la cuenta de cocina'));
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const create = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 8) return setError('La contraseña debe tener al menos 8 caracteres');
+    setBusy(true); setError('');
+    try {
+      await createKitchenAccount({ email: email.trim(), password });
+      setEmail(''); setPassword('');
+      await load();
+    } catch (err) {
+      setError(message(err, 'No se pudo crear la cuenta de cocina'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!account) return;
+    setBusy(true); setError(''); setConfirmDelete(false);
+    try {
+      await deleteUser(account.userId);
+      await load();
+    } catch (err) {
+      setError(message(err, 'No se pudo eliminar la cuenta de cocina'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ic = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary placeholder:text-txt-tertiary';
+  if (loading) return null;
+  return (
+    <div className="space-y-2 pt-3 border-t border-border-subtle">
+      <p className="text-sm font-medium text-txt-primary">Cuenta de cocina</p>
+      <p className="text-xs text-txt-tertiary">Una cuenta compartida para la tablet de la cocina: solo ve el tablero de pedidos y marca agotados.</p>
+      {account ? (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle px-3 py-2">
+          <span className="text-sm text-txt-primary truncate">{account.email}</span>
+          <button type="button" disabled={busy} onClick={() => setConfirmDelete(true)}
+            className="text-xs font-semibold text-error disabled:opacity-50">Eliminar</button>
+        </div>
+      ) : (
+        <form onSubmit={create} className="space-y-2">
+          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="Correo de la cocina" className={ic} />
+          <input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} placeholder="Contraseña (mínimo 8)" className={ic} />
+          <button type="submit" disabled={busy}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
+            Crear cuenta de cocina
+          </button>
+        </form>
+      )}
+      {error && <p role="alert" className="text-xs text-error">{error}</p>}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
+          <div role="dialog" aria-modal="true" className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">¿Eliminar la cuenta de cocina?</h3>
+            <p className="text-sm text-txt-secondary mb-5">La tablet de la cocina dejará de poder entrar.</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setConfirmDelete(false)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary">Cancelar</button>
+              <button type="button" onClick={remove}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500 text-white">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Spinner() {
@@ -151,6 +250,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     orderRequiresCedula: false,
     // Módulo restaurante (menú con opciones, productos preparados)
     kitchenEnabled: false,
+    kitchenRequiresAcceptance: true,
     menuTitle: '',
     businessHours: DEFAULT_BUSINESS_HOURS as BusinessHoursJson,
     staffLabel: 'Barbero',
@@ -212,6 +312,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         orderPolicy:          d.orderPolicy          ?? '',
         orderRequiresCedula:  d.orderRequiresCedula  ?? false,
         kitchenEnabled:       d.kitchenEnabled       ?? false,
+        kitchenRequiresAcceptance: d.kitchenRequiresAcceptance ?? true,
         menuTitle:            d.menuTitle            ?? '',
         businessHours:     d.businessHours      ?? DEFAULT_BUSINESS_HOURS,
         staffLabel:         d.staffLabel         ?? 'Barbero',
@@ -267,6 +368,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         orderPolicy:          form.orderPolicy,
         orderRequiresCedula:  form.orderRequiresCedula,
         kitchenEnabled:       form.kitchenEnabled,
+        kitchenRequiresAcceptance: form.kitchenRequiresAcceptance,
         menuTitle:            form.menuTitle.trim() || undefined,
         businessHours:     form.businessHours,
         staffLabel:         form.staffLabel      || undefined,
@@ -504,6 +606,20 @@ function NegocioSection({ storeId }: { storeId: string }) {
               placeholder="Menú" maxLength={60} className={ic} />
           </div>
         )}
+        {form.kitchenEnabled && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Toggle value={form.kitchenRequiresAcceptance} onChange={() => setf('kitchenRequiresAcceptance', !form.kitchenRequiresAcceptance)} />
+              <span className="text-sm text-txt-primary">Aceptar cada pedido antes de cocinarlo</span>
+            </div>
+            <p className="text-xs text-txt-tertiary ml-12">
+              {form.kitchenRequiresAcceptance
+                ? 'Los pedidos llegan a "Nuevos" y tú los aceptas con un tiempo estimado.'
+                : 'Los pedidos pasan directo a la cocina con el tiempo de preparación de sus platos.'}
+            </p>
+          </div>
+        )}
+        {form.kitchenEnabled && <KitchenAccountCard />}
       </div>
 
       <GroupTitle

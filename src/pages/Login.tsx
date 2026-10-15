@@ -29,7 +29,11 @@ export default function Login() {
     setError('');
     try {
       const userData = await loginFn(email, password);
-      navigate(userData.role === 'superadmin' ? '/superadmin' : '/dashboard');
+      navigate(
+        userData.role === 'superadmin' ? '/superadmin'
+          : userData.role === 'cocina' ? '/cocina'
+          : '/dashboard',
+      );
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError('Correo o contraseña incorrectos');
