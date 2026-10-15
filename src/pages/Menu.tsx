@@ -326,11 +326,11 @@ function GroupCard({ group: g, busy, run, onDelete }: {
         ))}
       </ul>
 
-      <form onSubmit={addOption} className="flex flex-wrap items-center gap-2">
+      <form onSubmit={addOption} className="flex flex-col sm:flex-row sm:items-center gap-2">
         <input value={newOption.name} onChange={(e) => setNewOption((p) => ({ ...p, name: e.target.value }))}
-          placeholder="Nueva opción" maxLength={80} className={`${ic} flex-1 min-w-[10rem]`} />
+          placeholder="Nueva opción" maxLength={80} className={`${ic} sm:flex-1 sm:w-auto`} />
         <input value={newOption.price} onChange={(e) => setNewOption((p) => ({ ...p, price: e.target.value.replace(/\D/g, '') }))}
-          inputMode="numeric" placeholder="Precio extra (0)" aria-label="Precio extra en pesos" className={`${ic} w-40`} />
+          inputMode="numeric" placeholder="Precio extra (0)" aria-label="Precio extra en pesos" className={`${ic} sm:w-40`} />
         <button type="submit" disabled={busy || !newOption.name.trim()}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default text-sm font-semibold text-txt-secondary hover:bg-surface-elevated disabled:opacity-50">
           <PlusIcon /> Añadir
