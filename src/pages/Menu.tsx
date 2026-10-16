@@ -36,6 +36,7 @@ export default function Menu() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [groups, setGroups] = useState<OptionGroupDto[]>([]);
   const [products, setProducts] = useState<{ productId: string; name: string; hasVariants: boolean }[]>([]);
+  const [allProducts, setAllProducts] = useState<{ productId: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -46,6 +47,7 @@ export default function Menu() {
     try {
       const [c, g, p] = await Promise.all([getCategories(), getOptionGroups(), getProducts()]);
       setCategories(c.data);
+      setAllProducts((p.data as any[]).filter((x) => x.isActive !== false).map((x) => ({ productId: x.productId, name: x.name })));
       setProducts((p.data as any[]).filter((x) => x.isActive !== false && !x.hasVariants)
         .map((x) => ({ productId: x.productId, name: x.name, hasVariants: x.hasVariants })));
       setGroups(g.data);
@@ -199,7 +201,7 @@ export default function Menu() {
           </form>
         </section>
 
-        <PromotionsPanel products={products} categories={categories} disabled={!kitchenEnabled || busy} onError={setError} />
+        <PromotionsPanel products={allProducts} categories={categories} disabled={!kitchenEnabled || busy} onError={setError} />
       </div>
 
       {deleteTarget && (

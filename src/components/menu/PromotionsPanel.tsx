@@ -57,27 +57,25 @@ const emptyForm = (): Form => ({
   startTime: '', endTime: '', startDate: '', endDate: '', productIds: [], categoryIds: [],
 });
 
-const money = (n: number) => `$${n.toLocaleString('es-CO')}`;
+const cop = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
 
 /** Misma frase que arma el servidor; la que vale es la que devuelve tras guardar. */
 function previewText(f: Form, names: { products: string[]; categories: string[] }): string {
-  const days = f.days.length === 0 || f.days.length === 7
-    ? 'Todos los días'
-    : (() => {
-        const t = [...f.days].sort((a, b) => a - b).map((d) => DAY_NAMES[d]).join(', ');
-        return t.charAt(0).toUpperCase() + t.slice(1);
-      })();
-  const hours = f.startTime && f.endTime ? `de ${f.startTime} a ${f.endTime}` : 'todo el día';
-  const v = Number(f.value);
-  let effect: string;
+  const days = f.days.length === 0
+    ? 'todos los días'
+    : [...f.days].sort((a, b) => a - b).map((d) => DAY_NAMES[d]).join(', ');
+  const daysCap = days.charAt(0).toUpperCase() + days.slice(1);
+  const when = f.startTime && f.endTime ? `de ${f.startTime} a ${f.endTime}` : 'todo el día';
+  const v = Number(f.value) || 0;
+  let what: string;
   switch (f.type) {
-    case 'percent': effect = `${v || 0}% de descuento`; break;
-    case 'amount': effect = `${money(v || 0)} menos`; break;
-    case 'buy_n_pay_m': effect = `${f.buyN || 0}x${f.payM || 0}`; break;
-    default: effect = `a ${money(v || 0)}`;
+    case 'percent': what = `${v}% de descuento`; break;
+    case 'amount': what = `${cop(v)} menos`; break;
+    case 'fixed_price': what = `a ${cop(v)}`; break;
+    default: what = `${f.buyN || 0}x${f.payM || 0}`;
   }
   const targets = [...names.categories, ...names.products];
-  return `${days}, ${hours}: ${effect} en ${targets.length ? targets.join(', ') : 'productos sin definir'}`;
+  return `${daysCap}, ${when}: ${what} en ${targets.join(', ') || 'productos sin definir'}`;
 }
 
 /** Fecha ISO del servidor -> YYYY-MM-DD en hora de Bogotá. */
