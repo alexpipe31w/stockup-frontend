@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag, Briefcase, Users, BarChart3, Settings,
-  ChevronRight, Smartphone, ShoppingCart, LogOut, ClipboardList, UtensilsCrossed,
+  ChevronRight, Smartphone, ShoppingCart, LogOut, ClipboardList, UtensilsCrossed, ChefHat,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useStoreFlags } from '../hooks/useStoreFlags';
@@ -19,13 +19,14 @@ const moreItems = [
 ];
 
 const menuItem = { to: '/menu', label: 'Menú', icon: UtensilsCrossed, desc: 'Secciones y opciones' };
+const kitchenItem = { to: '/cocina', label: 'Cocina', icon: ChefHat, desc: 'Tablero de pedidos' };
 
 export default function More() {
   const { user, logout } = useAuth() as any;
   const navigate = useNavigate();
   const { kitchenEnabled } = useStoreFlags();
   const items = kitchenEnabled
-    ? moreItems.flatMap((it) => (it.to === '/products' ? [it, menuItem] : [it]))
+    ? moreItems.flatMap((it) => (it.to === '/products' ? [it, menuItem, kitchenItem] : [it]))
     : moreItems;
 
   return (

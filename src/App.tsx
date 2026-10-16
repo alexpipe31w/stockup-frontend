@@ -28,6 +28,7 @@ import ServiceOrders from './pages/ServiceOrders';
 import PublicCalendar from './pages/PublicCalendar';
 import PublicStore from './pages/PublicStore';
 import Menu from './pages/Menu';
+import Kitchen from './pages/Kitchen';
 import Landing from './pages/Landing';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
@@ -63,15 +64,25 @@ function Layout({ children }: { children: React.ReactElement }) {
 }
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  // La cuenta de cocina solo tiene la pantalla de cocina (el servidor le niega lo demás).
+  if ((user as any)?.role === 'cocina') return <Navigate to="/cocina" replace />;
+  return children;
+}
+
+/** Pantalla de cocina: a pantalla completa, sin barra lateral ni chequeo de suscripción. */
+function KitchenRoute({ children }: { children: React.ReactElement }) {
   const { token } = useAuth();
   return token ? children : <Navigate to="/login" replace />;
 }
 
 function SubscribedRoute({ children }: { children: React.ReactElement }) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { isActive, loading, error, refresh } = useSubscription();
 
   if (!token) return <Navigate to="/login" replace />;
+  if ((user as any)?.role === 'cocina') return <Navigate to="/cocina" replace />;
 
   if (loading) {
     return (
@@ -127,6 +138,7 @@ function App() {
             <Route path="/products"         element={<SubscribedRoute><Layout><Products /></Layout></SubscribedRoute>} />
             <Route path="/services"         element={<SubscribedRoute><Layout><Services /></Layout></SubscribedRoute>} />
             <Route path="/menu"             element={<SubscribedRoute><Layout><Menu /></Layout></SubscribedRoute>} />
+            <Route path="/cocina"           element={<KitchenRoute><Kitchen /></KitchenRoute>} />
             <Route path="/appointments"     element={<SubscribedRoute><Layout><Appointments /></Layout></SubscribedRoute>} />
             <Route path="/campaigns"        element={<SubscribedRoute><Layout><Campaigns /></Layout></SubscribedRoute>} />
             <Route path="/analytics"        element={<SubscribedRoute><Layout><Analytics /></Layout></SubscribedRoute>} />

@@ -42,6 +42,8 @@ export const registerUser = (data: {
 
 // ── Users ─────────────────────────────────────────────────────────────────
 export const getUsers = () => api.get('/auth/users');
+export const createKitchenAccount = (data: { email: string; password: string }) =>
+  api.post('/auth/kitchen-account', data);
 export const deleteUser = (id: string) => api.delete(`/auth/users/${id}`);
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -140,6 +142,31 @@ export const updateProduct = (id: string, data: {
 }) => api.patch(`/products/${id}`, data);
 
 export const deleteProduct = (id: string) => api.delete(`/products/${id}`);
+
+// ── Cocina (módulo restaurante) ───────────────────────────────────────────────
+export type KitchenStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+export interface KitchenTicket {
+  orderId: string; number: string; status: KitchenStatus; createdAt: string; updatedAt: string;
+  confirmedAt: string | null; preparingAt: string | null; readyAt: string | null; estimatedTime: number | null;
+  suggestedMinutes: number; customerName: string; delivery: 'domicilio' | 'recoge';
+  deliveryAddress: string | null; notes: string | null;
+  items: { quantity: number; description: string; note: string | null; options: string[] }[];
+}
+export interface KitchenMenu {
+  products: { productId: string; name: string; available: boolean }[];
+  options: { optionId: string; name: string; groupName: string; available: boolean }[];
+}
+export const getKitchenContext = () =>
+  api.get<{ storeName: string; kitchenRequiresAcceptance: boolean; role: string; serverTime: string }>('/kitchen/context');
+export const getKitchenOrders = (since?: string) =>
+  api.get<{ orders: KitchenTicket[]; next: string }>('/kitchen/orders', { params: since ? { since } : {} });
+export const transitionKitchenOrder = (orderId: string, data: { status: KitchenStatus; estimatedTime?: number; reason?: string }) =>
+  api.post(`/kitchen/orders/${orderId}/transition`, data);
+export const getKitchenMenu = () => api.get<KitchenMenu>('/kitchen/menu');
+export const setKitchenProductAvailability = (productId: string, available: boolean) =>
+  api.patch(`/kitchen/products/${productId}/availability`, { available });
+export const setKitchenOptionAvailability = (optionId: string, available: boolean) =>
+  api.patch(`/kitchen/options/${optionId}/availability`, { available });
 
 // ── Menú (módulo restaurante) ─────────────────────────────────────────────────
 export type ProductKind = 'stock' | 'prepared';
