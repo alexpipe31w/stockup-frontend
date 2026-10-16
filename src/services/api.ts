@@ -426,6 +426,9 @@ export const createPublicOrder = (slug: string, data: {
   idempotencyKey?: string;
 }) => api.post(`/public/${slug}/order`, data);
 
+export const quotePublicOrder = (slug: string, data: { items: { productId: string; variantId?: string; quantity: number; optionIds?: string[]; note?: string }[] }) =>
+  api.post<{ subtotal: number; discount: number; total: number; lines: { unitPrice: number; discount: number; promotionName: string | null }[] }>(`/public/${slug}/quote`, data);
+
 // ── Staff ─────────────────────────────────────────────────────────────────────
 export const getStaff = () =>
   api.get('/staff');

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getPublicStoreProducts, createPublicOrder } from '../services/api';
+import { getPublicStoreProducts, createPublicOrder, quotePublicOrder } from '../services/api';
 
 interface ProductVariant {
   variantId: string;
@@ -35,6 +35,7 @@ interface PublicProduct {
   prepMinutes?: number | null;
   categoryId?: string | null;
   optionGroups?: MenuGroup[];
+  promotion?: { name: string; price: number | null } | null;
 }
 interface PublicCategory {
   categoryId: string;
@@ -56,6 +57,14 @@ interface CartLine {
   optionIds: string[]; // ordenados
   note: string;
   quantity: number;
+}
+
+/** Cotización del servidor: es la única fuente del total y de los descuentos con el módulo de restaurante. */
+interface Quote {
+  subtotal: number;
+  discount: number;
+  total: number;
+  lines: { unitPrice: number; discount: number; promotionName: string | null }[];
 }
 
 const fmtCOP = (n: number) =>
@@ -111,6 +120,11 @@ export default function PublicStore() {
   const [faults, setFaults] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoting, setQuoting] = useState(false);
+  const [quoteFaults, setQuoteFaults] = useState<string[]>([]);
+  const [quoteNonce, setQuoteNonce] = useState(0);
+  const quoteSeq = useRef(0);
 
   // Misma clave en los reintentos del MISMO carrito; un carrito distinto es otro pedido.
   const idemKey = useRef(uuidV4());
@@ -156,6 +170,44 @@ export default function PublicStore() {
   );
   const totalItems = useMemo(() => lines.reduce((s, [, l]) => s + l.quantity, 0), [lines]);
 
+  // Con el módulo, el total sale SOLO del servidor. Espera de 400 ms; un contador descarta respuestas viejas.
+  const kitchen = !!data?.kitchenEnabled;
+  useEffect(() => {
+    if (!kitchen || !slug) return;
+    const id = ++quoteSeq.current;
+    setQuote(null);
+    setQuoteFaults([]);
+    if (lines.length === 0) {
+      setQuoting(false);
+      return;
+    }
+    setQuoting(true);
+    const items = lines.map(([, l]) => ({
+      productId: l.productId,
+      quantity: l.quantity,
+      optionIds: l.optionIds,
+      ...(l.note && { note: l.note }),
+    }));
+    const timer = setTimeout(async () => {
+      try {
+        const r = await quotePublicOrder(slug, { items });
+        if (id !== quoteSeq.current) return;
+        setQuote(r.data);
+      } catch (err: any) {
+        if (id !== quoteSeq.current) return;
+        const body = err?.response?.data;
+        if (body?.code === 'MENU_INVALID' && Array.isArray(body.faults)) setQuoteFaults(body.faults);
+        else console.error('[PublicStore] cotizar', err?.response?.status);
+      } finally {
+        if (id === quoteSeq.current) setQuoting(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [kitchen, slug, lines, quoteNonce]);
+
+  const quoteReady = !kitchen || (!!quote && !quoting);
+  const orderTotal = kitchen ? quote?.total ?? 0 : total;
+
   /** Tras un "menú cambiado": quita las líneas cuyo producto u opciones ya no se ofrecen. */
   const pruneCart = (fresh: StoreProducts) => {
     const freshById = new Map(fresh.products.map(p => [p.productId, p]));
@@ -178,6 +230,7 @@ export default function PublicStore() {
       setError('Agrega al menos un producto.');
       return;
     }
+    if (kitchen && !quote) return;
     setSubmitting(true);
     try {
       await createPublicOrder(slug, {
@@ -189,7 +242,7 @@ export default function PublicStore() {
           ...(data?.kitchenEnabled && { optionIds: l.optionIds, ...(l.note && { note: l.note }) }),
         })),
         paymentMethod: pay || undefined,
-        expectedTotal: total,
+        expectedTotal: kitchen ? quote!.total : total,
         idempotencyKey: idemKey.current,
       });
       setDone(true);
@@ -199,6 +252,7 @@ export default function PublicStore() {
         setError('Algo de tu pedido cambió (se agotó o cambió de precio). Revisa tu carrito.');
         try {
           pruneCart(await loadProducts(slug));
+          setQuoteNonce(n => n + 1);
         } catch (reloadErr) {
           console.error('[PublicStore] recargar menú', reloadErr);
         }
@@ -273,8 +327,20 @@ export default function PublicStore() {
         )}
         <p className="font-semibold leading-tight">{p.name}</p>
         {p.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.description}</p>}
+        {p.promotion && (
+          <span className="self-start mt-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-[#D4FF00]/10 border border-[#D4FF00]/40 text-[#D4FF00]">
+            {p.promotion.name}
+          </span>
+        )}
         <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-sm font-bold text-[#D4FF00]">{fmtCOP(Number(p.salePrice))}</span>
+          {p.promotion?.price != null ? (
+            <>
+              <span className="text-xs text-gray-500 line-through">{fmtCOP(Number(p.salePrice))}</span>
+              <span className="text-sm font-bold text-[#D4FF00]">{fmtCOP(p.promotion.price)}</span>
+            </>
+          ) : (
+            <span className="text-sm font-bold text-[#D4FF00]">{fmtCOP(Number(p.salePrice))}</span>
+          )}
           {p.kind === 'prepared'
             ? p.prepMinutes ? <span className="text-xs text-gray-500">~{p.prepMinutes} min</span> : null
             : <span className="text-xs text-gray-500">{p.stock} disp.</span>}
@@ -323,7 +389,13 @@ export default function PublicStore() {
   };
 
   // Líneas con opciones o nota: se listan aparte para poder ver y cambiar cada una.
-  const detailedLines = lines.filter(([, l]) => l.optionIds.length > 0 || l.note);
+  // Con descuento también se listan, para mostrar el ahorro bajo su línea.
+  const lineDiscount = (key: string) => {
+    const i = lines.findIndex(([k]) => k === key);
+    return kitchen && quote && i >= 0 ? quote.lines[i] : undefined;
+  };
+  const detailedLines = lines.filter(([key, l]) => l.optionIds.length > 0 || l.note || (lineDiscount(key)?.discount ?? 0) > 0);
+  const shownFaults = Array.from(new Set([...faults, ...quoteFaults]));
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-white">
@@ -367,6 +439,11 @@ export default function PublicStore() {
                     <p className="text-sm font-semibold">{l.quantity}× {p?.name ?? 'Producto'}</p>
                     {optNames.length > 0 && <p className="text-xs text-gray-400">{optNames.join(' · ')}</p>}
                     {l.note && <p className="text-xs text-gray-500 italic">“{l.note}”</p>}
+                    {(lineDiscount(key)?.discount ?? 0) > 0 && (
+                      <p className="text-xs text-[#D4FF00]">
+                        {lineDiscount(key)!.promotionName ?? 'Promoción'} −{fmtCOP(lineDiscount(key)!.discount)}
+                      </p>
+                    )}
                   </div>
                   <span className="text-sm tabular-nums text-gray-300">{unit !== null ? fmtCOP(unit * l.quantity) : '—'}</span>
                   <div className="flex items-center gap-1">
@@ -409,10 +486,10 @@ export default function PublicStore() {
             </div>
           )}
 
-          {(error || faults.length > 0) && (
+          {(error || shownFaults.length > 0) && (
             <div role="alert" className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5 space-y-1">
               {error && <p>{error}</p>}
-              {faults.map(f => <p key={f}>• {f}</p>)}
+              {shownFaults.map(f => <p key={f}>• {f}</p>)}
             </div>
           )}
         </div>
@@ -428,13 +505,13 @@ export default function PublicStore() {
           <button
             type="button"
             onClick={submit}
-            disabled={submitting || lines.length === 0}
+            disabled={submitting || lines.length === 0 || !quoteReady}
             className="w-full py-3 rounded-xl bg-[#D4FF00] text-[#0A0A0F] font-bold text-sm hover:brightness-95 disabled:opacity-40 transition flex items-center justify-center gap-2"
           >
             {submitting && <span className="w-4 h-4 rounded-full border-2 border-[#0A0A0F] border-t-transparent animate-spin" />}
             {submitting
               ? 'Enviando...'
-              : `Hacer pedido${totalItems ? ` · ${totalItems} ítem${totalItems > 1 ? 's' : ''} · ${fmtCOP(total)}` : ''}`}
+              : `Hacer pedido${totalItems ? ` · ${totalItems} ítem${totalItems > 1 ? 's' : ''} · ${quoteReady ? fmtCOP(orderTotal) : 'Calculando…'}` : ''}`}
           </button>
         </div>
       </div>
