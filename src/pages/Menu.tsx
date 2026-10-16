@@ -7,6 +7,8 @@ import {
 } from '../services/api';
 import type { OptionGroupDto, MenuOptionDto } from '../services/api';
 import { useStoreFlags } from '../hooks/useStoreFlags';
+import { serverMessage } from '../utils/serverMessage';
+import PromotionsPanel from '../components/menu/PromotionsPanel';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PlusIcon  = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
@@ -19,13 +21,6 @@ interface Category { categoryId: string; name: string; description: string | nul
 const ic = 'w-full px-3 py-2 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary placeholder:text-txt-tertiary';
 const card = 'bg-surface rounded-2xl shadow-sm border border-border-subtle p-5 space-y-4';
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
-
-/** El mensaje del servidor tal cual (class-validator lo manda como lista). */
-function serverMessage(err: any, fallback: string): string {
-  const m = err?.response?.data?.message;
-  if (Array.isArray(m)) return m.join('. ');
-  return typeof m === 'string' && m ? m : fallback;
-}
 
 function Switch({ value, onChange, disabled }: { value: boolean; onChange: () => void; disabled?: boolean }) {
   return (
@@ -203,6 +198,8 @@ export default function Menu() {
             </button>
           </form>
         </section>
+
+        <PromotionsPanel products={products} categories={categories} disabled={!kitchenEnabled || busy} onError={setError} />
       </div>
 
       {deleteTarget && (
