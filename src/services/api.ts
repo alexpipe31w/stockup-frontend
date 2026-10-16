@@ -500,9 +500,9 @@ export const getAiConfig = (storeId: string) =>
   api.get(`/ai-config/${storeId}`);
 
 export const saveAiConfig = (data: {
-  aiProvider: string; apiKey: string; systemPrompt: string;
+  aiProvider: string; apiKey?: string; systemPrompt: string;
   model?: string; temperature?: number; maxTokens?: number;
-  cartridges?: Array<{ provider: string; apiKey: string; model: string }>;
+  cartridges?: Array<{ provider: string; apiKey?: string; model: string }>;
 }) => api.post('/ai-config', data);
 
 export const getAiPoolStatus = () =>

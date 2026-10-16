@@ -365,7 +365,34 @@ const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
 const cardClass = 'bg-surface rounded-2xl p-6 shadow-sm border border-border-subtle';
 const sectionIcon = 'w-9 h-9 rounded-xl bg-surface-elevated flex items-center justify-center flex-shrink-0';
 
-interface CartridgeForm { provider: AIProvider; apiKey: string; model: string }
+// apiKey = SOLO lo que el usuario teclea en esta sesion (vacio al cargar).
+// keyMask = version enmascarada de la clave guardada, para mostrarla.
+// stored  = clave guardada tal como la devolvio la API; nunca se pinta. Solo se
+//           rellena mientras la API devuelva claves completas (ver savedKey).
+interface CartridgeForm { provider: AIProvider; apiKey: string; model: string; keyMask: string; stored: string }
+
+/** Enmascara una clave: prefijo corto (gsk_, sk-) + puntos + ultimos 4. */
+function maskKey(k: string): string {
+  if (!k) return '';
+  if (k.length <= 8) return '••••';
+  const prefix = /^[A-Za-z]{2,4}[_-]/.exec(k)?.[0] ?? '';
+  return `${prefix}••••${k.slice(-4)}`;
+}
+
+/** La API ya devuelve la clave enmascarada (puntos o '...abcd'): no es reutilizable. */
+function isMaskedValue(k: string): boolean {
+  return k.includes('•') || k.startsWith('...') || k.includes('****');
+}
+
+/** El cartucho tiene clave: guardada (enmascarada) o recien tecleada. */
+function hasKey(c: CartridgeForm): boolean {
+  return !!(c.apiKey.trim() || c.keyMask);
+}
+
+/** Clave guardada que el panel puede reenviar (vacio si la API ya la enmascara). */
+function savedKey(k: unknown): string {
+  return typeof k === 'string' && k && !isMaskedValue(k) ? k : '';
+}
 
 interface CartridgeSnapshot {
   provider:  string;
@@ -437,6 +464,8 @@ export default function AiConfig() {
   const [form, setForm] = useState({
     aiProvider:   'groq' as AIProvider,
     apiKey:       '',
+    keyMask:      '',
+    stored:       '',
     model:        'openai/gpt-oss-120b',
     systemPrompt: '',
     temperature:  0.7,
@@ -467,7 +496,9 @@ export default function AiConfig() {
           const provider = (d.aiProvider ?? 'groq') as AIProvider;
           const loadedForm = {
             aiProvider:   provider,
-            apiKey:       d.apiKey ?? d.groqApiKey ?? '',
+            apiKey:       '',
+            keyMask:      maskKey(d.apiKey ?? d.groqApiKey ?? ''),
+            stored:       savedKey(d.apiKey ?? d.groqApiKey),
             model:        d.model ?? PROVIDERS[provider].models[0].value,
             systemPrompt: d.systemPrompt ?? '',
             temperature:  d.temperature ?? 0.7,
@@ -477,7 +508,9 @@ export default function AiConfig() {
           const loadedCartridges = (d.cartridges && Array.isArray(d.cartridges))
             ? d.cartridges.map((c: any) => ({
                 provider: c.provider as AIProvider,
-                apiKey:   c.apiKey ?? '',
+                apiKey:   '',
+                keyMask:  maskKey(c.apiKey ?? ''),
+                stored:   savedKey(c.apiKey),
                 model:    c.model  ?? '',
               }))
             : [];
@@ -494,22 +527,39 @@ export default function AiConfig() {
   }, [storeId, fetchPool]);
 
   const handleProviderChange = (p: AIProvider) => {
-    setForm(f => ({ ...f, aiProvider: p, model: PROVIDERS[p].models[0].value, apiKey: '' }));
+    setForm(f => ({ ...f, aiProvider: p, model: PROVIDERS[p].models[0].value, apiKey: '', keyMask: '', stored: '' }));
   };
 
   const handleSave = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setSaving(true);
     try {
+      // La clave solo viaja si el usuario tecleo una nueva. Mientras la API siga
+      // devolviendo claves completas se reenvia la guardada (la API hoy exige apiKey);
+      // cuando devuelva enmascaradas, no se manda nada y la API conserva la existente.
+      const mainKey = form.apiKey.trim() || form.stored;
+      const { keyMask: _km, stored: _st, apiKey: _ak, ...mainRest } = form;
       await saveAiConfig({
-        ...form,
-        cartridges: cartridges.filter(c => c.apiKey.trim()).map(c => ({
-          provider: c.provider,
-          apiKey:   c.apiKey.trim(),
-          model:    c.model || PROVIDERS[c.provider]?.models[0]?.value || '',
-        })),
+        ...mainRest,
+        ...(mainKey ? { apiKey: mainKey } : {}),
+        cartridges: cartridges.filter(hasKey).map(c => {
+          const key = c.apiKey.trim() || c.stored;
+          return {
+            provider: c.provider,
+            ...(key ? { apiKey: key } : {}),
+            model:    c.model || PROVIDERS[c.provider]?.models[0]?.value || '',
+          };
+        }),
       });
-      setInitial(JSON.stringify({ form, cartridges }));
+      // Tras guardar, la clave tecleada pasa a ser la guardada y se vuelve a enmascarar.
+      const savedForm = form.apiKey.trim()
+        ? { ...form, apiKey: '', keyMask: maskKey(form.apiKey.trim()), stored: form.apiKey.trim() }
+        : form;
+      const savedCartridges = cartridges.filter(hasKey).map(c =>
+        c.apiKey.trim() ? { ...c, apiKey: '', keyMask: maskKey(c.apiKey.trim()), stored: c.apiKey.trim() } : c);
+      setForm(savedForm);
+      setCartridges(savedCartridges);
+      setInitial(JSON.stringify({ form: savedForm, cartridges: savedCartridges }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } finally {
@@ -589,7 +639,8 @@ export default function AiConfig() {
           type="password"
           value={form.apiKey}
           onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
-          placeholder={pInfo.keyHint}
+          placeholder={form.keyMask ? `${form.keyMask} (guardada; escribe otra para reemplazarla)` : pInfo.keyHint}
+          autoComplete="new-password"
           className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 transition font-mono text-sm"
         />
       </div>
@@ -606,7 +657,7 @@ export default function AiConfig() {
           {cartridges.length < 11 && (
             <button
               type="button"
-              onClick={() => setCartridges(c => [...c, { provider: 'gemini', apiKey: '', model: 'gemini-2.0-flash' }])}
+              onClick={() => setCartridges(c => [...c, { provider: 'gemini', apiKey: '', keyMask: '', stored: '', model: 'gemini-2.0-flash' }])}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border-default text-txt-secondary hover:bg-surface-elevated transition"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -653,7 +704,8 @@ export default function AiConfig() {
                     type="password"
                     value={c.apiKey}
                     onChange={e => setCartridges(prev => prev.map((x, i) => i === idx ? { ...x, apiKey: e.target.value } : x))}
-                    placeholder={PROVIDERS[c.provider]?.keyHint}
+                    placeholder={c.keyMask ? `${c.keyMask} (guardada)` : PROVIDERS[c.provider]?.keyHint}
+                    autoComplete="new-password"
                     className="w-full px-3 py-2 rounded-lg border border-border-default bg-surface text-sm text-txt-primary placeholder:text-txt-tertiary focus:outline-none font-mono"
                   />
                 </div>
@@ -685,9 +737,9 @@ export default function AiConfig() {
 
         {/* Pool status indicator (conteo) */}
         <div className="mt-3 flex items-center gap-2 text-xs text-txt-tertiary">
-          <div className={`w-2 h-2 rounded-full ${cartridges.filter(c => c.apiKey.trim()).length + 1 >= 2 ? 'bg-success' : 'bg-warning'}`} />
-          {cartridges.filter(c => c.apiKey.trim()).length + 1} cartucho{cartridges.filter(c => c.apiKey.trim()).length + 1 !== 1 ? 's' : ''} configurado{cartridges.filter(c => c.apiKey.trim()).length + 1 !== 1 ? 's' : ''} en total
-          {cartridges.filter(c => c.apiKey.trim()).length + 1 >= 2
+          <div className={`w-2 h-2 rounded-full ${cartridges.filter(hasKey).length + 1 >= 2 ? 'bg-success' : 'bg-warning'}`} />
+          {cartridges.filter(hasKey).length + 1} cartucho{cartridges.filter(hasKey).length + 1 !== 1 ? 's' : ''} configurado{cartridges.filter(hasKey).length + 1 !== 1 ? 's' : ''} en total
+          {cartridges.filter(hasKey).length + 1 >= 2
             ? ' — Alta disponibilidad activa'
             : ' — Agrega al menos 1 cartucho más para redundancia'}
         </div>

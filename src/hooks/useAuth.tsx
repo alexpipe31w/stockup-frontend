@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { login as loginApi } from '../services/api';
 
 interface UserData {
@@ -68,6 +68,25 @@ function getInitialUser(): UserData | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getInitialToken);
   const [user, setUser]   = useState<UserData | null>(getInitialUser);
+
+  // Cierre de sesion entre pestanas: el evento `storage` solo se dispara en las OTRAS
+  // pestanas. Si otra pestana borra `token` (logout o 401) o `sa_token`, esta tambien sale.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      const cleared = e.key === null; // localStorage.clear()
+      if ((cleared || e.key === 'token') && !e.newValue) {
+        setToken(null);
+        setUser(null);
+      }
+      if ((cleared || e.key === 'sa_token') && !e.newValue
+          && window.location.pathname.startsWith('/superadmin')
+          && !window.location.pathname.startsWith('/superadmin/login')) {
+        window.location.replace('/superadmin/login');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const loginFn = async (email: string, password: string): Promise<UserData> => {
     const res = await loginApi(email, password);

@@ -5,6 +5,7 @@ import {
 } from '../services/api';
 import type { PriceType, ServiceVariantPayload } from '../services/api';
 import { ImageUploadField } from '../components/ImageUploadField';
+import { plainText } from '../utils/plainText';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
 import FloatingSaveBar from '../components/FloatingSaveBar';
@@ -205,8 +206,7 @@ function ServiceCard({ service, onEdit, onDelete }: {
 
         {/* Descripción */}
         {service.description && (
-          <p className="text-xs text-txt-secondary line-clamp-2"
-            dangerouslySetInnerHTML={{ __html: service.description.replace(/<[^>]+>/g, ' ') }} />
+          <p className="text-xs text-txt-secondary line-clamp-2">{plainText(service.description)}</p>
         )}
 
         {/* Precio */}
