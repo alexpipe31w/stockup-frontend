@@ -84,9 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     localStorage.setItem('token', access_token);
     localStorage.setItem('user', JSON.stringify(userObj));
-    if (userObj.role === 'superadmin') {
-      localStorage.setItem('sa_token', access_token);
-    }
+    // El superadmin ya no entra por aquí (la API lo rechaza): solo por /superadmin/login con código.
     setToken(access_token);
     setUser(userObj);
     return userObj;
@@ -95,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // En un equipo compartido, el siguiente usuario no hereda el acceso a /superadmin.
+    localStorage.removeItem('sa_token');
     setToken(null);
     setUser(null);
   };

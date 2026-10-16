@@ -21,6 +21,7 @@ api.interceptors.response.use(
       if (!isAuthPage) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('sa_token');
         // Usar replace para no dejar /login en el historial si el usuario vuelve atrás
         window.location.replace('/login');
       }
@@ -34,11 +35,6 @@ export default api;
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const login = (email: string, password: string) =>
   api.post('/auth/login', { email, password });
-
-export const registerUser = (data: {
-  name: string; email: string; password: string;
-  storeName?: string; storePhone?: string;
-}) => api.post('/auth/register', data);
 
 // ── Users ─────────────────────────────────────────────────────────────────
 export const getUsers = () => api.get('/auth/users');

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getUsers, registerUser, deleteUser } from '../services/api';
+import { getUsers, deleteUser } from '../services/api';
 
 interface User {
   userId: string;
@@ -11,14 +11,9 @@ interface User {
   store?: { name: string; phone: string } | null;
 }
 
-const emptyForm = { name: '', email: '', password: '', role: 'admin', storeName: '', storePhone: '' };
-
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-  const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
@@ -33,35 +28,16 @@ export default function Users() {
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCreate = async () => {
-    if (!form.name || !form.email || !form.password || !form.storeName || !form.storePhone) return;
-    setSaving(true);
-    setError('');
-    try {
-      await registerUser({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        storeName: form.storeName,
-        storePhone: form.storePhone,
-      });
-      setShowModal(false);
-      setForm(emptyForm);
-      await load();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Error al crear usuario');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Eliminar este usuario?')) return;
     setDeletingId(id);
+    setError('');
     try {
       await deleteUser(id);
       await load();
-    } catch {} finally {
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'No se pudo eliminar el usuario');
+    } finally {
       setDeletingId(null);
     }
   };
@@ -77,26 +53,20 @@ export default function Users() {
     return 'bg-surface-overlay text-txt-secondary';
   };
 
-  const isFormValid = form.name && form.email && form.password && form.storeName && form.storePhone;
-
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-txt-primary">Usuarios</h1>
-          <p className="text-txt-secondary mt-1">Cada usuario tiene su propia tienda independiente</p>
+          <p className="text-txt-secondary mt-1">Las cuentas con acceso al panel de tu tienda</p>
         </div>
-        <button
-          onClick={() => { setForm(emptyForm); setError(''); setShowModal(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[#0A0A0F] text-sm font-semibold"
-          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Nuevo usuario
-        </button>
       </div>
+
+      {error && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20 text-txt-tertiary">
@@ -115,7 +85,6 @@ export default function Users() {
                 </svg>
               </div>
               <p className="text-txt-primary font-medium">No hay usuarios</p>
-              <p className="text-txt-tertiary text-sm">Crea el primer usuario para dar acceso al panel</p>
             </div>
           ) : (
             <table className="w-full">
@@ -182,117 +151,6 @@ export default function Users() {
               </tbody>
             </table>
           )}
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[60] p-4">
-          <div className="bg-surface rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-txt-primary">Nuevo usuario</h2>
-              <button onClick={() => setShowModal(false)} className="text-txt-tertiary hover:text-txt-secondary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Sección usuario */}
-              <p className="text-xs font-bold text-txt-tertiary uppercase tracking-wider">Datos del usuario</p>
-              <div>
-                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Nombre *</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
-                  placeholder="Nombre completo"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Correo *</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Contraseña *</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-txt-primary mb-1.5">Rol</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-border-default text-txt-primary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm bg-surface"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="agent">Agente</option>
-                </select>
-              </div>
-
-              {/* Sección tienda */}
-              <div className="pt-2 border-t border-border-subtle">
-                <p className="text-xs font-bold text-txt-tertiary uppercase tracking-wider mb-4">Tienda del usuario</p>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-txt-primary mb-1.5">Nombre de la tienda *</label>
-                    <input
-                      value={form.storeName}
-                      onChange={(e) => setForm({ ...form, storeName: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
-                      placeholder="Ej: Tienda de Juan"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-txt-primary mb-1.5">Teléfono WhatsApp *</label>
-                    <input
-                      value={form.storePhone}
-                      onChange={(e) => setForm({ ...form, storePhone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary focus:outline-none focus:ring-2 focus:ring-lime/30 text-sm"
-                      placeholder="+573001234567"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
-                  {error}
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 py-3 rounded-xl border border-border-default text-txt-secondary text-sm font-semibold hover:bg-surface-elevated transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={saving || !isFormValid}
-                className="flex-1 py-3 rounded-xl text-[#0A0A0F] text-sm font-semibold transition disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}
-              >
-                {saving ? 'Creando...' : 'Crear usuario'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
