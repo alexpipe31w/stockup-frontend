@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  getCategories, updateCategory,
+  getCategories, updateCategory, getProducts,
   getOptionGroups, createOptionGroup, updateOptionGroup, deleteOptionGroup,
   createOption, updateOption, deleteOption,
 } from '../services/api';
@@ -40,6 +40,7 @@ export default function Menu() {
   const { kitchenEnabled, loading: flagsLoading } = useStoreFlags();
   const [categories, setCategories] = useState<Category[]>([]);
   const [groups, setGroups] = useState<OptionGroupDto[]>([]);
+  const [products, setProducts] = useState<{ productId: string; name: string; hasVariants: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,8 +49,10 @@ export default function Menu() {
 
   const load = useCallback(async () => {
     try {
-      const [c, g] = await Promise.all([getCategories(), getOptionGroups()]);
+      const [c, g, p] = await Promise.all([getCategories(), getOptionGroups(), getProducts()]);
       setCategories(c.data);
+      setProducts((p.data as any[]).filter((x) => x.isActive !== false && !x.hasVariants)
+        .map((x) => ({ productId: x.productId, name: x.name, hasVariants: x.hasVariants })));
       setGroups(g.data);
     } catch (err) {
       setError(serverMessage(err, 'No se pudo cargar el menú'));
@@ -174,7 +177,7 @@ export default function Menu() {
           </div>
 
           {groups.map((g) => (
-            <GroupCard key={g.groupId} group={g} busy={busy} run={run} onDelete={() => setDeleteTarget(g)} />
+            <GroupCard key={g.groupId} group={g} products={products} busy={busy} run={run} onDelete={() => setDeleteTarget(g)} />
           ))}
 
           <form onSubmit={handleCreateGroup} className={card}>
@@ -229,8 +232,9 @@ export default function Menu() {
 
 // ── Tarjeta de un grupo ───────────────────────────────────────────────────────
 
-function GroupCard({ group: g, busy, run, onDelete }: {
+function GroupCard({ group: g, products, busy, run, onDelete }: {
   group: OptionGroupDto;
+  products: { productId: string; name: string; hasVariants: boolean }[];
   busy: boolean;
   run: (fn: () => Promise<unknown>, fallback: string) => Promise<void>;
   onDelete: () => void;
@@ -275,6 +279,7 @@ function GroupCard({ group: g, busy, run, onDelete }: {
           <TrashIcon />
         </button>
       </div>
+      <p className="text-xs text-txt-tertiary">Conecta una opción a un producto para combos: si el producto se agota, la opción también, y al venderse descuenta su stock.</p>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-txt-primary">
         <label className="flex items-center gap-3">
@@ -308,11 +313,21 @@ function GroupCard({ group: g, busy, run, onDelete }: {
           <li className="px-3 py-2 text-sm text-txt-tertiary">Sin opciones todavía</li>
         )}
         {g.options.map((o) => (
-          <li key={o.optionId} className="flex items-center gap-3 px-3 py-2">
+          <li key={o.optionId} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
             <span className={`flex-1 min-w-0 truncate text-sm ${o.available ? 'text-txt-primary' : 'text-txt-tertiary line-through'}`}>{o.name}</span>
             <span className="text-sm text-txt-secondary tabular-nums">
               {Number(o.priceDelta) > 0 ? `+${cop(Number(o.priceDelta))}` : 'Sin costo'}
             </span>
+            <select value={o.linkedProductId ?? ''} disabled={busy}
+              aria-label={`Producto que descuenta ${o.name}`}
+              onChange={(e) => run(() => updateOption(o.optionId, { linkedProductId: e.target.value || null }), 'No se pudo conectar la opción')}
+              className="max-w-[11rem] px-2 py-1.5 rounded-lg border border-border-default bg-surface-elevated text-xs text-txt-secondary">
+              <option value="">Sin producto</option>
+              {o.linkedProduct && !products.some((p) => p.productId === o.linkedProduct!.productId) && (
+                <option value={o.linkedProduct.productId}>{o.linkedProduct.name}</option>
+              )}
+              {products.map((p) => <option key={p.productId} value={p.productId}>{p.name}</option>)}
+            </select>
             <label className="flex items-center gap-2 text-xs text-txt-secondary">
               <Switch value={!o.available} onChange={() => toggleSoldOut(o)} disabled={busy} />
               Agotado

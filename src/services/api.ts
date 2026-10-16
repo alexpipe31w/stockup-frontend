@@ -170,7 +170,7 @@ export const setKitchenOptionAvailability = (optionId: string, available: boolea
 
 // ── Menú (módulo restaurante) ─────────────────────────────────────────────────
 export type ProductKind = 'stock' | 'prepared';
-export interface MenuOptionDto { optionId: string; groupId: string; name: string; priceDelta: string | number; available: boolean; sortOrder: number }
+export interface MenuOptionDto { optionId: string; groupId: string; name: string; priceDelta: string | number; available: boolean; sortOrder: number; linkedProductId: string | null; linkedProduct: { productId: string; name: string } | null }
 export interface OptionGroupDto { groupId: string; name: string; minSelect: number; maxSelect: number; aiAsks: boolean; sortOrder: number; options: MenuOptionDto[]; productIds: string[] }
 
 export const getOptionGroups = () => api.get<OptionGroupDto[]>('/menu/option-groups');
@@ -179,9 +179,9 @@ export const createOptionGroup = (data: { name: string; minSelect: number; maxSe
 export const updateOptionGroup = (groupId: string, data: Partial<{ name: string; minSelect: number; maxSelect: number; aiAsks: boolean; sortOrder: number }>) =>
   api.patch(`/menu/option-groups/${groupId}`, data);
 export const deleteOptionGroup = (groupId: string) => api.delete(`/menu/option-groups/${groupId}`);
-export const createOption = (groupId: string, data: { name: string; priceDelta: number; available?: boolean; sortOrder?: number }) =>
+export const createOption = (groupId: string, data: { name: string; priceDelta: number; available?: boolean; sortOrder?: number; linkedProductId?: string | null }) =>
   api.post(`/menu/option-groups/${groupId}/options`, data);
-export const updateOption = (optionId: string, data: Partial<{ name: string; priceDelta: number; available: boolean; sortOrder: number }>) =>
+export const updateOption = (optionId: string, data: Partial<{ name: string; priceDelta: number; available: boolean; sortOrder: number; linkedProductId: string | null }>) =>
   api.patch(`/menu/options/${optionId}`, data);
 export const deleteOption = (optionId: string) => api.delete(`/menu/options/${optionId}`);
 export const assignProductGroups = (productId: string, groupIds: string[]) =>
