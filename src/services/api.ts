@@ -426,6 +426,9 @@ export const createPublicOrder = (slug: string, data: {
   idempotencyKey?: string;
 }) => api.post(`/public/${slug}/order`, data);
 
+export const quotePublicOrder = (slug: string, data: { items: { productId: string; variantId?: string; quantity: number; optionIds?: string[]; note?: string }[] }) =>
+  api.post<{ subtotal: number; discount: number; total: number; lines: { unitPrice: number; discount: number; promotionName: string | null }[] }>(`/public/${slug}/quote`, data);
+
 // ── Staff ─────────────────────────────────────────────────────────────────────
 export const getStaff = () =>
   api.get('/staff');
@@ -601,3 +604,18 @@ export const getStockupConnection = () =>
 
 export const disconnectStockup = () =>
   api.delete<{ ok: boolean }>('/integrations/stockup/connection');
+
+// ── Promociones (módulo restaurante) ──────────────────────────────────────────
+export type PromotionType = 'percent' | 'amount' | 'buy_n_pay_m' | 'fixed_price';
+export interface PromotionDto {
+  promotionId: string; name: string; active: boolean; type: PromotionType;
+  value: number | null; buyN: number | null; payM: number | null;
+  daysOfWeek: number[]; startTime: string | null; endTime: string | null;
+  startsAt: string | null; endsAt: string | null;
+  productIds: string[]; categoryIds: string[]; summary: string;
+}
+export type PromotionInput = Partial<Omit<PromotionDto, 'promotionId' | 'summary'>>;
+export const getPromotions = () => api.get<PromotionDto[]>('/menu/promotions');
+export const createPromotion = (data: PromotionInput) => api.post<PromotionDto>('/menu/promotions', data);
+export const updatePromotion = (id: string, data: PromotionInput) => api.patch<PromotionDto>(`/menu/promotions/${id}`, data);
+export const deletePromotion = (id: string) => api.delete(`/menu/promotions/${id}`);
