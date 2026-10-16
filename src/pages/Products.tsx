@@ -8,6 +8,7 @@ import {
 import type { OptionGroupDto, ProductKind } from '../services/api';
 import { useStoreFlags } from '../hooks/useStoreFlags';
 import { ImageUploadField } from '../components/ImageUploadField';
+import { plainText } from '../utils/plainText';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
 import FloatingSaveBar from '../components/FloatingSaveBar';
@@ -194,8 +195,7 @@ function ProductCard({ product, onEdit, onDelete, onToggleAvailable }: {
         </div>
 
         {product.description && (
-          <p className="text-xs text-txt-secondary line-clamp-2"
-            dangerouslySetInnerHTML={{ __html: product.description.replace(/<[^>]+>/g, ' ') }} />
+          <p className="text-xs text-txt-secondary line-clamp-2">{plainText(product.description)}</p>
         )}
 
         <div className="flex items-center gap-3 mt-auto pt-2 border-t border-slate-50">
