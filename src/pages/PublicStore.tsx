@@ -124,6 +124,7 @@ export default function PublicStore() {
   const [quoting, setQuoting] = useState(false);
   const [quoteFaults, setQuoteFaults] = useState<string[]>([]);
   const [quoteNonce, setQuoteNonce] = useState(0);
+  const [quoteError, setQuoteError] = useState('');
   const quoteSeq = useRef(0);
 
   // Misma clave en los reintentos del MISMO carrito; un carrito distinto es otro pedido.
@@ -177,6 +178,7 @@ export default function PublicStore() {
     const id = ++quoteSeq.current;
     setQuote(null);
     setQuoteFaults([]);
+    setQuoteError('');
     if (lines.length === 0) {
       setQuoting(false);
       return;
@@ -197,7 +199,11 @@ export default function PublicStore() {
         if (id !== quoteSeq.current) return;
         const body = err?.response?.data;
         if (body?.code === 'MENU_INVALID' && Array.isArray(body.faults)) setQuoteFaults(body.faults);
-        else console.error('[PublicStore] cotizar', err?.response?.status);
+        else {
+          console.error('[PublicStore] cotizar', err?.response?.status);
+          const m = body?.message;
+          setQuoteError((Array.isArray(m) ? m.join('. ') : typeof m === 'string' ? m : '') || 'No pudimos calcular el total. Revisa tu conexión.');
+        }
       } finally {
         if (id === quoteSeq.current) setQuoting(false);
       }
@@ -394,7 +400,7 @@ export default function PublicStore() {
     const i = lines.findIndex(([k]) => k === key);
     return kitchen && quote && i >= 0 ? quote.lines[i] : undefined;
   };
-  const detailedLines = lines.filter(([key, l]) => l.optionIds.length > 0 || l.note || (lineDiscount(key)?.discount ?? 0) > 0);
+  const detailedLines = lines.filter(([, l]) => l.optionIds.length > 0 || l.note);
   const shownFaults = Array.from(new Set([...faults, ...quoteFaults]));
 
   return (
@@ -502,6 +508,15 @@ export default function PublicStore() {
       {/* Barra fija de pedido */}
       <div className="fixed bottom-0 inset-x-0 bg-[#111117] border-t border-white/10 px-4 py-3">
         <div className="max-w-2xl mx-auto">
+          {kitchen && quoteError && !quoting && (
+            <div role="alert" className="flex items-center justify-between gap-3 text-xs text-red-400 mb-2">
+              <span>{quoteError}</span>
+              <button type="button" onClick={() => setQuoteNonce(n => n + 1)}
+                className="shrink-0 px-3 py-1.5 rounded-lg border border-white/10 text-gray-200 hover:border-white/20">
+                Reintentar
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={submit}
