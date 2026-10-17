@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { SubscriptionProvider, useSubscription } from './hooks/useSubscription';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
+import ReadOnlyBanner from './components/ReadOnlyBanner';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Conversations from './pages/Conversations';
@@ -56,6 +57,7 @@ function Layout({ children }: { children: React.ReactElement }) {
     <div className="flex min-h-screen bg-canvas">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
+        <ReadOnlyBanner />
         <PageWrapper>{children}</PageWrapper>
         <BottomNav />
       </div>
@@ -79,7 +81,7 @@ function KitchenRoute({ children }: { children: React.ReactElement }) {
 
 function SubscribedRoute({ children }: { children: React.ReactElement }) {
   const { token, user } = useAuth();
-  const { isActive, loading, error, refresh } = useSubscription();
+  const { isActive, readOnly, loading, error, refresh } = useSubscription();
 
   if (!token) return <Navigate to="/login" replace />;
   if ((user as any)?.role === 'cocina') return <Navigate to="/cocina" replace />;
@@ -106,7 +108,8 @@ function SubscribedRoute({ children }: { children: React.ReactElement }) {
     );
   }
 
-  if (!isActive) return <Navigate to="/subscription" replace />;
+  // Impago = solo lectura (la API rechaza los cambios con 402), no bloqueo total.
+  if (!isActive && !readOnly) return <Navigate to="/subscription" replace />;
   return children;
 }
 

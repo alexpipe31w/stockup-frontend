@@ -13,6 +13,7 @@ interface AuthContextType {
   user: UserData | null;
   storeId: string;
   loginFn: (email: string, password: string) => Promise<UserData>;
+  setSession: (accessToken: string) => UserData;
   logout: () => void;
 }
 
@@ -90,8 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginFn = async (email: string, password: string): Promise<UserData> => {
     const res = await loginApi(email, password);
-    const { access_token } = res.data;
+    return setSession(res.data.access_token);
+  };
 
+  /** Guarda un token emitido por la API (login o cambio de contraseña) como la sesión actual. */
+  const setSession = (access_token: string): UserData => {
     // Leer user data del JWT — no confiar en los campos extra del response
     const payload = decodeJwt(access_token);
     const userObj: UserData = {
@@ -124,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       storeId: user?.storeId ?? '',
       loginFn,
+      setSession,
       logout,
     }}>
       {children}
