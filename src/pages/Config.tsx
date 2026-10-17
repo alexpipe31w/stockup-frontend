@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import api, {
   getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices, getProducts,
   generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
-  getUsers, deleteUser, createKitchenAccount, changePassword, logoutAll,
+  getUsers, deleteUser, createKitchenAccount, changePassword, logoutAll, getSessions, revokeSession, OpenSession,
 } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
@@ -1702,8 +1702,92 @@ function StockupIntegrationSection() {
 // Misma política que la API (ChangePasswordDto): al menos dos de minúsculas, mayúsculas y números.
 const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])|(?=.*[a-z])(?=.*\d)|(?=.*[A-Z])(?=.*\d)/;
 
+/** "Chrome en Windows" a partir del User-Agent; lo justo para reconocer el dispositivo. */
+function describeAgent(ua: string | null): string {
+  if (!ua) return 'Dispositivo desconocido';
+  const browser = /Edg\//.test(ua) ? 'Edge'
+    : /OPR\//.test(ua) ? 'Opera'
+    : /Firefox\//.test(ua) ? 'Firefox'
+    : /Chrome\//.test(ua) ? 'Chrome'
+    : /Safari\//.test(ua) ? 'Safari'
+    : 'Navegador';
+  const os = /Android/.test(ua) ? 'Android'
+    : /iPhone|iPad/.test(ua) ? 'iPhone/iPad'
+    : /Windows/.test(ua) ? 'Windows'
+    : /Mac OS X/.test(ua) ? 'Mac'
+    : /Linux/.test(ua) ? 'Linux'
+    : '';
+  return os ? `${browser} en ${os}` : browser;
+}
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+function SessionsCard({ card, message }: { card: string; message: (err: any, fallback: string) => string }) {
+  const [sessions, setSessions] = useState<OpenSession[] | null>(null);
+  const [error, setError] = useState('');
+  const [closing, setClosing] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      const res = await getSessions();
+      setSessions(res.data);
+      setError('');
+    } catch (err) {
+      setError(message(err, 'No se pudieron cargar las sesiones'));
+    }
+  };
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const close = async (id: string) => {
+    setClosing(id);
+    try {
+      await revokeSession(id);
+      await load();
+    } catch (err) {
+      setError(message(err, 'No se pudo cerrar la sesión'));
+    } finally {
+      setClosing(null);
+    }
+  };
+
+  return (
+    <div className={card}>
+      <div>
+        <h2 className="font-semibold text-txt-primary">Dispositivos con sesión abierta</h2>
+        <p className="text-sm text-txt-tertiary mt-0.5">Si no reconoces alguno, ciérralo y cambia tu contraseña.</p>
+      </div>
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
+      {sessions === null && !error && <p className="text-sm text-txt-tertiary">Cargando...</p>}
+      {sessions && (
+        <ul className="divide-y divide-border-subtle">
+          {sessions.map((s) => (
+            <li key={s.sessionId} className="flex items-center justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-txt-primary truncate">
+                  {describeAgent(s.userAgent)}
+                  {s.current && <span className="ml-2 text-xs font-semibold text-green-600">Este dispositivo</span>}
+                </p>
+                <p className="text-xs text-txt-tertiary truncate">
+                  Última actividad {fmtDate(s.lastUsedAt)}{s.ip ? ` · ${s.ip}` : ''}
+                </p>
+              </div>
+              {!s.current && (
+                <button type="button" disabled={closing === s.sessionId} onClick={() => close(s.sessionId)}
+                  className="text-xs font-semibold text-error disabled:opacity-50 whitespace-nowrap">
+                  {closing === s.sessionId ? 'Cerrando...' : 'Cerrar'}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function SeguridadSection() {
-  const { setSession, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -1713,6 +1797,7 @@ function SeguridadSection() {
   const [done, setDone] = useState(false);
   const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
   const [logoutError, setLogoutError] = useState('');
+  const [sessionsKey, setSessionsKey] = useState(0);
 
   const message = (err: any, fallback: string) => {
     const m = err?.response?.data?.message;
@@ -1728,11 +1813,11 @@ function SeguridadSection() {
     if (next === current) return setError('La contraseña nueva debe ser distinta de la actual');
     setBusy(true); setError('');
     try {
-      const res = await changePassword(current, next);
-      // El token con el que se hizo la petición ya no vale: seguimos con el nuevo.
-      setSession(res.data.access_token);
+      // Esta sesión sigue; la API cierra las demás.
+      await changePassword(current, next);
       setCurrent(''); setNext(''); setConfirm('');
       setDone(true);
+      setSessionsKey((k) => k + 1);
     } catch (err) {
       setError(message(err, 'No se pudo cambiar la contraseña'));
     } finally {
@@ -1777,6 +1862,8 @@ function SeguridadSection() {
           {busy ? 'Guardando...' : 'Cambiar contraseña'}
         </button>
       </form>
+
+      <SessionsCard key={sessionsKey} card={card} message={message} />
 
       <div className={card}>
         <div>
