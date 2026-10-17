@@ -369,7 +369,9 @@ const sectionIcon = 'w-9 h-9 rounded-xl bg-surface-elevated flex items-center ju
 // keyMask = version enmascarada de la clave guardada, para mostrarla.
 // stored  = clave guardada tal como la devolvio la API; nunca se pinta. Solo se
 //           rellena mientras la API devuelva claves completas (ver savedKey).
-interface CartridgeForm { provider: AIProvider; apiKey: string; model: string; keyMask: string; stored: string }
+// keyRef  = huella de la clave guardada que da la API (que ya no devuelve la clave): se
+//           reenvia para decir "conserva esta" sin tenerla.
+interface CartridgeForm { provider: AIProvider; apiKey: string; model: string; keyMask: string; stored: string; keyRef: string }
 
 /** Enmascara una clave: prefijo corto (gsk_, sk-) + puntos + ultimos 4. */
 function maskKey(k: string): string {
@@ -392,6 +394,24 @@ function hasKey(c: CartridgeForm): boolean {
 /** Clave guardada que el panel puede reenviar (vacio si la API ya la enmascara). */
 function savedKey(k: unknown): string {
   return typeof k === 'string' && k && !isMaskedValue(k) ? k : '';
+}
+
+/** Lo que se pinta: la mascara de la API tal cual, o la propia si llega la clave entera. */
+function displayMask(k: string): string {
+  return isMaskedValue(k) ? k : maskKey(k);
+}
+
+/** Cartuchos tal como los devuelve la API (al cargar y tras guardar). */
+function cartridgesFromApi(list: unknown): CartridgeForm[] {
+  if (!Array.isArray(list)) return [];
+  return list.map((c: any) => ({
+    provider: c.provider as AIProvider,
+    apiKey:   '',
+    keyMask:  displayMask(c.apiKey ?? ''),
+    stored:   savedKey(c.apiKey),
+    keyRef:   typeof c.keyRef === 'string' ? c.keyRef : '',
+    model:    c.model ?? '',
+  }));
 }
 
 interface CartridgeSnapshot {
@@ -497,7 +517,7 @@ export default function AiConfig() {
           const loadedForm = {
             aiProvider:   provider,
             apiKey:       '',
-            keyMask:      maskKey(d.apiKey ?? d.groqApiKey ?? ''),
+            keyMask:      displayMask(d.apiKey ?? d.groqApiKey ?? ''),
             stored:       savedKey(d.apiKey ?? d.groqApiKey),
             model:        d.model ?? PROVIDERS[provider].models[0].value,
             systemPrompt: d.systemPrompt ?? '',
@@ -505,15 +525,7 @@ export default function AiConfig() {
             maxTokens:    d.maxTokens ?? 500,
           };
           setForm(loadedForm);
-          const loadedCartridges = (d.cartridges && Array.isArray(d.cartridges))
-            ? d.cartridges.map((c: any) => ({
-                provider: c.provider as AIProvider,
-                apiKey:   '',
-                keyMask:  maskKey(c.apiKey ?? ''),
-                stored:   savedKey(c.apiKey),
-                model:    c.model  ?? '',
-              }))
-            : [];
+          const loadedCartridges = cartridgesFromApi(d.cartridges);
           setCartridges(loadedCartridges);
           setInitial(JSON.stringify({ form: loadedForm, cartridges: loadedCartridges }));
         }
@@ -539,24 +551,26 @@ export default function AiConfig() {
       // cuando devuelva enmascaradas, no se manda nada y la API conserva la existente.
       const mainKey = form.apiKey.trim() || form.stored;
       const { keyMask: _km, stored: _st, apiKey: _ak, ...mainRest } = form;
-      await saveAiConfig({
+      const res = await saveAiConfig({
         ...mainRest,
         ...(mainKey ? { apiKey: mainKey } : {}),
         cartridges: cartridges.filter(hasKey).map(c => {
           const key = c.apiKey.trim() || c.stored;
           return {
             provider: c.provider,
-            ...(key ? { apiKey: key } : {}),
+            ...(key ? { apiKey: key } : c.keyRef ? { keyRef: c.keyRef } : {}),
             model:    c.model || PROVIDERS[c.provider]?.models[0]?.value || '',
           };
         }),
       });
       // Tras guardar, la clave tecleada pasa a ser la guardada y se vuelve a enmascarar.
+      // Los cartuchos salen de la respuesta: asi cada clave nueva recibe su keyRef.
       const savedForm = form.apiKey.trim()
-        ? { ...form, apiKey: '', keyMask: maskKey(form.apiKey.trim()), stored: form.apiKey.trim() }
+        ? { ...form, apiKey: '', keyMask: maskKey(form.apiKey.trim()), stored: savedKey(res.data?.apiKey) }
         : form;
-      const savedCartridges = cartridges.filter(hasKey).map(c =>
-        c.apiKey.trim() ? { ...c, apiKey: '', keyMask: maskKey(c.apiKey.trim()), stored: c.apiKey.trim() } : c);
+      const savedCartridges = Array.isArray(res.data?.cartridges)
+        ? cartridgesFromApi(res.data.cartridges)
+        : cartridges.filter(hasKey);
       setForm(savedForm);
       setCartridges(savedCartridges);
       setInitial(JSON.stringify({ form: savedForm, cartridges: savedCartridges }));
@@ -657,7 +671,7 @@ export default function AiConfig() {
           {cartridges.length < 11 && (
             <button
               type="button"
-              onClick={() => setCartridges(c => [...c, { provider: 'gemini', apiKey: '', keyMask: '', stored: '', model: 'gemini-2.0-flash' }])}
+              onClick={() => setCartridges(c => [...c, { provider: 'gemini', apiKey: '', keyMask: '', stored: '', keyRef: '', model: 'gemini-2.0-flash' }])}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border-default text-txt-secondary hover:bg-surface-elevated transition"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -688,7 +702,8 @@ export default function AiConfig() {
                     onChange={e => {
                       const p = e.target.value as AIProvider;
                       const defaultModel = PROVIDERS[p]?.models[0]?.value ?? '';
-                      setCartridges(prev => prev.map((x, i) => i === idx ? { ...x, provider: p, model: defaultModel } : x));
+                      // La clave guardada era de otro proveedor: no se reutiliza.
+                      setCartridges(prev => prev.map((x, i) => i === idx ? { ...x, provider: p, model: defaultModel, keyMask: '', stored: '', keyRef: '' } : x));
                     }}
                     className="px-3 py-2 rounded-lg border border-border-default bg-surface text-sm text-txt-primary focus:outline-none"
                   >
