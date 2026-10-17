@@ -1,36 +1,184 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000/api',
+  // La sesión larga es una cookie httpOnly de la API (bloque 2f-2): sin esto el navegador
+  // ni la guarda en el login ni la manda al renovar.
+  withCredentials: true,
 });
 
 export const READ_ONLY_EVENT = 'stockup:read-only';
+/** La sesión murió (refresh rechazado o logout en otra pestaña): useAuth limpia el estado. */
+export const SESSION_ENDED_EVENT = 'stockup:session-ended';
+
+// ── Sesión ────────────────────────────────────────────────────────────────
+// El access token vive solo en memoria (dura 15 min). Al recargar, se pide otro con la cookie.
+// En localStorage solo queda una marca "hay sesión" para no llamar a /refresh en cada visita
+// a la tienda pública o al calendario.
+
+type Scope = 'store' | 'sa';
+const tokens: Record<Scope, string | null> = { store: null, sa: null };
+const timers: Record<Scope, ReturnType<typeof setTimeout> | undefined> = { store: undefined, sa: undefined };
+const HINT: Record<Scope, string> = { store: 'stockup:session', sa: 'stockup:sa-session' };
+const REFRESH_PATH: Record<Scope, string> = { store: '/auth/refresh', sa: '/superadmin/refresh' };
+const LOGOUT_PATH: Record<Scope, string> = { store: '/auth/logout', sa: '/superadmin/logout' };
+// Los endpoints de la cookie exigen esta cabecera (anti-CSRF, ver RefreshCsrfGuard en la API).
+const CSRF_HEADERS = { 'X-Requested-With': 'stockup' };
+
+// Tokens de antes de 2f-2: ya no valen (la API subió token_version) y no deben quedar ahí.
+try {
+  ['token', 'user', 'sa_token'].forEach((k) => localStorage.removeItem(k));
+} catch {}
+
+const channel: BroadcastChannel | null =
+  typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('stockup-auth') : null;
+
+function hasHint(scope: Scope): boolean {
+  try { return localStorage.getItem(HINT[scope]) === '1'; } catch { return false; }
+}
+function setHint(scope: Scope, on: boolean) {
+  try {
+    if (on) localStorage.setItem(HINT[scope], '1');
+    else localStorage.removeItem(HINT[scope]);
+  } catch {}
+}
+
+function jwtExp(token: string): number | null {
+  try {
+    const p = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof p.exp === 'number' ? p.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+export const getAccessToken = (scope: Scope = 'store') => tokens[scope];
+
+/** Guarda el access en memoria y programa su renovación 3 min antes de que caduque. */
+export function setAccessToken(token: string | null, scope: Scope = 'store') {
+  tokens[scope] = token;
+  clearTimeout(timers[scope]);
+  if (!token) return;
+  setHint(scope, true);
+  const exp = jwtExp(token);
+  if (exp) {
+    const ms = Math.max(exp - Date.now() - 3 * 60_000, 30_000);
+    timers[scope] = setTimeout(() => { refreshAccessToken(scope).catch(() => {}); }, ms);
+  }
+}
+
+function endSession(scope: Scope, broadcast: boolean) {
+  setAccessToken(null, scope);
+  setHint(scope, false);
+  if (broadcast) channel?.postMessage({ type: 'logout', scope });
+  window.dispatchEvent(new CustomEvent(SESSION_ENDED_EVENT, { detail: scope }));
+}
+
+// Cerrar sesión en una pestaña la cierra en las demás.
+channel?.addEventListener('message', (e: MessageEvent) => {
+  if (e.data?.type === 'logout' && (e.data.scope === 'store' || e.data.scope === 'sa')) {
+    endSession(e.data.scope, false);
+  }
+});
+
+const inFlight: Record<Scope, Promise<string | null> | null> = { store: null, sa: null };
+
+/**
+ * Pide un access nuevo con la cookie. Uno solo en vuelo por pestaña: las peticiones que
+ * llegan mientras tanto esperan el mismo. null = la sesión ya no vale; si la red falla,
+ * rechaza (no se cierra la sesión por un corte).
+ */
+export function refreshAccessToken(scope: Scope = 'store'): Promise<string | null> {
+  if (!inFlight[scope]) {
+    inFlight[scope] = api
+      .post(REFRESH_PATH[scope], null, { headers: CSRF_HEADERS, _noRefresh: true } as AxiosRequestConfig)
+      .then((res) => {
+        const t: string = res.data.access_token;
+        setAccessToken(t, scope);
+        return t;
+      })
+      .catch((err) => {
+        if (err.response && [401, 403].includes(err.response.status)) {
+          endSession(scope, false);
+          return null;
+        }
+        throw err;
+      })
+      .finally(() => { inFlight[scope] = null; });
+  }
+  return inFlight[scope]!;
+}
+
+/** Al abrir el panel: si había sesión, recupera el access con la cookie. */
+export async function restoreSession(scope: Scope = 'store'): Promise<string | null> {
+  if (tokens[scope]) return tokens[scope];
+  if (!hasHint(scope)) return null;
+  try {
+    return await refreshAccessToken(scope);
+  } catch {
+    return null;
+  }
+}
+
+/** Cierra la sesión en la API (revoca la cookie) y en todas las pestañas. */
+export async function logoutSession(scope: Scope = 'store'): Promise<void> {
+  // El access no hace falta para cerrar (va la cookie): se suelta ya.
+  setAccessToken(null, scope);
+  try {
+    await api.post(LOGOUT_PATH[scope], null, { headers: CSRF_HEADERS, _noRefresh: true } as AxiosRequestConfig);
+  } catch {
+    // Sin red la cookie sigue viva hasta caducar, pero aquí la sesión se cierra igual.
+  }
+  endSession(scope, true);
+}
+
+const scopeOf = (url?: string): Scope => (url?.startsWith('/superadmin') ? 'sa' : 'store');
+
+// Endpoints sin sesión: su 401 es "credenciales o código malos", no un access caducado.
+const PUBLIC_AUTH = new Set([
+  '/auth/login', '/auth/send-verification', '/auth/verify-and-register',
+  '/superadmin/login', '/superadmin/verify-code', '/superadmin/forgot-password', '/superadmin/reset-password',
+]);
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = tokens[scopeOf(config.url)];
+  if (token && !config.headers.Authorization) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      // Limpiar sesión y redirigir — solo si no estamos ya en login/register
+  async (err) => {
+    const cfg = err.config as (AxiosRequestConfig & { _retried?: boolean; _noRefresh?: boolean }) | undefined;
+    // 401 ⇒ el access caducó o la sesión murió: se renueva una vez y se repite la petición.
+    if (err.response?.status === 401 && cfg && !cfg._retried && !cfg._noRefresh && !PUBLIC_AUTH.has(cfg.url ?? '')) {
+      const scope = scopeOf(cfg.url);
+      cfg._retried = true;
+      const sent = (cfg.headers as Record<string, string> | undefined)?.Authorization;
+      let token: string | null;
+      if (tokens[scope] && sent !== `Bearer ${tokens[scope]}`) {
+        // Otra petición ya renovó mientras esta iba en vuelo.
+        token = tokens[scope];
+      } else if (sent || hasHint(scope)) {
+        try {
+          token = await refreshAccessToken(scope);
+        } catch {
+          return Promise.reject(err);
+        }
+      } else {
+        token = null;
+      }
+      if (token) {
+        cfg.headers = { ...(cfg.headers ?? {}), Authorization: `Bearer ${token}` };
+        return api(cfg);
+      }
       const isAuthPage = ['/login', '/register', '/superadmin/login'].some(
         p => window.location.pathname.startsWith(p),
       );
-      // Un 401 de una petición hecha con un token que ya se reemplazó (p. ej. justo después de
-      // cambiar la contraseña) no debe borrar la sesión nueva.
-      const sentWith = err.config?.headers?.Authorization;
-      const current = localStorage.getItem('token');
-      const stale = !!sentWith && !!current && sentWith !== `Bearer ${current}`;
-      if (!isAuthPage && !stale) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('sa_token');
-        // Usar replace para no dejar /login en el historial si el usuario vuelve atrás
-        window.location.replace('/login');
+      if (sent && !isAuthPage) {
+        endSession(scope, false);
+        // replace: que "atrás" no devuelva a la página que ya no se puede ver.
+        window.location.replace(scope === 'sa' ? '/superadmin/login' : '/login');
       }
     }
     // 402 = tienda en solo lectura por impago: lo recoge useSubscription para mostrar el aviso
@@ -53,10 +201,22 @@ export const getUsers = () => api.get('/auth/users');
 export const createKitchenAccount = (data: { email: string; password: string }) =>
   api.post('/auth/kitchen-account', data);
 export const deleteUser = (id: string) => api.delete(`/auth/users/${id}`);
-// Devuelve un token nuevo: el anterior (y todas las demás sesiones) deja de valer.
+// Esta sesión sigue; la API cierra todas las demás del usuario.
 export const changePassword = (currentPassword: string, newPassword: string) =>
-  api.post<{ access_token: string }>('/auth/change-password', { currentPassword, newPassword });
+  api.post<{ message: string }>('/auth/change-password', { currentPassword, newPassword });
 export const logoutAll = () => api.post('/auth/logout-all');
+
+export interface OpenSession {
+  sessionId: string;
+  kind: 'store' | 'kitchen' | 'superadmin';
+  createdAt: string;
+  lastUsedAt: string;
+  userAgent: string | null;
+  ip: string | null;
+  current: boolean;
+}
+export const getSessions = () => api.get<OpenSession[]>('/auth/sessions');
+export const revokeSession = (sessionId: string) => api.delete(`/auth/sessions/${sessionId}`);
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export const getDashboard = (storeId: string) => api.get(`/dashboard/${storeId}`);
@@ -553,9 +713,11 @@ export const unblockContact = (id: string) =>
   api.delete(`/blocked/${id}`);
 
 // ── SuperAdmin ─────────────────────────────────────────────────────────────
-// Usa sa_token separado del token de usuario normal
+// Sesión propia del SA (cookie __Secure-sa_rt y access en memoria), separada de la de tienda.
 function saHeaders() {
-  return { Authorization: `Bearer ${localStorage.getItem('sa_token') ?? ''}` };
+  // El interceptor ya pone el token del SA en /superadmin/*; esto solo lo deja explícito.
+  const t = getAccessToken('sa');
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
 export const superAdminLogin = (email: string, password: string) =>
