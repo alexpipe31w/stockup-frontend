@@ -12,6 +12,8 @@ import {
   getSuperAdminSubscriptionConfig,
   updateSuperAdminSubscriptionConfig,
   getSuperAdminSubscriptions,
+  logoutSession,
+  restoreSession,
 } from '../services/api';
 
 type Tab = 'dashboard' | 'stores' | 'users' | 'audit' | 'subscriptions';
@@ -82,12 +84,6 @@ function decodeJwt(token: string): any {
   }
 }
 
-function isTokenValid(token: string | null): boolean {
-  if (!token) return false;
-  const payload = decodeJwt(token);
-  if (!payload?.exp) return false;
-  return payload.exp * 1000 > Date.now() && payload.role === 'superadmin';
-}
 
 interface WaGatewayRow {
   ownerId: string;
@@ -142,14 +138,19 @@ export default function SuperAdmin() {
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceLoading, setPriceLoading] = useState(false);
 
-  const token = localStorage.getItem('sa_token');
+  // El access del SA vive en memoria; al recargar se recupera con su cookie (bloque 2f-2).
+  const [token, setToken] = useState<string | null>(null);
   const adminEmail = token ? decodeJwt(token)?.email : '';
 
   useEffect(() => {
-    if (!isTokenValid(token)) {
-      navigate('/superadmin/login', { replace: true });
-    }
-  }, [token, navigate]);
+    let cancelled = false;
+    restoreSession('sa').then((t) => {
+      if (cancelled) return;
+      if (t && decodeJwt(t)?.role === 'superadmin') setToken(t);
+      else navigate('/superadmin/login', { replace: true });
+    });
+    return () => { cancelled = true; };
+  }, [navigate]);
 
   const loadTab = useCallback(async (t: Tab) => {
     setLoading(true);
@@ -183,7 +184,7 @@ export default function SuperAdmin() {
       }
     } catch (e: any) {
       if (e.response?.status === 401 || e.response?.status === 403) {
-        localStorage.removeItem('sa_token');
+        void logoutSession('sa');
         navigate('/superadmin/login', { replace: true });
         return;
       }
@@ -194,7 +195,7 @@ export default function SuperAdmin() {
   }, [navigate]);
 
   useEffect(() => {
-    if (isTokenValid(token)) loadTab(tab);
+    if (token) loadTab(tab);
   }, [tab, loadTab, token]);
 
   const handleToggleStore = async (storeId: string) => {
@@ -226,7 +227,7 @@ export default function SuperAdmin() {
   };
 
   const logout = () => {
-    localStorage.removeItem('sa_token');
+    void logoutSession('sa');
     navigate('/superadmin/login', { replace: true });
   };
 
