@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import api, {
   getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices, getProducts,
   generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
-  getUsers, deleteUser, createKitchenAccount,
+  getUsers, deleteUser, createKitchenAccount, changePassword, logoutAll,
 } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
@@ -14,7 +15,7 @@ import { useStoreFlags } from '../hooks/useStoreFlags';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type Tab = 'negocio' | 'ia' | 'excluidos' | 'suscripcion' | 'equipo' | 'stockup';
+type Tab = 'negocio' | 'ia' | 'excluidos' | 'suscripcion' | 'equipo' | 'stockup' | 'seguridad';
 
 interface BlockedContact {
   blockedId: string;
@@ -1696,6 +1697,121 @@ function StockupIntegrationSection() {
   );
 }
 
+// ── TAB: SEGURIDAD ─────────────────────────────────────────────────────────
+
+// Misma política que la API (ChangePasswordDto): al menos dos de minúsculas, mayúsculas y números.
+const PASSWORD_POLICY = /^(?=.*[a-z])(?=.*[A-Z])|(?=.*[a-z])(?=.*\d)|(?=.*[A-Z])(?=.*\d)/;
+
+function SeguridadSection() {
+  const { setSession, logout } = useAuth();
+  const navigate = useNavigate();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+  const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+
+  const message = (err: any, fallback: string) => {
+    const m = err?.response?.data?.message;
+    return Array.isArray(m) ? m.join('. ') : (m || fallback);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDone(false);
+    if (next.length < 8) return setError('La contraseña nueva debe tener al menos 8 caracteres');
+    if (!PASSWORD_POLICY.test(next)) return setError('La contraseña nueva debe incluir mayúsculas y minúsculas, o letras y números');
+    if (next !== confirm) return setError('Las contraseñas nuevas no coinciden');
+    if (next === current) return setError('La contraseña nueva debe ser distinta de la actual');
+    setBusy(true); setError('');
+    try {
+      const res = await changePassword(current, next);
+      // El token con el que se hizo la petición ya no vale: seguimos con el nuevo.
+      setSession(res.data.access_token);
+      setCurrent(''); setNext(''); setConfirm('');
+      setDone(true);
+    } catch (err) {
+      setError(message(err, 'No se pudo cambiar la contraseña'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doLogoutAll = async () => {
+    setBusy(true); setLogoutError('');
+    try {
+      await logoutAll();
+      logout();
+      navigate('/login', { replace: true });
+    } catch (err) {
+      setLogoutError(message(err, 'No se pudieron cerrar las sesiones'));
+      setConfirmLogoutAll(false);
+      setBusy(false);
+    }
+  };
+
+  const ic = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary placeholder:text-txt-tertiary';
+  const card = 'bg-surface rounded-2xl shadow-sm border border-border-subtle p-6 space-y-4';
+
+  return (
+    <div className="space-y-5">
+      <form onSubmit={submit} className={card}>
+        <div>
+          <h2 className="font-semibold text-txt-primary">Cambiar contraseña</h2>
+          <p className="text-sm text-txt-tertiary mt-0.5">Al cambiarla se cierra la sesión en todos los demás dispositivos.</p>
+        </div>
+        <input type="password" required autoComplete="current-password" value={current}
+          onChange={e => setCurrent(e.target.value)} placeholder="Contraseña actual" className={ic} />
+        <input type="password" required autoComplete="new-password" minLength={8} maxLength={72} value={next}
+          onChange={e => setNext(e.target.value)} placeholder="Contraseña nueva (mínimo 8)" className={ic} />
+        <input type="password" required autoComplete="new-password" maxLength={72} value={confirm}
+          onChange={e => setConfirm(e.target.value)} placeholder="Repite la contraseña nueva" className={ic} />
+        {error && <p role="alert" className="text-sm text-error">{error}</p>}
+        {done && <p role="status" className="text-sm text-green-600">Contraseña cambiada. Las demás sesiones se cerraron.</p>}
+        <button type="submit" disabled={busy}
+          className="px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}>
+          {busy ? 'Guardando...' : 'Cambiar contraseña'}
+        </button>
+      </form>
+
+      <div className={card}>
+        <div>
+          <h2 className="font-semibold text-txt-primary">Cerrar sesión en todos los dispositivos</h2>
+          <p className="text-sm text-txt-tertiary mt-0.5">
+            Úsalo si perdiste un teléfono o entraste desde un equipo ajeno. Tendrás que volver a iniciar sesión aquí también.
+          </p>
+        </div>
+        {logoutError && <p role="alert" className="text-sm text-error">{logoutError}</p>}
+        <button type="button" disabled={busy} onClick={() => setConfirmLogoutAll(true)}
+          className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white disabled:opacity-50">
+          Cerrar todas las sesiones
+        </button>
+      </div>
+
+      {confirmLogoutAll && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
+          <div role="dialog" aria-modal="true" className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-bold text-txt-primary mb-2">¿Cerrar todas las sesiones?</h3>
+            <p className="text-sm text-txt-secondary mb-5">Se cerrará la sesión en todos los dispositivos, incluido este.</p>
+            <div className="flex gap-3">
+              <button type="button" disabled={busy} onClick={() => setConfirmLogoutAll(false)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary">Cancelar</button>
+              <button type="button" disabled={busy} onClick={doLogoutAll}
+                className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500 text-white disabled:opacity-50">
+                {busy ? 'Cerrando...' : 'Cerrar sesiones'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main: Config ───────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -1761,6 +1877,16 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    id: 'seguridad',
+    label: 'Seguridad',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function Config() {
@@ -1799,6 +1925,7 @@ export default function Config() {
       {activeTab === 'suscripcion' && <SuscripcionSection />}
       {activeTab === 'equipo'      && <EquipoSection     storeId={storeId} />}
       {activeTab === 'stockup'     && <StockupIntegrationSection />}
+      {activeTab === 'seguridad'   && <SeguridadSection />}
     </div>
   );
 }

@@ -4,6 +4,8 @@ const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000/api',
 });
 
+export const READ_ONLY_EVENT = 'stockup:read-only';
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -18,13 +20,23 @@ api.interceptors.response.use(
       const isAuthPage = ['/login', '/register', '/superadmin/login'].some(
         p => window.location.pathname.startsWith(p),
       );
-      if (!isAuthPage) {
+      // Un 401 de una petición hecha con un token que ya se reemplazó (p. ej. justo después de
+      // cambiar la contraseña) no debe borrar la sesión nueva.
+      const sentWith = err.config?.headers?.Authorization;
+      const current = localStorage.getItem('token');
+      const stale = !!sentWith && !!current && sentWith !== `Bearer ${current}`;
+      if (!isAuthPage && !stale) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('sa_token');
         // Usar replace para no dejar /login en el historial si el usuario vuelve atrás
         window.location.replace('/login');
       }
+    }
+    // 402 = tienda en solo lectura por impago: lo recoge useSubscription para mostrar el aviso
+    // aunque la página que hizo la petición se trague el error.
+    if (err.response?.status === 402) {
+      window.dispatchEvent(new CustomEvent(READ_ONLY_EVENT, { detail: err.response.data?.message }));
     }
     return Promise.reject(err);
   }
@@ -41,6 +53,10 @@ export const getUsers = () => api.get('/auth/users');
 export const createKitchenAccount = (data: { email: string; password: string }) =>
   api.post('/auth/kitchen-account', data);
 export const deleteUser = (id: string) => api.delete(`/auth/users/${id}`);
+// Devuelve un token nuevo: el anterior (y todas las demás sesiones) deja de valer.
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  api.post<{ access_token: string }>('/auth/change-password', { currentPassword, newPassword });
+export const logoutAll = () => api.post('/auth/logout-all');
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export const getDashboard = (storeId: string) => api.get(`/dashboard/${storeId}`);
