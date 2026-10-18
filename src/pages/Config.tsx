@@ -5,12 +5,14 @@ import api, {
   getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices, getProducts,
   generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
   getUsers, deleteUser, createKitchenAccount, changePassword, logoutAll, getSessions, revokeSession, OpenSession,
+  getTotpStatus, totpSetup, totpEnable, totpDisable, TotpStatus,
 } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
 } from '../utils/businessHours';
 import FloatingSaveBar from '../components/FloatingSaveBar';
+import { RecoveryCodes, TotpQr } from '../components/TwoFactorParts';
 import { useStoreFlags } from '../hooks/useStoreFlags';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -1786,6 +1788,154 @@ function SessionsCard({ card, message }: { card: string; message: (err: any, fal
   );
 }
 
+/** Verificación en dos pasos (TOTP): opcional para los admins de tienda. */
+function TwoFactorCard({ card, ic, message, onEnabled }: {
+  card: string;
+  ic: string;
+  message: (err: any, fallback: string) => string;
+  onEnabled: () => void;
+}) {
+  const [status, setStatus] = useState<TotpStatus | null>(null);
+  const [setup, setSetup] = useState<{ otpauthUri: string; secret: string } | null>(null);
+  const [codes, setCodes] = useState<string[] | null>(null);
+  const [disabling, setDisabling] = useState(false);
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = async () => {
+    try {
+      setStatus((await getTotpStatus()).data);
+    } catch (err) {
+      setError(message(err, 'No se pudo cargar la verificación en dos pasos'));
+    }
+  };
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reset = () => { setPassword(''); setCode(''); setError(''); };
+
+  const start = async () => {
+    setBusy(true); reset();
+    try {
+      setSetup((await totpSetup()).data);
+    } catch (err) {
+      setError(message(err, 'No se pudo empezar la activación'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const enable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setError('');
+    try {
+      const res = await totpEnable(password, code);
+      setCodes(res.data.recoveryCodes);
+      setSetup(null);
+      reset();
+      onEnabled();
+    } catch (err) {
+      setCode('');
+      setError(message(err, 'No se pudo activar'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const disable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setError('');
+    try {
+      await totpDisable(password, code);
+      setDisabling(false);
+      reset();
+      await load();
+    } catch (err) {
+      setCode('');
+      setError(message(err, 'No se pudo desactivar'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const primary = 'px-4 py-2 rounded-xl text-sm font-medium text-[#0A0A0F] disabled:opacity-50';
+  const lime = { background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' };
+
+  return (
+    <div className={card}>
+      <div>
+        <h2 className="font-semibold text-txt-primary">Verificación en dos pasos</h2>
+        <p className="text-sm text-txt-tertiary mt-0.5">
+          Además de la contraseña, al entrar se pide un código de una app en tu teléfono. Si alguien
+          consigue tu contraseña, no podrá entrar sin él.
+        </p>
+      </div>
+
+      {codes ? (
+        <>
+          <p className="text-sm font-medium text-green-600">Activada. Estos son tus códigos de recuperación:</p>
+          <RecoveryCodes codes={codes} />
+          <button type="button" onClick={() => { setCodes(null); load(); }} className={primary} style={lime}>
+            Ya los guardé
+          </button>
+        </>
+      ) : status === null ? (
+        !error && <p className="text-sm text-txt-tertiary">Cargando...</p>
+      ) : status.enabled ? (
+        <>
+          <p className="text-sm text-txt-secondary">
+            <span className="font-semibold text-green-600">Activada</span>
+            {status.enabledAt && ` desde el ${new Date(status.enabledAt).toLocaleDateString('es-CO')}`}.
+            {' '}Te quedan {status.recoveryCodesLeft} códigos de recuperación.
+          </p>
+          {disabling ? (
+            <form onSubmit={disable} className="space-y-2">
+              <input type="password" required autoComplete="current-password" value={password}
+                onChange={e => setPassword(e.target.value)} placeholder="Contraseña" className={ic} />
+              <input required autoComplete="one-time-code" maxLength={20} value={code}
+                onChange={e => setCode(e.target.value)} placeholder="Código de la app o de recuperación" className={ic} />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setDisabling(false); reset(); }}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary">Cancelar</button>
+                <button type="submit" disabled={busy}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500 text-white disabled:opacity-50">
+                  {busy ? 'Desactivando...' : 'Desactivar'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button type="button" onClick={() => { reset(); setDisabling(true); }}
+              className="text-sm font-semibold text-error">Desactivar</button>
+          )}
+        </>
+      ) : setup ? (
+        <form onSubmit={enable} className="space-y-4">
+          <TotpQr otpauthUri={setup.otpauthUri} secret={setup.secret} />
+          <div className="space-y-2">
+            <input inputMode="numeric" required autoComplete="one-time-code" maxLength={6} value={code}
+              onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="Código de 6 dígitos de la app" className={ic} />
+            <input type="password" required autoComplete="current-password" value={password}
+              onChange={e => setPassword(e.target.value)} placeholder="Tu contraseña actual" className={ic} />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setSetup(null); reset(); }}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary">Cancelar</button>
+            <button type="submit" disabled={busy || code.length !== 6} className={primary} style={lime}>
+              {busy ? 'Activando...' : 'Activar'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" disabled={busy} onClick={start} className={primary} style={lime}>
+          {busy ? 'Preparando...' : 'Activar verificación en dos pasos'}
+        </button>
+      )}
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
+    </div>
+  );
+}
+
 function SeguridadSection() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -1862,6 +2012,8 @@ function SeguridadSection() {
           {busy ? 'Guardando...' : 'Cambiar contraseña'}
         </button>
       </form>
+
+      <TwoFactorCard card={card} ic={ic} message={message} onEnabled={() => setSessionsKey((k) => k + 1)} />
 
       <SessionsCard key={sessionsKey} card={card} message={message} />
 
