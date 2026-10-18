@@ -422,6 +422,8 @@ interface Order {
   notes:               string | null;
   estimatedTime:       number | null;
   deliveryAddress:     string | null;
+  /** Zona de envío en la que cae la dirección, si la tienda tiene zonas. */
+  deliveryZone?:       string | null;
   isManual:            boolean;
   manualPaymentMethod: string | null;
   createdAt:           string;
@@ -534,6 +536,9 @@ function OrderDetail({
               <div className="bg-surface-elevated rounded-xl px-4 py-3">
                 <p className="text-xs text-txt-tertiary mb-0.5">Dirección</p>
                 <p className="font-semibold text-txt-primary text-sm">{order.deliveryAddress}</p>
+                {order.deliveryZone && (
+                  <p className="text-xs text-txt-secondary mt-1">Zona de envío: {order.deliveryZone}</p>
+                )}
               </div>
             )}
             <div className="bg-surface-elevated rounded-xl px-4 py-3">

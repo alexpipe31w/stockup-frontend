@@ -244,7 +244,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
     requiresCustomerCedula: false,
     // Pedidos de productos (los de arriba son de citas)
     orderShipping: false,
-    orderShippingZone: '',
+    // Zonas de envío como texto separado por comas; la API guarda la lista.
+    orderShippingZones: '',
     orderRequiresDeposit: false,
     orderDepositAmount: '',
     orderPolicy: '',
@@ -307,7 +308,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         requiresCustomerAddress: d.requiresCustomerAddress ?? false,
         requiresCustomerCedula:  d.requiresCustomerCedula  ?? false,
         orderShipping:        d.orderShipping        ?? false,
-        orderShippingZone:    d.orderShippingZone    ?? '',
+        orderShippingZones:   (d.orderShippingZones ?? []).join(', '),
         orderRequiresDeposit: d.orderRequiresDeposit ?? false,
         orderDepositAmount:   d.orderDepositAmount   ?? '',
         orderPolicy:          d.orderPolicy          ?? '',
@@ -363,7 +364,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         requiresCustomerAddress: form.requiresCustomerAddress,
         requiresCustomerCedula:  form.requiresCustomerCedula,
         orderShipping:        form.orderShipping,
-        orderShippingZone:    form.orderShippingZone,
+        orderShippingZones:   form.orderShippingZones.split(/[,;\n]/).map((z: string) => z.trim()).filter(Boolean),
         orderRequiresDeposit: form.orderRequiresDeposit,
         orderDepositAmount:   form.orderDepositAmount,
         orderPolicy:          form.orderPolicy,
@@ -566,8 +567,13 @@ function NegocioSection({ storeId }: { storeId: string }) {
           </p>
         </div>
         {form.orderShipping && (
-          <input value={form.orderShippingZone} onChange={e => setf('orderShippingZone', e.target.value)}
-            placeholder="Ciudades o zonas de envío (vacío = a todo el país)" className={ic} />
+          <div className="space-y-1">
+            <input value={form.orderShippingZones} onChange={e => setf('orderShippingZones', e.target.value)}
+              placeholder="Zonas de envío separadas por coma: Neiva, Rivera, Palermo" className={ic} />
+            <p className="text-xs text-txt-tertiary">
+              Vacío = enviamos a cualquier parte. Con zonas, un pedido con dirección fuera de ellas no se registra: la IA le dice al cliente a dónde envías.
+            </p>
+          </div>
         )}
         <div className="flex items-center gap-3">
           <Toggle value={form.orderRequiresDeposit} onChange={() => setf('orderRequiresDeposit', !form.orderRequiresDeposit)} />
