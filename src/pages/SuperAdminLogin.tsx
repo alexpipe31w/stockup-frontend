@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { setAccessToken, superAdminLogin } from '../services/api';
+import { setAccessToken, superAdminEnrollTotp, superAdminLogin, superAdminVerifyTotp } from '../services/api';
 import api from '../services/api';
+import { RecoveryCodes, TotpQr } from '../components/TwoFactorParts';
 
-type View = 'credentials' | 'verify-code' | 'forgot-request' | 'forgot-reset';
+type View = 'credentials' | 'verify-code' | 'verify-totp' | 'enroll' | 'recovery-codes' | 'forgot-request' | 'forgot-reset';
+
+/** Respuesta de verify-code mientras el SA aún no tiene 2FA: hay que activarlo para entrar. */
+interface EnrollData { enrollTicket: string; otpauthUri: string; secret: string }
+
+const inputCls = 'w-full px-4 py-2.5 rounded-xl bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition text-sm';
 
 function decodeJwt(token: string): any {
   try {
@@ -69,7 +75,7 @@ function CredentialsView({
   onSuccess,
   onForgot,
 }: {
-  onSuccess: (sessionId: string, email: string) => void;
+  onSuccess: (sessionId: string, email: string, needsTotp: boolean) => void;
   onForgot: () => void;
 }) {
   const [email, setEmail] = useState('');
@@ -83,8 +89,8 @@ function CredentialsView({
     setLoading(true);
     try {
       const res = await superAdminLogin(email, password);
-      const { sessionId } = res.data;
-      onSuccess(sessionId, email);
+      const { sessionId, requiresTotp } = res.data;
+      onSuccess(sessionId, email, !!requiresTotp);
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'Credenciales inválidas');
     } finally {
@@ -126,11 +132,13 @@ function VerifyCodeView({
   sessionId,
   email,
   onSuccess,
+  onMustEnroll,
   onBack,
 }: {
   sessionId: string;
   email: string;
   onSuccess: (token: string) => void;
+  onMustEnroll: (data: EnrollData) => void;
   onBack: () => void;
 }) {
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
@@ -174,7 +182,8 @@ function VerifyCodeView({
     setLoading(true);
     try {
       const res = await api.post('/superadmin/verify-code', { sessionId, code });
-      onSuccess(res.data.access_token);
+      if (res.data.mustEnrollTotp) onMustEnroll(res.data);
+      else onSuccess(res.data.access_token);
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'Código inválido o expirado');
       setDigits(['', '', '', '', '', '']);
@@ -219,6 +228,107 @@ function VerifyCodeView({
           className="mt-4 w-full text-center text-slate-400 hover:text-slate-200 text-sm transition">
           ← Volver al inicio de sesión
         </button>
+      </div>
+    </>
+  );
+}
+
+// ── Vista 2b: código de la app de autenticación (SA con 2FA) ─────────────────
+function VerifyTotpView({
+  sessionId,
+  onSuccess,
+  onBack,
+}: {
+  sessionId: string;
+  onSuccess: (token: string) => void;
+  onBack: () => void;
+}) {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await superAdminVerifyTotp(sessionId, code);
+      onSuccess(res.data.access_token);
+    } catch (err: any) {
+      const msg: string | undefined = err.response?.data?.message;
+      setCode('');
+      setError(msg ?? 'Código incorrecto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Header subtitle="Verificación en dos pasos" />
+      <div className="bg-slate-800 rounded-2xl p-8 shadow-2xl border border-slate-700">
+        <p className="text-slate-400 text-sm text-center mb-6">
+          Escribe el código de 6 dígitos de tu app de autenticación, o uno de tus códigos de recuperación.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <input value={code} onChange={e => setCode(e.target.value)} required autoFocus
+            autoComplete="one-time-code" maxLength={20} placeholder="123456"
+            aria-label="Código" className={`${inputCls} text-center tracking-widest`} />
+          <ErrorMsg msg={error} />
+          <SubmitBtn loading={loading} label="Verificar" />
+        </form>
+        <button onClick={onBack}
+          className="mt-4 w-full text-center text-slate-400 hover:text-slate-200 text-sm transition">
+          Volver al inicio de sesión
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ── Vista 2c: alta obligatoria del 2FA (primer login del SA) ────────────────
+function EnrollView({
+  data,
+  onEnrolled,
+}: {
+  data: EnrollData;
+  onEnrolled: (token: string, recoveryCodes: string[]) => void;
+}) {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await superAdminEnrollTotp(data.enrollTicket, code);
+      onEnrolled(res.data.access_token, res.data.recoveryCodes);
+    } catch (err: any) {
+      setCode('');
+      setError(err.response?.data?.message ?? 'No se pudo activar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Header subtitle="Activa la verificación en dos pasos" />
+      <div className="bg-slate-800 rounded-2xl p-8 shadow-2xl border border-slate-700 space-y-5">
+        <p className="text-slate-300 text-sm">
+          Para el superadmin es obligatoria. Desde ahora, al entrar se pedirá un código de esta app en
+          lugar del código por correo.
+        </p>
+        <TotpQr otpauthUri={data.otpauthUri} secret={data.secret} />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} required
+            inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="Código de 6 dígitos"
+            aria-label="Código de la app" className={`${inputCls} text-center tracking-widest`} />
+          <ErrorMsg msg={error} />
+          <SubmitBtn loading={loading} label="Activar y entrar" />
+        </form>
       </div>
     </>
   );
@@ -353,19 +463,30 @@ export default function SuperAdminLogin() {
   const [sessionId, setSessionId] = useState('');
   const [mfaEmail, setMfaEmail] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
+  const [enroll, setEnroll] = useState<EnrollData | null>(null);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
 
-  const handleCredentialsSuccess = (sid: string, email: string) => {
+  const handleCredentialsSuccess = (sid: string, email: string, needsTotp: boolean) => {
     setSessionId(sid);
     setMfaEmail(email);
-    setView('verify-code');
+    setView(needsTotp ? 'verify-totp' : 'verify-code');
   };
 
   const handleVerifySuccess = (token: string) => {
     const payload = decodeJwt(token);
     if (payload?.role !== 'superadmin') return;
-    // Access en memoria; la sesión larga queda en la cookie que puso verify-code.
+    // Access en memoria; la sesión larga queda en la cookie que puso la API.
     setAccessToken(token, 'sa');
     navigate('/superadmin');
+  };
+
+  const handleEnrolled = (token: string, codes: string[]) => {
+    if (decodeJwt(token)?.role !== 'superadmin') return;
+    setAccessToken(token, 'sa');
+    // Antes de entrar, una sola vez: los códigos de recuperación.
+    setRecoveryCodes(codes);
+    setEnroll(null);
+    setView('recovery-codes');
   };
 
   return (
@@ -383,8 +504,34 @@ export default function SuperAdminLogin() {
             sessionId={sessionId}
             email={mfaEmail}
             onSuccess={handleVerifySuccess}
+            onMustEnroll={(d) => { setEnroll(d); setView('enroll'); }}
             onBack={() => setView('credentials')}
           />
+        )}
+
+        {view === 'verify-totp' && (
+          <VerifyTotpView
+            sessionId={sessionId}
+            onSuccess={handleVerifySuccess}
+            onBack={() => setView('credentials')}
+          />
+        )}
+
+        {view === 'enroll' && enroll && <EnrollView data={enroll} onEnrolled={handleEnrolled} />}
+
+        {view === 'recovery-codes' && (
+          <>
+            <Header subtitle="Verificación en dos pasos activada" />
+            <div className="bg-slate-800 rounded-2xl p-8 shadow-2xl border border-slate-700 space-y-5">
+              <p className="text-slate-300 text-sm font-medium">Tus códigos de recuperación:</p>
+              <RecoveryCodes codes={recoveryCodes} />
+              <button type="button" onClick={() => navigate('/superadmin')}
+                className="w-full py-2.5 rounded-xl text-white font-semibold text-sm"
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                Ya los guardé, entrar al panel
+              </button>
+            </div>
+          </>
         )}
 
         {view === 'forgot-request' && (
