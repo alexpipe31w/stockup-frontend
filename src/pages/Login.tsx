@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import AuthGridBg from '../components/AuthGridBg';
 
@@ -15,20 +15,46 @@ const itemVariants = {
 };
 
 export default function Login() {
-  const { loginFn } = useAuth() as any;
+  const { loginFn, loginTotpFn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Segundo paso del login con verificación en dos pasos: la contraseña ya se comprobó.
+  const [mfaTicket, setMfaTicket] = useState('');
+  const [code, setCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    if (mfaTicket) {
+      try {
+        const userData = await loginTotpFn(mfaTicket, code);
+        navigate(userData.role === 'cocina' ? '/cocina' : '/dashboard');
+      } catch (err: any) {
+        const msg: string | undefined = err?.response?.data?.message;
+        if (err?.response?.status === 401 && msg?.includes('caducó')) {
+          // Ticket muerto (5 min o 5 fallos): vuelta a la contraseña.
+          setMfaTicket('');
+          setPassword('');
+        }
+        setCode('');
+        setError(msg ?? 'No se pudo conectar al servidor. Verifica tu conexión.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     try {
-      const userData = await loginFn(email, password);
+      const result = await loginFn(email, password);
+      if ('mfaTicket' in result) {
+        setMfaTicket(result.mfaTicket);
+        return;
+      }
+      const userData = result;
       navigate(
         userData.role === 'superadmin' ? '/superadmin'
           : userData.role === 'cocina' ? '/cocina'
@@ -37,6 +63,8 @@ export default function Login() {
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError('Correo o contraseña incorrectos');
+      } else if (err?.response?.status === 429) {
+        setError(err.response.data?.message ?? 'Demasiados intentos. Espera un momento.');
       } else {
         setError('No se pudo conectar al servidor. Verifica tu conexión.');
       }
@@ -102,16 +130,54 @@ export default function Login() {
           {/* Card */}
           <div className="rounded-2xl border p-8" style={{ background: 'rgba(17,17,23,0.85)', borderColor: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(12px)' }}>
             <motion.h1 variants={itemVariants} className="text-2xl font-bold text-white mb-1">
-              Bienvenido
+              {mfaTicket ? 'Verificación en dos pasos' : 'Bienvenido'}
             </motion.h1>
+            {mfaTicket ? (
+              <p className="text-white/50 text-sm mb-7">
+                Escribe el código de 6 dígitos de tu app de autenticación, o uno de tus códigos de recuperación.
+              </p>
+            ) : (
             <motion.p variants={itemVariants} className="text-white/50 text-sm mb-7">
               Ingresa tus credenciales para continuar.{' '}
               <Link to="/register" className="hover:underline font-medium transition" style={{ color: '#D4FF00' }}>
                 Crear cuenta
               </Link>
             </motion.p>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {mfaTicket ? (
+                <div>
+                  <label htmlFor="totp-code" className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                    Código
+                  </label>
+                  <div className="relative">
+                    <ShieldCheck size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    <input
+                      id="totp-code"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="123456"
+                      required
+                      autoFocus
+                      autoComplete="one-time-code"
+                      maxLength={20}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all tracking-widest"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white' }}
+                      onFocus={e => (e.target.style.borderColor = 'rgba(212,255,0,0.5)')}
+                      onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setMfaTicket(''); setCode(''); setPassword(''); setError(''); }}
+                    className="mt-3 text-xs hover:underline"
+                    style={{ color: 'rgba(255,255,255,0.45)' }}
+                  >
+                    Volver
+                  </button>
+                </div>
+              ) : (<>
               <motion.div variants={itemVariants}>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
                   Correo electrónico
@@ -167,6 +233,7 @@ export default function Login() {
                   </button>
                 </div>
               </motion.div>
+              </>)}
 
               {error && (
                 <motion.p
@@ -189,10 +256,10 @@ export default function Login() {
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Ingresando...
+                    {mfaTicket ? 'Verificando...' : 'Ingresando...'}
                   </>
                 ) : (
-                  'Ingresar al panel'
+                  mfaTicket ? 'Verificar' : 'Ingresar al panel'
                 )}
               </motion.button>
             </form>

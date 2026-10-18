@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import {
-  login as loginApi, logoutSession, restoreSession, setAccessToken, SESSION_ENDED_EVENT,
+  login as loginApi, loginTotp as loginTotpApi, logoutSession, restoreSession, setAccessToken, SESSION_ENDED_EVENT,
 } from '../services/api';
 
 interface UserData {
@@ -16,7 +16,9 @@ interface AuthContextType {
   storeId: string;
   /** false mientras se recupera la sesión con la cookie al abrir el panel. */
   ready: boolean;
-  loginFn: (email: string, password: string) => Promise<UserData>;
+  /** Con 2FA activo devuelve el ticket del segundo paso en vez del usuario. */
+  loginFn: (email: string, password: string) => Promise<UserData | { mfaTicket: string }>;
+  loginTotpFn: (mfaTicket: string, code: string) => Promise<UserData>;
   setSession: (accessToken: string) => UserData;
   logout: () => void;
 }
@@ -82,8 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(SESSION_ENDED_EVENT, onEnded);
   }, []);
 
-  const loginFn = async (email: string, password: string): Promise<UserData> => {
+  const loginFn = async (email: string, password: string): Promise<UserData | { mfaTicket: string }> => {
     const res = await loginApi(email, password);
+    if (res.data.mfaRequired) return { mfaTicket: res.data.mfaTicket };
+    return setSession(res.data.access_token);
+  };
+
+  const loginTotpFn = async (mfaTicket: string, code: string): Promise<UserData> => {
+    const res = await loginTotpApi(mfaTicket, code);
     return setSession(res.data.access_token);
   };
 
@@ -111,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       storeId: user?.storeId ?? '',
       ready,
       loginFn,
+      loginTotpFn,
       setSession,
       logout,
     }}>
