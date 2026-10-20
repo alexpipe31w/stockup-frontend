@@ -716,7 +716,9 @@ export default function Orders() {
             <div>
               <h1 className="text-xl font-bold text-txt-primary">Órdenes</h1>
               <p className="text-sm text-txt-tertiary mt-0.5">
-                {loading ? '...' : `${orders.length} pedidos en total`}
+                {loading ? '...' : cursor
+                  ? `${orders.length} pedidos más recientes (hay más: los totales y el reporte cuentan solo estos)`
+                  : `${orders.length} pedidos en total`}
               </p>
             </div>
 

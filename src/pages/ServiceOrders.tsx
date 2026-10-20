@@ -486,6 +486,12 @@ export default function ServiceOrders() {
 
       {/* Lista */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
+        {!loading && cursor && (
+          <p className="mb-3 text-xs text-txt-tertiary">
+            Se muestran los {orders.length} cobros más recientes: los totales y el reporte cuentan solo estos.
+            Usa "Cargar más antiguos" al final de la lista para incluir los anteriores.
+          </p>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 rounded-full border-2 border-lime border-t-transparent animate-spin" />
