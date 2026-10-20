@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders, updateOrderStatus, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
+import { getOrders, ORDERS_PAGE, updateOrderStatus, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
 import { exportCashReport } from '../utils/exportExcel';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
@@ -62,6 +62,9 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const [submitting, setSubmitting]     = useState(false);
   const [error, setError]               = useState('');
   const [products, setProducts]         = useState<ProductOption[]>([]);
+  // Clave del pedido: una por formulario abierto. Un doble clic o un reintento tras un corte
+  // repiten la misma y la API devuelve el pedido ya creado (antes era Date.now() por envío).
+  const [idemKey]                       = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     getCustomers(storeId).then((r) => setCustomers(r.data));
@@ -138,7 +141,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
         notes:               notes.trim() || undefined,
         discountPercent:     discountPct || undefined,
         manualPaymentMethod: payMethod,
-        idempotencyKey:      `manual-${storeId}-${Date.now()}`,
+        idempotencyKey:      `manual-${idemKey}`,
       });
       onCreated();
       onClose();
@@ -647,12 +650,33 @@ export default function Orders() {
     if (!localStorage.getItem('tour-orders-done')) setTourRun(true);
   }, []);
 
+  // orderId del último pedido de la última página llena: desde ahí sigue "Cargar más".
+  // null = no hay más.
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const takePage = (page: Order[]) => {
+    setCursor(page.length === ORDERS_PAGE ? page[page.length - 1].orderId : null);
+    return page;
+  };
+
   const load = useCallback(() => {
     setLoading(true);
     getOrders(storeId)
-      .then((res) => setOrders((res.data ?? []).filter((o: Order) => o.type !== 'service')))
+      .then((res) => setOrders(takePage(res.data ?? [])))
       .finally(() => setLoading(false));
   }, [storeId]);
+
+  const loadMore = () => {
+    if (!cursor) return;
+    setLoadingMore(true);
+    getOrders(storeId, cursor)
+      .then((res) => {
+        const page = takePage(res.data ?? []);
+        setOrders((prev) => [...prev, ...page]);
+      })
+      .finally(() => setLoadingMore(false));
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -882,6 +906,15 @@ export default function Orders() {
                 Mostrando <span className="font-semibold text-txt-secondary">{filtered.length}</span> de{' '}
                 <span className="font-semibold text-txt-secondary">{orders.length}</span> órdenes
               </p>
+              {cursor && (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  {loadingMore ? 'Cargando…' : 'Cargar más antiguas'}
+                </button>
+              )}
               {(search || filterStatus || filterType) && (
                 <button
                   onClick={() => { setSearch(''); setFilterStatus(''); setFilterType(''); }}

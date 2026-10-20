@@ -139,6 +139,8 @@ export const updateProduct = (id: string, data: {
   salePrice?: number;
   costPrice?: number;
   stock?: number;
+  // Stock que vio el formulario: la API solo aplica `stock` si sigue siendo este (409 si no).
+  stockBefore?: number;
   hasVariants?: boolean;
   description?: string;
   imageUrl?: string;
@@ -217,6 +219,7 @@ export interface VariantPayload {
 
 export interface VariantUpdatePayload extends VariantPayload {
   variantId?: string;
+  stockBefore?: number;
 }
 
 export const addVariant = (productId: string, data: VariantPayload) =>
@@ -292,11 +295,16 @@ export const deleteServiceVariant = (variantId: string) =>
   api.delete(`/services/variants/${variantId}`);
 
 // ── Orders ────────────────────────────────────────────────────────────────
-export const getOrders = (storeId: string) =>
-  api.get(`/orders/store/${storeId}`);
+// Los pedidos llegan por páginas, de los más recientes hacia atrás. `before` = orderId del
+// último que ya se tiene; una página llena (ORDERS_PAGE) significa que puede haber más.
+export const ORDERS_PAGE = 200;
 
-export const getServiceOrders = (storeId: string) =>
-  api.get(`/orders/store/${storeId}?type=service`);
+// Pantalla de pedidos: todo menos los cobros de servicios (esos van en su propia pantalla).
+export const getOrders = (storeId: string, before?: string) =>
+  api.get(`/orders/store/${storeId}`, { params: { type: 'product,food', limit: ORDERS_PAGE, ...(before && { before }) } });
+
+export const getServiceOrders = (storeId: string, before?: string) =>
+  api.get(`/orders/store/${storeId}`, { params: { type: 'service', limit: ORDERS_PAGE, ...(before && { before }) } });
 
 export const updateOrderStatus = (id: string, status: string) =>
   api.patch(`/orders/${id}/status`, { status });
