@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getServiceOrders, createManualOrder, createCustomer, getCustomers, getServices } from '../services/api';
+import { getServiceOrders, ORDERS_PAGE, createManualOrder, createCustomer, getCustomers, getServices } from '../services/api';
 import { Briefcase, Calendar, CreditCard, TrendingUp, Search, Download, Plus, X, HelpCircle } from 'lucide-react';
 import { exportCashReport } from '../utils/exportExcel';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
@@ -69,6 +69,8 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
   const [notes,         setNotes]      = useState('');
   const [submitting,    setSubmitting] = useState(false);
   const [error,         setError]      = useState('');
+  // Una clave por formulario abierto: un doble clic o un reintento no registran el cobro dos veces.
+  const [idemKey]                      = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     getCustomers(storeId).then(r => setCustomers(r.data ?? []));
@@ -116,7 +118,7 @@ function ManualServiceModal({ storeId, onClose, onCreated }: {
         }],
         manualPaymentMethod: payMethod,
         notes: notes.trim() || undefined,
-        idempotencyKey: `svc-manual-${storeId}-${Date.now()}`,
+        idempotencyKey: `svc-manual-${idemKey}`,
       });
       onCreated();
       onClose();
@@ -310,12 +312,29 @@ export default function ServiceOrders() {
     if (!localStorage.getItem('tour-svc-done')) setTourRun(true);
   }, []);
 
+  // Páginas de los más recientes hacia atrás; cursor = último de una página llena (null = no hay más).
+  const [cursor,      setCursor]      = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const takePage = (page: ServiceOrder[]) => {
+    setCursor(page.length === ORDERS_PAGE ? page[page.length - 1].orderId : null);
+    return page;
+  };
+
   const load = useCallback(() => {
     setLoading(true);
     getServiceOrders(storeId)
-      .then(r => setOrders(r.data ?? []))
+      .then(r => setOrders(takePage(r.data ?? [])))
       .finally(() => setLoading(false));
   }, [storeId]);
+
+  const loadMore = () => {
+    if (!cursor) return;
+    setLoadingMore(true);
+    getServiceOrders(storeId, cursor)
+      .then(r => { const page = takePage(r.data ?? []); setOrders(prev => [...prev, ...page]); })
+      .finally(() => setLoadingMore(false));
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -467,6 +486,12 @@ export default function ServiceOrders() {
 
       {/* Lista */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
+        {!loading && cursor && (
+          <p className="mb-3 text-xs text-txt-tertiary">
+            Se muestran los {orders.length} cobros más recientes: los totales y el reporte cuentan solo estos.
+            Usa "Cargar más antiguos" al final de la lista para incluir los anteriores.
+          </p>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 rounded-full border-2 border-lime border-t-transparent animate-spin" />
@@ -572,6 +597,15 @@ export default function ServiceOrders() {
               <p className="text-xs text-txt-tertiary">
                 {filtered.length} servicio{filtered.length !== 1 ? 's' : ''} cobrado{filtered.length !== 1 ? 's' : ''}
               </p>
+              {cursor && (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  {loadingMore ? 'Cargando…' : 'Cargar más antiguos'}
+                </button>
+              )}
               <p className="text-sm font-bold text-txt-primary">
                 Total: <span className="text-lime">{fmt(totalRevenue)}</span>
               </p>

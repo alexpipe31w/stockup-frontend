@@ -300,14 +300,20 @@ function VariantRow({ variant, onUpdate, onRemove }: {
     sortOrder:  String(variant.sortOrder ?? 0),
   });
   const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState('');
   const [newAttrKey, setNewAttrKey]     = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
 
   const save = async () => {
-    setSaving(true);
-    await onUpdate(variant.variantId, form);
-    setSaving(false);
-    setEditing(false);
+    setSaving(true); setError('');
+    try {
+      await onUpdate(variant.variantId, form);
+      setEditing(false);
+    } catch (err) {
+      setError(serverMessage(err, 'No se pudo guardar la variante.'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addAttr = () => {
@@ -417,6 +423,8 @@ function VariantRow({ variant, onUpdate, onRemove }: {
         </div>
       </div>
 
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
       <div className="flex gap-1 pt-1">
         <button onClick={save} disabled={saving || !form.name.trim()}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium text-[#0A0A0F] disabled:opacity-50 transition"
@@ -447,6 +455,9 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
   // Si se creó el producto pero falló la asignación de grupos, el modal sigue abierto
   // editando ESE producto: un segundo "Guardar" no debe crear un duplicado.
   const [createdId, setCreatedId] = useState<string | null>(null);
+  // Stock que vio este formulario. Al guardar, el stock solo se manda si el admin lo cambió, y
+  // con este valor: si entre medias se vendió algo, la API responde 409 en vez de pisarlo.
+  const [stockSeen, setStockSeen] = useState<number | null>(product ? product.stock : null);
   const targetId = product?.productId ?? createdId;
   const isEdit = !!product;
   const initialGroupIds = (product?.optionGroups ?? []).slice().sort((a, b) => a.sortOrder - b.sortOrder).map(g => g.groupId);
@@ -525,6 +536,14 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
   };
 
   // ── Guardar producto ──────────────────────────────────────────────────────
+  const stockFields = () => {
+    if (form.hasVariants || prepared) return {};
+    const stock = Number(form.stock) || 0;
+    if (!targetId) return { stock };
+    if (stock === stockSeen) return {}; // no lo tocó: no se pisa lo vendido mientras tanto
+    return { stock, stockBefore: stockSeen ?? undefined };
+  };
+
   const handleSubmit = async () => {
     if (!form.name.trim()) return setError('El nombre es requerido');
     if (!form.salePrice)   return setError('El precio de venta es requerido');
@@ -537,7 +556,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
         description:      form.description.trim() || undefined,
         salePrice:        Number(form.salePrice),
         costPrice:        form.costPrice ? Number(form.costPrice) : undefined,
-        stock:            form.hasVariants || prepared ? undefined : Number(form.stock) || 0,
+        ...stockFields(),
         hasVariants:      prepared ? false : form.hasVariants,
         imageUrl:         form.imageUrl.trim() || undefined,
         hasShipping:      form.hasShipping,
@@ -570,6 +589,7 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
         : await createProduct(payload);
       const productId: string = res.data.productId;
       if (!targetId) setCreatedId(productId);
+      setStockSeen(res.data.stock);
 
       // Grupos de opciones: después del producto, y solo si cambiaron.
       if (kitchenEnabled && JSON.stringify(groupIds) !== JSON.stringify(savedGroupIds)) {
@@ -584,7 +604,11 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
       }
       onSaved({ ...res.data, variants, optionGroups: groupIds.map((groupId, sortOrder) => ({ groupId, sortOrder })) });
       onClose();
-    } catch (err) {
+    } catch (err: any) {
+      // Se vendió algo mientras editaba: a partir de ahora se compara con el stock actual, así
+      // que si vuelve a guardar es porque decidió ese número viendo el aviso.
+      const data = err?.response?.data;
+      if (data?.code === 'STOCK_CHANGED' && typeof data.current === 'number') setStockSeen(data.current);
       setError(serverMessage(err, 'Error al guardar. Verifica los datos.'));
     } finally {
       setSaving(false);
@@ -666,17 +690,29 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
       } : x));
       return;
     }
-    const res = await updateVariant(variantId, {
-      name:       data.name,
-      sku:        data.sku || undefined,
-      salePrice:  data.salePrice ? Number(data.salePrice) : undefined,
-      costPrice:  data.costPrice ? Number(data.costPrice) : undefined,
-      stock:      data.stock !== undefined ? Number(data.stock) : undefined,
-      imageUrl:   data.imageUrl || undefined,
-      weight:     data.weight ? Number(data.weight) : undefined,
-      attributes: data.attributes,
-      sortOrder:  data.sortOrder !== undefined ? Number(data.sortOrder) : undefined,
-    });
+    // El stock solo viaja si cambió, con el que se vio (409 si se vendió algo entre medias).
+    const seen = variants.find(x => x.variantId === variantId)?.stock;
+    const stock = data.stock !== undefined ? Number(data.stock) || 0 : undefined;
+    const stockChanged = stock !== undefined && stock !== seen;
+    let res: Awaited<ReturnType<typeof updateVariant>>;
+    try {
+      res = await updateVariant(variantId, {
+        name:       data.name,
+        sku:        data.sku || undefined,
+        salePrice:  data.salePrice ? Number(data.salePrice) : undefined,
+        costPrice:  data.costPrice ? Number(data.costPrice) : undefined,
+        ...(stockChanged && { stock, stockBefore: seen }),
+        imageUrl:   data.imageUrl || undefined,
+        weight:     data.weight ? Number(data.weight) : undefined,
+        attributes: data.attributes,
+        sortOrder:  data.sortOrder !== undefined ? Number(data.sortOrder) : undefined,
+      });
+    } catch (err: any) {
+      const body = err?.response?.data;
+      if (body?.code === 'STOCK_CHANGED' && typeof body.current === 'number')
+        setVariants(v => v.map(x => x.variantId === variantId ? { ...x, stock: body.current } : x));
+      throw err;
+    }
     setVariants(v => v.map(x => x.variantId === variantId ? res.data : x));
   };
 
