@@ -570,6 +570,9 @@ export const getSuperAdminStores = () =>
 export const getSuperAdminWaGateways = () =>
   api.get('/superadmin/wa-gateways', { headers: saHeaders() });
 
+export const getSuperAdminJobs = () =>
+  api.get('/superadmin/jobs', { headers: saHeaders() });
+
 export const toggleSuperAdminStore = (storeId: string) =>
   api.patch(`/superadmin/stores/${storeId}/toggle`, {}, { headers: saHeaders() });
 
