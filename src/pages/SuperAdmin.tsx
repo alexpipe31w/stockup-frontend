@@ -4,6 +4,7 @@ import {
   getSuperAdminDashboard,
   getSuperAdminStores,
   getSuperAdminWaGateways,
+  getSuperAdminJobs,
   getSuperAdminUsers,
   getSuperAdminAudit,
   toggleSuperAdminStore,
@@ -98,6 +99,33 @@ interface WaGatewayRow {
   rssMb: number;
 }
 
+type JobHealth = 'ok' | 'late' | 'failing' | 'never';
+
+interface JobRow {
+  job: string;
+  label: string;
+  health: JobHealth;
+  running: boolean;
+  lastRun: { startedAt: string; finishedAt: string | null; ok: boolean | null; error: string | null; trigger: string } | null;
+  lastOkAt: string | null;
+}
+
+const JOB_HEALTH: Record<JobHealth, { label: string; cls: string }> = {
+  ok:      { label: 'Al día',          cls: 'bg-emerald-100 text-emerald-700' },
+  late:    { label: 'Atrasada',        cls: 'bg-amber-100 text-amber-700' },
+  failing: { label: 'Falló',           cls: 'bg-red-100 text-red-700' },
+  never:   { label: 'Sin ejecuciones', cls: 'bg-surface-overlay text-txt-secondary' },
+};
+
+function fmtAgo(iso: string | null) {
+  if (!iso) return '—';
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (min < 1) return 'ahora';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  return h < 48 ? `hace ${h} h` : `hace ${Math.round(h / 24)} días`;
+}
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', {
     day: '2-digit', month: 'short', year: 'numeric',
@@ -130,6 +158,7 @@ export default function SuperAdmin() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [gateways, setGateways] = useState<WaGatewayRow[]>([]);
+  const [jobs, setJobs] = useState<JobRow[] | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [audit, setAudit] = useState<AuditLog[]>([]);
@@ -156,13 +185,15 @@ export default function SuperAdmin() {
     setError('');
     try {
       if (t === 'dashboard') {
-        const [res, gw] = await Promise.all([
+        const [res, gw, jb] = await Promise.all([
           getSuperAdminDashboard(),
-          // El gateway no debe tumbar el resumen si su endpoint falla.
+          // El gateway y las tareas no deben tumbar el resumen si su endpoint falla.
           getSuperAdminWaGateways().catch(() => ({ data: [] as WaGatewayRow[] })),
+          getSuperAdminJobs().catch(() => ({ data: null })),
         ]);
         setStats(res.data);
         setGateways(gw.data);
+        setJobs(jb.data);
       } else if (t === 'stores') {
         const res = await getSuperAdminStores();
         setStores(res.data);
@@ -379,6 +410,56 @@ export default function SuperAdmin() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                <h3 className="text-lg font-semibold text-white mt-8 mb-4">Tareas programadas</h3>
+                {jobs === null ? (
+                  <p className="text-txt-tertiary text-sm">No se pudo cargar el estado de las tareas.</p>
+                ) : (
+                  <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-700 text-left text-txt-tertiary text-xs">
+                            <th className="px-4 py-3 font-medium">Tarea</th>
+                            <th className="px-4 py-3 font-medium">Estado</th>
+                            <th className="px-4 py-3 font-medium">Último OK</th>
+                            <th className="px-4 py-3 font-medium">Última ejecución</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {jobs.map(j => {
+                            const h = JOB_HEALTH[j.health];
+                            return (
+                              <tr key={j.job} className="border-b border-slate-700/50 last:border-0 align-top">
+                                <td className="px-4 py-3 text-white">{j.label}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${h.cls}`}>{h.label}</span>
+                                  {j.running && <span className="ml-2 text-txt-tertiary text-xs">en curso</span>}
+                                </td>
+                                <td className="px-4 py-3 text-txt-secondary tabular-nums">{fmtAgo(j.lastOkAt)}</td>
+                                <td className="px-4 py-3 text-txt-secondary">
+                                  {j.lastRun ? (
+                                    <>
+                                      <span className="tabular-nums">{fmtDateTime(j.lastRun.startedAt)}</span>
+                                      {j.lastRun.trigger !== 'cron' && (
+                                        <span className="ml-2 text-txt-tertiary text-xs">
+                                          {j.lastRun.trigger === 'catchup' ? 'recuperada' : 'manual'}
+                                        </span>
+                                      )}
+                                      {j.lastRun.error && (
+                                        <div className="text-red-400 text-xs mt-1 break-words">{j.lastRun.error}</div>
+                                      )}
+                                    </>
+                                  ) : '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
