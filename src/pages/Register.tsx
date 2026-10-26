@@ -4,6 +4,7 @@ import { createCheckout } from '../services/api';
 import api from '../services/api';
 import { Bot, Package, CalendarDays, BarChart3 } from 'lucide-react';
 import AuthGridBg from '../components/AuthGridBg';
+import { useAuth } from '../hooks/useAuth';
 
 type Step = 'form' | 'verify' | 'payment';
 
@@ -122,6 +123,7 @@ function DarkInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
 }
 
 export default function Register() {
+  const { setSession } = useAuth();
   const [step, setStep]           = useState<Step>('form');
   const [sessionId, setSessionId] = useState('');
   const [form, setForm]           = useState<FormData>({ name: '', email: '', password: '', confirmPassword: '', storeName: '', storePhone: '' });
@@ -174,9 +176,8 @@ export default function Register() {
     setLoading(true);
     try {
       const res = await api.post('/auth/verify-and-register', { sessionId, code: fullCode });
-      const { access_token, userId, email, role, storeId } = res.data;
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('user', JSON.stringify({ userId, email, role, storeId }));
+      // La API deja la cookie de la sesión; el access queda en memoria para el pago.
+      setSession(res.data.access_token);
       setStep('payment');
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'Código incorrecto o expirado.');
