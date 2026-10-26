@@ -44,6 +44,13 @@ api.interceptors.response.use(
 
 export default api;
 
+/** Mensaje que manda la API (p. ej. el 429 "espera N min"), o el de respaldo. */
+export const apiMessage = (err: unknown, fallback: string): string => {
+  const m = (err as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  if (Array.isArray(m)) return m.join('. ');
+  return typeof m === 'string' && m ? m : fallback;
+};
+
 // ── Auth ──────────────────────────────────────────────────────────────────
 export const login = (email: string, password: string) =>
   api.post('/auth/login', { email, password });
