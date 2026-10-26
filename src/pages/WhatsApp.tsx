@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp, getWhatsAppHealth, type WhatsAppHealth } from '../services/api';
+import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp, getWhatsAppHealth, apiMessage, type WhatsAppHealth } from '../services/api';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const fmtWindow = (iso: string) =>
@@ -58,6 +58,8 @@ export default function WhatsAppPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [pausedReason, setPausedReason] = useState<string | null>(null);
   const [unlinkHint, setUnlinkHint] = useState<string | null>(null);
+  // Lo que contestó la API al conectar/desconectar (p. ej. el límite de 6 cada 10 min).
+  const [actionError, setActionError] = useState<string | null>(null);
   const [health, setHealth] = useState<WhatsAppHealth | null>(null);
 
   // Salud del número: cada 30 s basta (cambia despacio; el QR sí va cada 3 s).
@@ -108,10 +110,13 @@ export default function WhatsAppPage() {
   const handleConnect = async () => {
     setConnecting(true);
     setUnlinkHint(null);
+    setActionError(null);
     try {
       await connectWhatsApp(storeId);
       await fetchQR();
-    } catch {} finally {
+    } catch (err) {
+      setActionError(apiMessage(err, 'No se pudo conectar. Intenta de nuevo.'));
+    } finally {
       setConnecting(false);
     }
   };
@@ -120,6 +125,7 @@ export default function WhatsAppPage() {
   const handleUnlink = async () => {
     setConfirmUnlink(false);
     setDisconnecting(true);
+    setActionError(null);
     try {
       const res = await disconnectWhatsApp(storeId, { logout: true });
       setUnlinkHint(res.data?.hint ?? null);
@@ -128,18 +134,23 @@ export default function WhatsAppPage() {
       // Esperar que el backend limpie la sesión antes de re-verificar
       await new Promise(r => setTimeout(r, 1500));
       await checkStatus();
-    } catch {} finally {
+    } catch (err) {
+      setActionError(apiMessage(err, 'No se pudo desvincular. Intenta de nuevo.'));
+    } finally {
       setDisconnecting(false);
     }
   };
 
   const handleCancel = async () => {
     setDisconnecting(true);
+    setActionError(null);
     try {
       // Cierra el intento sin desvincular: limpia QR/socket/reintentos en el backend para que
       // el QR no reaparezca con el polling
       await disconnectWhatsApp(storeId);
-    } catch {} finally {
+    } catch (err) {
+      setActionError(apiMessage(err, 'No se pudo cancelar. Intenta de nuevo.'));
+    } finally {
       setQr(null);
       setDisconnecting(false);
     }
@@ -147,6 +158,7 @@ export default function WhatsAppPage() {
 
   const handleReconnect = async () => {
     setDisconnecting(true);
+    setActionError(null);
     try {
       // Cierra y vuelve a abrir con la misma vinculación: no hace falta escanear otro QR
       await disconnectWhatsApp(storeId);
@@ -155,7 +167,9 @@ export default function WhatsAppPage() {
       await new Promise(r => setTimeout(r, 1500));
       await connectWhatsApp(storeId);
       await fetchQR();
-    } catch {} finally {
+    } catch (err) {
+      setActionError(apiMessage(err, 'No se pudo reconectar. Intenta de nuevo.'));
+    } finally {
       setDisconnecting(false);
     }
   };
@@ -187,6 +201,12 @@ export default function WhatsAppPage() {
           <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-orange-400'} animate-pulse`}/>
           {connected ? 'Conectado' : 'Desconectado'}
         </div>
+
+        {actionError && (
+          <p role="alert" className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 text-center">
+            {actionError}
+          </p>
+        )}
 
         {connected ? (
           <>

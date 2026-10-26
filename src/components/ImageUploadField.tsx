@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { uploadImage } from '../services/api';
+import { uploadImage, apiMessage } from '../services/api';
 
 interface Props {
   value: string;
@@ -18,8 +18,8 @@ export function ImageUploadField({ value, onChange, label = 'Imagen' }: Props) {
     try {
       const res = await uploadImage(file);
       onChange(res.data.url);
-    } catch {
-      setError('Error al subir imagen. Intenta de nuevo.');
+    } catch (err) {
+      setError(apiMessage(err, 'Error al subir imagen. Intenta de nuevo.'));
     } finally {
       setUploading(false);
     }
