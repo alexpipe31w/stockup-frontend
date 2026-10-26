@@ -153,6 +153,9 @@ const ADVANCE_OPTS = [
   { value: 1440, label: '24 horas' },
 ];
 
+// Tope de grupo de citas: la API acepta de 1 a 20 (C-5).
+const GROUP_CAP_OPTS = Array.from({ length: 20 }, (_, i) => i + 1);
+
 // ── Shared UI components ───────────────────────────────────────────────────
 
 function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
@@ -259,6 +262,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
     slug: '',
     defaultServiceId: '',
     autoConfirmAppointments: true,
+    appointmentGroupCap: 4,
   });
   const [services, setServices] = useState<Array<{ serviceId: string; name: string }>>([]);
   const [productCount, setProductCount] = useState<number | null>(null);
@@ -321,6 +325,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         slug:               d.slug               ?? '',
         defaultServiceId:   d.defaultServiceId   ?? '',
         autoConfirmAppointments: d.autoConfirmAppointments ?? true,
+        appointmentGroupCap: d.appointmentGroupCap ?? 4,
       };
       setForm(loaded);
       setInitial(JSON.stringify(loaded));
@@ -377,6 +382,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
         slug:               form.slug            || undefined,
         defaultServiceId:   form.defaultServiceId || null,
         autoConfirmAppointments: form.autoConfirmAppointments,
+        appointmentGroupCap: form.appointmentGroupCap,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -645,6 +651,17 @@ function NegocioSection({ storeId }: { storeId: string }) {
           <select value={form.minAdvanceMinutes} onChange={e => setf('minAdvanceMinutes', Number(e.target.value))} className={ic}>
             {ADVANCE_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-txt-secondary mb-1">Grupos que la IA agenda sola</label>
+          <select value={form.appointmentGroupCap} onChange={e => setf('appointmentGroupCap', Number(e.target.value))} className={ic}>
+            {GROUP_CAP_OPTS.map(n => (
+              <option key={n} value={n}>{n === 1 ? 'Ninguno: todo grupo pasa a un asesor' : `Hasta ${n} personas`}</option>
+            ))}
+          </select>
+          <p className="text-xs text-txt-tertiary mt-1">
+            Cuando el cliente viene con acompañantes, la IA deja las citas seguidas con el mismo {form.staffLabel.toLowerCase() || 'profesional'}. Si el grupo es más grande, un asesor lo coordina.
+          </p>
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-3">
