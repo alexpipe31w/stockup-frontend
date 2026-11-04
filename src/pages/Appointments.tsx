@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  getAppointments, getAppointmentStats,
+  getAppointments, getAppointmentStats, APPOINTMENTS_PAGE,
   updateAppointment, getAppointmentTimeline,
   createAppointment, createCustomer, getCustomers, getServices,
   getStore, getStaff, createWalkIn,
@@ -1372,13 +1372,14 @@ function ListView({ appointments, selected, onSelect, emptyHint }: {
 
 // ─── Calendar View ────────────────────────────────────────────────────────────
 
-function CalendarView({ appointments, selected, onSelect, businessHours }: {
+function CalendarView({ appointments, selected, onSelect, businessHours, weekStart, setWeekStart }: {
   appointments: Appointment[];
   selected: Appointment | null;
   onSelect: (a: Appointment | null) => void;
   businessHours: BusinessHoursJson | null;
+  weekStart: Date;
+  setWeekStart: React.Dispatch<React.SetStateAction<Date>>;
 }) {
-  const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const weekDays  = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const weekEnd   = addDays(weekStart, 6);
   const weekLabel = `${weekStart.toLocaleDateString('es-CO',{day:'numeric',month:'short'})} – ${weekEnd.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}`;
@@ -1533,6 +1534,12 @@ export default function Appointments() {
   const [filterStaffId, setFilterStaffId] = useState('');
   // La lista arranca en la semana en curso; el resto se busca con el filtro.
   const [datePreset, setDatePreset] = useState<DatePreset>('week');
+  const [weekStart,  setWeekStart]  = useState(() => getMonday(new Date()));
+  // Cita más antigua de la última página llena: desde ahí sigue "Cargar más".
+  const [cursor,      setCursor]      = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // Si cambian los filtros o la semana con una petición en vuelo, su respuesta ya no vale.
+  const requestRef = useRef(0);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo,   setCustomTo]   = useState('');
   const [staffList,     setStaffList]     = useState<StaffInfo[]>([]);
@@ -1558,26 +1565,65 @@ export default function Appointments() {
     }).catch(() => {});
   }, [storeId]);
 
+  const listParams = useCallback(() => {
+    const p: Parameters<typeof getAppointments>[0] = {};
+    if (filterStatus)        p.status           = filterStatus;
+    if (filterType)          p.type             = filterType;
+    if (filterPendingAction) p.hasPendingAction = filterPendingAction;
+    if (filterStaffId)       p.staffId          = filterStaffId;
+    return p;
+  }, [filterStatus, filterType, filterPendingAction, filterStaffId]);
+
+  const rangeParams = useCallback(
+    () => rangeFromPreset(datePreset, customFrom, customTo),
+    [datePreset, customFrom, customTo],
+  );
+
+  const takePage = (page: Appointment[]) => {
+    setCursor(page.length === APPOINTMENTS_PAGE ? page[0].appointmentId : null);
+    return page;
+  };
+
   const load = useCallback(async () => {
+    const request = ++requestRef.current;
     setLoading(true); setError('');
     try {
-      const p: Record<string,string> = {};
-      if (filterStatus)        p.status           = filterStatus;
-      if (filterType)          p.type             = filterType;
-      if (filterPendingAction) p.hasPendingAction = filterPendingAction;
-      if (filterStaffId)       p.staffId          = filterStaffId;
-      // Solo en la lista: el calendario navega semanas por su cuenta y con un rango
-      // fijo se quedaría vacío al pasar de semana.
-      if (view === 'list') {
-        const { from, to } = rangeFromPreset(datePreset, customFrom, customTo);
-        if (from) p.from = from;
-        if (to)   p.to   = to;
-      }
+      // La lista pagina; el calendario pide solo la semana que muestra.
+      const p = view === 'list'
+        ? { ...listParams(), ...rangeParams(), limit: APPOINTMENTS_PAGE }
+        : {
+            ...listParams(),
+            from: weekStart.toISOString(),
+            to:   endOfDay(addDays(weekStart, 6)).toISOString(),
+          };
       const [aR, sR] = await Promise.all([getAppointments(p), getAppointmentStats()]);
+      if (request !== requestRef.current) return;
       setAppointments(aR.data); setStats(sR.data);
-    } catch { setError('Error cargando agendamientos.'); }
-    finally { setLoading(false); }
-  }, [filterStatus, filterType, filterPendingAction, filterStaffId, view, datePreset, customFrom, customTo]);
+      if (view === 'list') takePage(aR.data); else setCursor(null);
+    } catch {
+      if (request === requestRef.current) setError('Error cargando agendamientos.');
+    } finally {
+      if (request === requestRef.current) setLoading(false);
+    }
+  }, [listParams, rangeParams, view, weekStart]);
+
+  const loadMore = async () => {
+    if (!cursor) return;
+    const request = requestRef.current;
+    setLoadingMore(true);
+    try {
+      const res = await getAppointments({
+        ...listParams(), ...rangeParams(), limit: APPOINTMENTS_PAGE, before: cursor,
+      });
+      if (request !== requestRef.current) return;
+      const page = takePage(res.data);
+      setAppointments(prev => [...page, ...prev]);
+    } catch {
+      if (request === requestRef.current) setError('Error cargando agendamientos.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -1785,11 +1831,23 @@ export default function Appointments() {
                   emptyHint={datePreset === 'all'
                     ? undefined
                     : `No hay citas en el rango seleccionado (${rangeLabel(datePreset, customFrom, customTo)}). Cambia el filtro de fechas para ver otras.`} />
-              : <CalendarView appointments={filtered} selected={selected} onSelect={setSelected} businessHours={businessHours} />
+              : <CalendarView appointments={filtered} selected={selected} onSelect={setSelected} businessHours={businessHours}
+                  weekStart={weekStart} setWeekStart={setWeekStart} />
             }
             {selected && (
               <DetailPanel appt={selected} onUpdate={handleUpdate} onClose={() => setSelected(null)} />
             )}
+          </div>
+        )}
+        {!loading && view === 'list' && cursor && (
+          <div className="flex justify-center py-3">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+            >
+              {loadingMore ? 'Cargando…' : 'Cargar más antiguas'}
+            </button>
           </div>
         )}
       </div>
