@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { login as loginApi } from '../services/api';
+import {
+  login as loginApi, logoutSession, restoreSession, setAccessToken, SESSION_ENDED_EVENT,
+} from '../services/api';
 
 interface UserData {
   userId: string;
@@ -12,6 +14,8 @@ interface AuthContextType {
   token: string | null;
   user: UserData | null;
   storeId: string;
+  /** false mientras se recupera la sesión con la cookie al abrir el panel. */
+  ready: boolean;
   loginFn: (email: string, password: string) => Promise<UserData>;
   setSession: (accessToken: string) => UserData;
   logout: () => void;
@@ -29,35 +33,10 @@ function decodeJwt(token: string): any {
   }
 }
 
-/** Verifica si el token ya expiró en el cliente */
-function isTokenExpired(token: string): boolean {
+/** Datos del usuario leídos del JWT, no de campos sueltos que se puedan editar en DevTools. */
+function userFromToken(token: string): UserData | null {
   const payload = decodeJwt(token);
-  if (!payload?.exp) return true;
-  // exp es en segundos, Date.now() en ms
-  return payload.exp * 1000 < Date.now();
-}
-
-function getInitialToken(): string | null {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  // Si el token expiró, limpiar localStorage y no restaurar sesión
-  if (isTokenExpired(token)) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    return null;
-  }
-  return token;
-}
-
-function getInitialUser(): UserData | null {
-  const token = localStorage.getItem('token');
-  if (!token || isTokenExpired(token)) return null;
-
-  // Leer datos del JWT directamente — no de localStorage.user
-  // Esto evita que alguien edite el rol en DevTools
-  const payload = decodeJwt(token);
-  if (!payload) return null;
-
+  if (!payload?.sub) return null;
   return {
     userId: payload.sub,
     email: payload.email,
@@ -67,26 +46,40 @@ function getInitialUser(): UserData | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(getInitialToken);
-  const [user, setUser]   = useState<UserData | null>(getInitialUser);
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser]   = useState<UserData | null>(null);
+  const [ready, setReady] = useState(false);
 
-  // Cierre de sesion entre pestanas: el evento `storage` solo se dispara en las OTRAS
-  // pestanas. Si otra pestana borra `token` (logout o 401) o `sa_token`, esta tambien sale.
+  // El access token vive en memoria: al recargar se pide otro con la cookie de la sesión.
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      const cleared = e.key === null; // localStorage.clear()
-      if ((cleared || e.key === 'token') && !e.newValue) {
+    let cancelled = false;
+    restoreSession('store').then((t) => {
+      if (cancelled) return;
+      if (t) {
+        setToken(t);
+        setUser(userFromToken(t));
+      }
+      setReady(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Sesión terminada fuera de este componente: refresh rechazado o logout en otra pestaña.
+  useEffect(() => {
+    const onEnded = (e: Event) => {
+      const scope = (e as CustomEvent).detail;
+      if (scope === 'store') {
         setToken(null);
         setUser(null);
       }
-      if ((cleared || e.key === 'sa_token') && !e.newValue
+      if (scope === 'sa'
           && window.location.pathname.startsWith('/superadmin')
           && !window.location.pathname.startsWith('/superadmin/login')) {
         window.location.replace('/superadmin/login');
       }
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener(SESSION_ENDED_EVENT, onEnded);
+    return () => window.removeEventListener(SESSION_ENDED_EVENT, onEnded);
   }, []);
 
   const loginFn = async (email: string, password: string): Promise<UserData> => {
@@ -94,19 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return setSession(res.data.access_token);
   };
 
-  /** Guarda un token emitido por la API (login o cambio de contraseña) como la sesión actual. */
+  /** Guarda un access emitido por la API (login o registro) como la sesión actual. */
   const setSession = (access_token: string): UserData => {
-    // Leer user data del JWT — no confiar en los campos extra del response
-    const payload = decodeJwt(access_token);
-    const userObj: UserData = {
-      userId:  payload.sub,
-      email:   payload.email,
-      role:    payload.role ?? 'user',
-      storeId: payload.storeId ?? '',
-    };
-
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify(userObj));
+    const userObj = userFromToken(access_token);
+    if (!userObj) throw new Error('Token sin datos de usuario');
+    setAccessToken(access_token, 'store');
     // El superadmin ya no entra por aquí (la API lo rechaza): solo por /superadmin/login con código.
     setToken(access_token);
     setUser(userObj);
@@ -114,12 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // En un equipo compartido, el siguiente usuario no hereda el acceso a /superadmin.
-    localStorage.removeItem('sa_token');
     setToken(null);
     setUser(null);
+    void logoutSession('store');
   };
 
   return (
@@ -127,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       user,
       storeId: user?.storeId ?? '',
+      ready,
       loginFn,
       setSession,
       logout,

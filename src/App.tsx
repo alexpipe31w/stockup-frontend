@@ -65,8 +65,18 @@ function Layout({ children }: { children: React.ReactElement }) {
   );
 }
 
+function FullScreenLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-canvas">
+      <div className="w-8 h-8 rounded-full border-2 border-lime border-t-transparent animate-spin-loader" />
+    </div>
+  );
+}
+
 function PrivateRoute({ children }: { children: React.ReactElement }) {
-  const { token, user } = useAuth();
+  const { token, user, ready } = useAuth();
+  // Al abrir el panel la sesión se recupera con la cookie: hasta saberlo, no se redirige.
+  if (!ready) return <FullScreenLoader />;
   if (!token) return <Navigate to="/login" replace />;
   // La cuenta de cocina solo tiene la pantalla de cocina (el servidor le niega lo demás).
   if ((user as any)?.role === 'cocina') return <Navigate to="/cocina" replace />;
@@ -75,24 +85,20 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
 
 /** Pantalla de cocina: a pantalla completa, sin barra lateral ni chequeo de suscripción. */
 function KitchenRoute({ children }: { children: React.ReactElement }) {
-  const { token } = useAuth();
+  const { token, ready } = useAuth();
+  if (!ready) return <FullScreenLoader />;
   return token ? children : <Navigate to="/login" replace />;
 }
 
 function SubscribedRoute({ children }: { children: React.ReactElement }) {
-  const { token, user } = useAuth();
+  const { token, user, ready } = useAuth();
   const { isActive, readOnly, loading, error, refresh } = useSubscription();
 
+  if (!ready) return <FullScreenLoader />;
   if (!token) return <Navigate to="/login" replace />;
   if ((user as any)?.role === 'cocina') return <Navigate to="/cocina" replace />;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-canvas">
-        <div className="w-8 h-8 rounded-full border-2 border-lime border-t-transparent animate-spin-loader" />
-      </div>
-    );
-  }
+  if (loading) return <FullScreenLoader />;
 
   if (error) {
     return (
@@ -114,7 +120,8 @@ function SubscribedRoute({ children }: { children: React.ReactElement }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactElement }) {
-  const { token, user } = useAuth();
+  const { token, user, ready } = useAuth();
+  if (!ready) return <FullScreenLoader />;
   if (!token) return <Navigate to="/login" replace />;
   if ((user as any)?.role !== 'superadmin') return <Navigate to="/dashboard" replace />;
   return children;
