@@ -136,8 +136,9 @@ const scopeOf = (url?: string): Scope => (url?.startsWith('/superadmin') ? 'sa' 
 
 // Endpoints sin sesión: su 401 es "credenciales o código malos", no un access caducado.
 const PUBLIC_AUTH = new Set([
-  '/auth/login', '/auth/send-verification', '/auth/verify-and-register',
-  '/superadmin/login', '/superadmin/verify-code', '/superadmin/forgot-password', '/superadmin/reset-password',
+  '/auth/login', '/auth/login/totp', '/auth/send-verification', '/auth/verify-and-register',
+  '/superadmin/login', '/superadmin/verify-code', '/superadmin/verify-totp', '/superadmin/totp/enroll',
+  '/superadmin/forgot-password', '/superadmin/reset-password',
 ]);
 
 api.interceptors.request.use((config) => {
@@ -216,6 +217,17 @@ export interface OpenSession {
   current: boolean;
 }
 export const getSessions = () => api.get<OpenSession[]>('/auth/sessions');
+
+// ── Verificación en dos pasos (TOTP) ──────────────────────────────────────
+export const loginTotp = (mfaTicket: string, code: string) =>
+  api.post('/auth/login/totp', { mfaTicket, code });
+export interface TotpStatus { enabled: boolean; enabledAt: string | null; recoveryCodesLeft: number }
+export const getTotpStatus = () => api.get<TotpStatus>('/auth/totp');
+export const totpSetup = () => api.post<{ otpauthUri: string; secret: string }>('/auth/totp/setup');
+export const totpEnable = (password: string, code: string) =>
+  api.post<{ recoveryCodes: string[] }>('/auth/totp/enable', { password, code });
+export const totpDisable = (password: string, code: string) =>
+  api.post('/auth/totp/disable', { password, code });
 export const revokeSession = (sessionId: string) => api.delete(`/auth/sessions/${sessionId}`);
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -722,6 +734,15 @@ function saHeaders() {
 
 export const superAdminLogin = (email: string, password: string) =>
   api.post('/superadmin/login', { email, password });
+
+export const superAdminVerifyTotp = (sessionId: string, code: string) =>
+  api.post('/superadmin/verify-totp', { sessionId, code });
+
+export const superAdminEnrollTotp = (enrollTicket: string, code: string) =>
+  api.post<{ access_token: string; recoveryCodes: string[] }>('/superadmin/totp/enroll', { enrollTicket, code });
+
+export const resetSuperAdminUserTwoFactor = (userId: string) =>
+  api.post(`/superadmin/users/${userId}/reset-2fa`, {}, { headers: saHeaders() });
 
 export const getSuperAdminDashboard = () =>
   api.get('/superadmin/dashboard', { headers: saHeaders() });

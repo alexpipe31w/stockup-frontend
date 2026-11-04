@@ -10,6 +10,7 @@ import {
   toggleSuperAdminStore,
   toggleSuperAdminUser,
   deleteSuperAdminUser,
+  resetSuperAdminUserTwoFactor,
   getSuperAdminSubscriptionConfig,
   updateSuperAdminSubscriptionConfig,
   getSuperAdminSubscriptions,
@@ -44,6 +45,8 @@ interface User {
   role: string;
   isActive: boolean;
   createdAt: string;
+  /** Con verificación en dos pasos activada desde esta fecha (2f-3). */
+  totpEnabledAt: string | null;
   store: { storeId: string; name: string; phone: string } | null;
 }
 
@@ -161,6 +164,8 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // Quitar el 2FA pide dos clics: el primero solo arma el botón.
+  const [confirmReset2fa, setConfirmReset2fa] = useState<string | null>(null);
   const [subConfig, setSubConfig] = useState<SubscriptionConfig | null>(null);
   const [subs, setSubs] = useState<SubRecord[]>([]);
   const [editPrice, setEditPrice] = useState('');
@@ -244,6 +249,20 @@ export default function SuperAdmin() {
       setUsers(prev => prev.map(u => u.userId === userId ? { ...u, isActive: !u.isActive } : u));
     } catch {
       setError('Error al actualizar usuario');
+    }
+  };
+
+  const handleResetTwoFactor = async (userId: string) => {
+    if (confirmReset2fa !== userId) {
+      setConfirmReset2fa(userId);
+      return;
+    }
+    setConfirmReset2fa(null);
+    try {
+      await resetSuperAdminUserTwoFactor(userId);
+      setUsers(prev => prev.map(u => u.userId === userId ? { ...u, totpEnabledAt: null } : u));
+    } catch {
+      setError('Error al quitar la verificación en dos pasos');
     }
   };
 
@@ -564,6 +583,16 @@ export default function SuperAdmin() {
                                 >
                                   {user.isActive ? 'Bloquear' : 'Activar'}
                                 </button>
+                                {user.totpEnabledAt && (
+                                  <button
+                                    onClick={() => handleResetTwoFactor(user.userId)}
+                                    onBlur={() => setConfirmReset2fa(null)}
+                                    title="El usuario perdió el teléfono: podrá entrar solo con la contraseña y volver a activarla"
+                                    className="px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition whitespace-nowrap"
+                                  >
+                                    {confirmReset2fa === user.userId ? 'Confirmar' : 'Quitar 2FA'}
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => setConfirmDelete(user.userId)}
                                   className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-700 text-txt-tertiary hover:bg-red-500/20 hover:text-red-400 transition"
