@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getAiConfig, saveAiConfig, getAiPoolStatus, verifyAiKeys } from '../services/api';
+import { getAiConfig, saveAiConfig, getAiPoolStatus, verifyAiKeys, apiMessage } from '../services/api';
 import FloatingSaveBar from '../components/FloatingSaveBar';
 
 type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic' | 'gemini';
@@ -481,6 +481,7 @@ export default function AiConfig() {
   const [showTemplates, setShowTemplates]   = useState(false);
   const [verifying,    setVerifying]        = useState(false);
   const [verifyResults, setVerifyResults]   = useState<VerifyResult[] | null>(null);
+  const [verifyError, setVerifyError]       = useState<string | null>(null);
   const [form, setForm] = useState({
     aiProvider:   'groq' as AIProvider,
     apiKey:       '',
@@ -498,11 +499,13 @@ export default function AiConfig() {
 
   const handleVerify = useCallback(async () => {
     setVerifying(true);
+    setVerifyError(null);
     try {
       const r = await verifyAiKeys();
       setVerifyResults(r.data.cartridges ?? []);
-    } catch {
+    } catch (err) {
       setVerifyResults([]);
+      setVerifyError(apiMessage(err, 'No se pudieron verificar las claves. Intenta de nuevo.'));
     } finally {
       setVerifying(false);
     }
@@ -804,6 +807,10 @@ export default function AiConfig() {
             </button>
           </div>
         </div>
+
+        {verifyError && (
+          <p role="alert" className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{verifyError}</p>
+        )}
 
         {/* ── Pool status (runtime) ── */}
         {!pool || !pool.hasPool ? (
