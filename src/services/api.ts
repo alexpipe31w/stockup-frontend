@@ -369,6 +369,10 @@ export const resumeCampaigns = () =>
   api.post('/campaigns/resume');
 
 // ── Appointments ──────────────────────────────────────────────────────────
+// Páginas de las más recientes hacia atrás: `before` es la cita más antigua que ya se tiene;
+// una página llena (APPOINTMENTS_PAGE) significa que puede haber más.
+export const APPOINTMENTS_PAGE = 200;
+
 export const getAppointments = (params?: {
   status?: string;
   type?: string;
@@ -377,6 +381,9 @@ export const getAppointments = (params?: {
   serviceId?: string;
   priority?: string;
   staffId?: string;
+  hasPendingAction?: string;
+  before?: string;
+  limit?: number;
 }) => api.get('/appointments', { params });
 
 export const getAppointmentStats = () =>
