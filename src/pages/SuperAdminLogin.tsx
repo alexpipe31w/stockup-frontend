@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { superAdminLogin } from '../services/api';
+import { setAccessToken, superAdminLogin } from '../services/api';
 import api from '../services/api';
 
 type View = 'credentials' | 'verify-code' | 'forgot-request' | 'forgot-reset';
@@ -363,7 +363,8 @@ export default function SuperAdminLogin() {
   const handleVerifySuccess = (token: string) => {
     const payload = decodeJwt(token);
     if (payload?.role !== 'superadmin') return;
-    localStorage.setItem('sa_token', token);
+    // Access en memoria; la sesión larga queda en la cookie que puso verify-code.
+    setAccessToken(token, 'sa');
     navigate('/superadmin');
   };
 

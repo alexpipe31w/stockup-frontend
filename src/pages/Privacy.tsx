@@ -247,8 +247,8 @@ export default function Privacy() {
               La plataforma utiliza las siguientes tecnologías de almacenamiento en el navegador:
             </p>
             <ul className="list-disc list-inside space-y-1.5 text-white/60">
-              <li><strong className="text-white/80">localStorage:</strong> almacena el token de sesión (JWT) y datos básicos del perfil para mantener la sesión activa. Se elimina al cerrar sesión</li>
-              <li><strong className="text-white/80">Cookies funcionales:</strong> no utilizamos cookies propias más allá de las estrictamente necesarias para el funcionamiento del Servicio</li>
+              <li><strong className="text-white/80">Cookie de sesión:</strong> una cookie estrictamente necesaria, inaccesible para el código de la página (httpOnly), que mantiene la sesión iniciada. Se elimina al cerrar sesión y caduca sola por inactividad o, como máximo, a los 30 días (180 en la cuenta de cocina)</li>
+              <li><strong className="text-white/80">localStorage:</strong> solo una marca de que hay una sesión abierta y preferencias de la interfaz (como los recorridos guiados ya vistos). No guarda el token de sesión</li>
             </ul>
             <p className="mt-3 text-sm text-white/50">
               <strong className="text-white/70">No utilizamos</strong> cookies de terceros, cookies de seguimiento
