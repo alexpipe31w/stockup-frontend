@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders, ORDERS_PAGE, updateOrderStatus, getOrderById, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
+import { getOrders, ORDERS_PAGE, updateOrderStatus, getOrderById, createManualOrder, getProducts, createCustomer } from '../services/api';
+import type { CustomerSearchResult } from '../services/api';
+import CustomerPicker from '../components/CustomerPicker';
 import { exportCashReport } from '../utils/exportExcel';
 import { serverMessage } from '../utils/serverMessage';
 import { useStoreFlags } from '../hooks/useStoreFlags';
@@ -44,16 +46,13 @@ const DownloadIcon = () => (
 interface VariantOption { variantId: string; name: string; salePrice: number | null; stock: number; }
 interface ProductOption { productId: string; name: string; salePrice: number; stock: number | null; variants?: VariantOption[]; }
 interface ManualItem { productId: string; variantId: string; description: string; quantity: number; unitPrice: number; }
-interface CustomerOption { customerId: string; name: string | null; phone: string; }
 
 function ManualOrderModal({ storeId, onClose, onCreated }: {
   storeId: string;
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [customers, setCustomers]       = useState<CustomerOption[]>([]);
-  const [customerSearch, setCSearch]    = useState('');
-  const [selectedCustomer, setSelCust]  = useState<CustomerOption | null>(null);
+  const [selectedCustomer, setSelCust]  = useState<CustomerSearchResult | null>(null);
   const [customerMode, setCustMode]     = useState<'search' | 'new'>('search');
   const [newPhone, setNewPhone]         = useState('');
   const [newName, setNewName]           = useState('');
@@ -69,17 +68,11 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
   const [idemKey]                       = useState(() => crypto.randomUUID());
 
   useEffect(() => {
-    getCustomers(storeId).then((r) => setCustomers(r.data));
     getProducts().then((r) => {
       const active = (r.data ?? []).filter((p: any) => p.isActive !== false);
       setProducts(active);
     });
   }, [storeId]);
-
-  const filteredCustomers = customers.filter((c) => {
-    const q = customerSearch.toLowerCase();
-    return !q || c.phone.includes(q) || (c.name ?? '').toLowerCase().includes(q);
-  }).slice(0, 8);
 
   const subtotal      = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const discountAmt   = Math.round(subtotal * (discountPct / 100) * 100) / 100;
@@ -187,7 +180,7 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
                   className={`px-3 py-1 text-xs rounded-md font-medium transition ${customerMode === 'search' ? 'bg-surface text-txt-primary shadow-sm' : 'text-txt-tertiary hover:text-txt-secondary'}`}>
                   Existente
                 </button>
-                <button onClick={() => { setCustMode('new'); setSelCust(null); setCSearch(''); }}
+                <button onClick={() => { setCustMode('new'); setSelCust(null); }}
                   className={`px-3 py-1 text-xs rounded-md font-medium transition ${customerMode === 'new' ? 'bg-surface text-txt-primary shadow-sm' : 'text-txt-tertiary hover:text-txt-secondary'}`}>
                   Nuevo
                 </button>
@@ -195,38 +188,8 @@ function ManualOrderModal({ storeId, onClose, onCreated }: {
             </div>
 
             {customerMode === 'search' ? (
-              selectedCustomer ? (
-                <div className="flex items-center justify-between bg-surface-elevated border border-border-default rounded-xl px-4 py-3">
-                  <div>
-                    <p className="font-medium text-txt-primary text-sm">{selectedCustomer.name ?? 'Sin nombre'}</p>
-                    <p className="text-xs text-txt-secondary font-mono">{selectedCustomer.phone}</p>
-                  </div>
-                  <button onClick={() => { setSelCust(null); setCSearch(''); }} className="text-xs text-lime hover:underline">Cambiar</button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <input
-                    value={customerSearch}
-                    onChange={(e) => setCSearch(e.target.value)}
-                    placeholder="Buscar por nombre o teléfono..."
-                    className="w-full px-4 py-2.5 text-sm border border-border-default bg-surface-elevated text-txt-primary placeholder:text-txt-tertiary rounded-xl focus:outline-none focus:ring-2 focus:ring-lime/30"
-                  />
-                  {customerSearch && filteredCustomers.length > 0 && (
-                    <div className="absolute w-full bg-surface border border-border-default rounded-xl shadow-lg mt-1 overflow-hidden z-10">
-                      {filteredCustomers.map((c) => (
-                        <button key={c.customerId} onClick={() => { setSelCust(c); setCSearch(''); }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-surface-elevated transition">
-                          <p className="text-sm font-medium text-txt-primary">{c.name ?? 'Sin nombre'}</p>
-                          <p className="text-xs text-txt-tertiary font-mono">{c.phone}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {customerSearch && filteredCustomers.length === 0 && (
-                    <p className="mt-2 text-xs text-txt-tertiary">Sin coincidencias. Cambia a "Nuevo" para crear el cliente.</p>
-                  )}
-                </div>
-              )
+              <CustomerPicker storeId={storeId} value={selectedCustomer} onChange={setSelCust}
+                emptyHint={'Cambia a "Nuevo" para crear el cliente.'} />
             ) : (
               <div className="space-y-2">
                 <input

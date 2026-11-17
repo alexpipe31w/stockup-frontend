@@ -280,9 +280,9 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
     try {
       await onUpdate(variant.variantId, {
         name:             form.name.trim(),
-        description:      form.description.trim() || undefined,
-        priceOverride:    form.priceOverride ? Number(form.priceOverride) : undefined,
-        priceModifier:    form.priceModifier ? Number(form.priceModifier) : undefined,
+        description:      form.description.trim() || null,
+        priceOverride:    form.priceOverride ? Number(form.priceOverride) : null,
+        priceModifier:    form.priceModifier ? Number(form.priceModifier) : null,
         estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
       });
       setEditing(false);
@@ -465,18 +465,20 @@ function ServiceModal({ service, onClose, onSaved }: {
     if (!form.name.trim()) return setError('El nombre es requerido');
     if (form.priceType !== 'VARIABLE' && !form.basePrice) return setError('El precio base es requerido para este tipo de precio');
     setSaving(true); setError('');
+    // C-3: al editar, un campo vaciado viaja como null (la API lo borra); undefined lo dejaba igual.
+    const empty = isEdit ? null : undefined;
     try {
       const payload: any = {
         name:             form.name.trim(),
-        description:      form.description.trim() || undefined,
-        category:         form.category.trim() || undefined,
-        imageUrl:         form.imageUrl.trim() || undefined,
+        description:      form.description.trim() || empty,
+        category:         form.category.trim() || empty,
+        imageUrl:         form.imageUrl.trim() || empty,
         priceType:        form.priceType,
         basePrice:        form.basePrice ? Number(form.basePrice) : undefined,
         minPrice:         form.minPrice ? Number(form.minPrice) : undefined,
         maxPrice:         form.maxPrice ? Number(form.maxPrice) : undefined,
         costPrice:        form.costPrice ? Number(form.costPrice) : undefined,
-        unitLabel:        form.unitLabel.trim() || undefined,
+        unitLabel:        form.unitLabel.trim() || empty,
         hasVariants:      form.hasVariants,
         estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
         customFields:     Object.keys(cfFields).length > 0 ? cfFields : undefined,
@@ -486,8 +488,8 @@ function ServiceModal({ service, onClose, onSaved }: {
         : await createService(payload);
       onSaved({ ...res.data, variants });
       onClose();
-    } catch {
-      setError('Error al guardar. Verifica los datos.');
+    } catch (err) {
+      setError(serverMessage(err, 'Error al guardar. Verifica los datos.'));
     } finally {
       setSaving(false);
     }

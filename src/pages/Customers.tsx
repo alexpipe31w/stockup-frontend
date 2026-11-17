@@ -130,9 +130,9 @@ export default function Customers() {
     setSaving(true); setSaveError('');
     try {
       await updateCustomer(customerId, {
-        name:             editState.name.trim()   || undefined,
-        cedula:           editState.cedula.trim() || undefined,
-        city:             editState.city.trim()   || undefined,
+        name:             editState.name.trim()   || null,
+        cedula:           editState.cedula.trim() || null,
+        city:             editState.city.trim()   || null,
         acceptsMarketing: editState.acceptsMarketing,
       });
       setCustomers((prev) =>
