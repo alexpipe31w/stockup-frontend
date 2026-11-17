@@ -328,6 +328,16 @@ function VariantRow({ variant, onUpdate, onRemove }: {
     setForm(f => ({ ...f, attributes: updated }));
   };
 
+  const remove = async () => {
+    setSaving(true); setError('');
+    try {
+      await onRemove(variant.variantId);
+    } catch (err) {
+      setError(serverMessage(err, 'No se pudo quitar la variante.'));
+      setSaving(false);
+    }
+  };
+
   if (!editing) {
     const attrKeys = Object.keys(variant.attributes ?? {});
     return (
@@ -363,12 +373,13 @@ function VariantRow({ variant, onUpdate, onRemove }: {
               className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-blue-600 hover:bg-blue-50 transition">
               <EditIcon />
             </button>
-            <button onClick={() => onRemove(variant.variantId)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-red-500 hover:bg-red-50 transition">
+            <button onClick={remove} disabled={saving} aria-label="Quitar variante"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-red-500 hover:bg-red-50 transition disabled:opacity-50">
               <TrashIcon />
             </button>
           </div>
         </div>
+        {error && <p role="alert" className="text-xs text-red-600 mt-1">{error}</p>}
       </div>
     );
   }
@@ -1130,6 +1141,7 @@ export default function Products() {
   const [modalProduct,   setModalProduct]   = useState<Product | null | 'new'>(null);
   const [deleteTarget,   setDeleteTarget]   = useState<Product | null>(null);
   const [deleting,       setDeleting]       = useState(false);
+  const [deleteError,    setDeleteError]    = useState('');
   const [tourRun,        setTourRun]        = useState(false);
   const [groups,         setGroups]         = useState<OptionGroupDto[]>([]);
   const [listError,      setListError]      = useState('');
@@ -1185,11 +1197,17 @@ export default function Products() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
-    await deleteProduct(deleteTarget.productId);
-    setProducts(prev => prev.filter(p => p.productId !== deleteTarget.productId));
-    setDeleteTarget(null);
-    setDeleting(false);
+    setDeleting(true); setDeleteError('');
+    try {
+      await deleteProduct(deleteTarget.productId);
+      setProducts(prev => prev.filter(p => p.productId !== deleteTarget.productId));
+      setDeleteTarget(null);
+    } catch (err) {
+      // El modal sigue abierto con el motivo.
+      setDeleteError(serverMessage(err, 'No se pudo eliminar el producto.'));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filtered = products.filter(p => {
@@ -1364,8 +1382,11 @@ export default function Products() {
             <p className="text-sm text-txt-secondary mb-5">
               <span className="font-semibold">{deleteTarget.name}</span> será desactivado junto con todas sus variantes.
             </p>
+            {deleteError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2 mb-4">{deleteError}</p>
+            )}
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)}
+              <button onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
                 className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
                 Cancelar
               </button>

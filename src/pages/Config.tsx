@@ -11,7 +11,9 @@ import {
   BusinessHoursJson, DaySchedule, DAY_KEYS, DAY_LABELS, DEFAULT_BUSINESS_HOURS,
 } from '../utils/businessHours';
 import FloatingSaveBar from '../components/FloatingSaveBar';
+import LoadError from '../components/LoadError';
 import { useStoreFlags } from '../hooks/useStoreFlags';
+import { serverMessage } from '../utils/serverMessage';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -272,6 +274,8 @@ function NegocioSection({ storeId }: { storeId: string }) {
   const [saved,   setSaved]   = useState(false);
   const [error,   setError]   = useState('');
   const [initial, setInitial] = useState('');   // snapshot del form cargado para detectar cambios
+  const [loadError, setLoadError] = useState('');
+  const [loadKey,   setLoadKey]   = useState(0);
 
   useEffect(() => {
     getServices()
@@ -283,6 +287,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
   }, []);
 
   useEffect(() => {
+    setLoading(true); setLoadError('');
     getStore(storeId).then(res => {
       const d = res.data;
       const loaded = {
@@ -329,8 +334,9 @@ function NegocioSection({ storeId }: { storeId: string }) {
       };
       setForm(loaded);
       setInitial(JSON.stringify(loaded));
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [storeId]);
+    }).catch(err => setLoadError(serverMessage(err, 'No se pudo cargar la configuración de la tienda.')))
+      .finally(() => setLoading(false));
+  }, [storeId, loadKey]);
 
   const setf = (key: string, val: any) => setForm(p => ({ ...p, [key]: val }));
 
@@ -396,6 +402,7 @@ function NegocioSection({ storeId }: { storeId: string }) {
   };
 
   if (loading) return <Spinner />;
+  if (loadError) return <LoadError message={loadError} onRetry={() => setLoadKey(k => k + 1)} />;
 
   const ic = 'w-full px-4 py-3 rounded-xl border border-border-default bg-surface-elevated focus:outline-none focus:ring-2 focus:bg-surface transition text-sm text-txt-primary placeholder:text-txt-tertiary';
   const ta = `${ic} resize-none`;

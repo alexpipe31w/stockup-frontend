@@ -313,8 +313,11 @@ export const getOrders = (storeId: string, before?: string) =>
 export const getServiceOrders = (storeId: string, before?: string) =>
   api.get(`/orders/store/${storeId}`, { params: { type: 'service', limit: ORDERS_PAGE, ...(before && { before }) } });
 
-export const updateOrderStatus = (id: string, status: string) =>
-  api.patch(`/orders/${id}/status`, { status });
+export const getOrderById = (id: string) =>
+  api.get(`/orders/${id}`);
+
+export const updateOrderStatus =(id: string, status: string, reason?: string) =>
+  api.patch(`/orders/${id}/status`, { status, ...(reason ? { reason } : {}) });
 
 export const createManualOrder = (data: {
   customerId: string;
