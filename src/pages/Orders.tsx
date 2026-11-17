@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getOrders, ORDERS_PAGE, updateOrderStatus, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
+import { getOrders, ORDERS_PAGE, updateOrderStatus, getOrderById, createManualOrder, getCustomers, getProducts, createCustomer } from '../services/api';
 import { exportCashReport } from '../utils/exportExcel';
+import { serverMessage } from '../utils/serverMessage';
+import { useStoreFlags } from '../hooks/useStoreFlags';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
 
@@ -473,22 +475,36 @@ function OrderDetail({
 }: {
   order: Order;
   onClose: () => void;
-  onStatusChange: (orderId: string, status: string) => Promise<void>;
+  onStatusChange: (orderId: string, status: string, reason?: string) => Promise<void>;
 }) {
+  const { kitchenEnabled } = useStoreFlags();
   const [updating, setUpdating] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const cfg = STATUS_CONFIG[order.status];
 
-  const advance = async () => {
-    if (!cfg?.next) return;
-    setUpdating(true);
-    await onStatusChange(order.orderId, cfg.next);
-    setUpdating(false);
+  // El botón nunca se queda en "Actualizando..." y se muestra el motivo del servidor
+  // (409 el pedido ya cambió, 403 transición no permitida, 402 solo lectura, 429).
+  const change = async (status: string, reason?: string) => {
+    setUpdating(true); setActionError('');
+    try {
+      await onStatusChange(order.orderId, status, reason);
+      return true;
+    } catch (err) {
+      setActionError(serverMessage(err, 'No se pudo cambiar el estado del pedido.'));
+      return false;
+    } finally {
+      setUpdating(false);
+    }
   };
 
+  const advance = () => { if (cfg?.next) change(cfg.next); };
+
   const cancel = async () => {
-    setUpdating(true);
-    await onStatusChange(order.orderId, 'cancelled');
-    setUpdating(false);
+    if (await change('cancelled', cancelReason.trim() || undefined)) {
+      setConfirmCancel(false); setCancelReason('');
+    }
   };
 
   return (
@@ -598,8 +614,41 @@ function OrderDetail({
             </div>
           )}
 
+          {actionError && (
+            <div role="alert" className="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700">
+              {actionError}
+            </div>
+          )}
+
+          {/* Cancelar: siempre con confirmación; el motivo es opcional */}
+          {confirmCancel && order.status !== 'delivered' && order.status !== 'cancelled' && (
+            <div className="border border-red-100 bg-red-50/50 rounded-xl px-4 py-3 space-y-3">
+              <p className="text-sm font-semibold text-txt-primary">¿Cancelar este pedido?</p>
+              {kitchenEnabled && (
+                <div className="space-y-1">
+                  <label htmlFor="order-cancel-reason" className="text-xs text-txt-secondary">
+                    Motivo (opcional). Si lo escribes, se le envía al cliente por WhatsApp.
+                  </label>
+                  <textarea id="order-cancel-reason" value={cancelReason} maxLength={300} rows={2}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border-default bg-surface text-sm text-txt-primary resize-none focus:outline-none focus:ring-2" />
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={() => { setConfirmCancel(false); setCancelReason(''); }} disabled={updating}
+                  className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:text-txt-primary transition disabled:opacity-50">
+                  Volver
+                </button>
+                <button onClick={cancel} disabled={updating}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50">
+                  {updating ? 'Cancelando...' : 'Sí, cancelar pedido'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Acciones de estado */}
-          {order.status !== 'delivered' && order.status !== 'cancelled' && (
+          {!confirmCancel && order.status !== 'delivered' && order.status !== 'cancelled' && (
             <div className="flex gap-2 pt-1">
               {cfg?.next && (
                 <button
@@ -612,7 +661,7 @@ function OrderDetail({
                 </button>
               )}
               <button
-                onClick={cancel}
+                onClick={() => { setActionError(''); setConfirmCancel(true); }}
                 disabled={updating}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition disabled:opacity-50"
               >
@@ -680,12 +729,24 @@ export default function Orders() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleStatusChange = async (orderId: string, status: string) => {
-    await updateOrderStatus(orderId, status);
-    setOrders((prev) =>
-      prev.map((o) => o.orderId === orderId ? { ...o, status } : o)
-    );
-    setSelected((prev) => prev?.orderId === orderId ? { ...prev, status } : prev);
+  // La pantalla se queda con el pedido que devuelve el servidor. Si responde 409 ("ya
+  // cambió"), se recarga para que se vea el estado real antes de reintentar.
+  const handleStatusChange = async (orderId: string, status: string, reason?: string) => {
+    try {
+      const { data: saved } = await updateOrderStatus(orderId, status, reason);
+      const patch = saved?.orderId === orderId ? saved : { status };
+      setOrders((prev) => prev.map((o) => o.orderId === orderId ? { ...o, ...patch } : o));
+      setSelected((prev) => prev?.orderId === orderId ? { ...prev, ...patch } : prev);
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        const { data } = await getOrderById(orderId).catch(() => ({ data: null }));
+        if (data?.orderId === orderId) {
+          setOrders((prev) => prev.map((o) => o.orderId === orderId ? { ...o, ...data } : o));
+          setSelected((prev) => prev?.orderId === orderId ? { ...prev, ...data } : prev);
+        }
+      }
+      throw err;
+    }
   };
 
   const filtered = orders.filter((o) => {

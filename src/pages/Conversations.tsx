@@ -5,6 +5,7 @@ import {
   takeoverConversation, releaseConversation, closeConversation,
 } from '../services/api';
 import api from '../services/api';
+import { serverMessage } from '../utils/serverMessage';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
@@ -66,6 +67,11 @@ export default function Conversations() {
 
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleting,     setDeleting]     = useState(false);
+  const [deleteError,  setDeleteError]  = useState('');
+  const [actionError,  setActionError]  = useState('');
+  const [acting,       setActing]       = useState(false);
+
+  useEffect(() => { setActionError(''); }, [selected?.conversationId]);
 
   // ── Refs para scroll inteligente ──────────────────────────────────────────
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -143,7 +149,7 @@ export default function Conversations() {
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!text.trim() || !selected) return;
-    setSending(true);
+    setSending(true); setActionError('');
     try {
       await sendMessage({
         conversationId: selected.conversationId,
@@ -158,42 +164,47 @@ export default function Conversations() {
         setTimeout(() => scrollToBottom('smooth'), 50);
       });
     } catch (err: any) {
-      console.error('Error enviando:', err.response?.data);
+      // El texto se queda en la caja para reintentar.
+      setActionError(serverMessage(err, 'No se pudo enviar el mensaje.'));
     } finally {
       setSending(false);
     }
   };
 
-  const handleTakeover = async () => {
-    await takeoverConversation(selected.conversationId);
-    setSelected((s: any) => ({ ...s, status: 'human' }));
-    loadConversations();
+  // Tomar / soltar / cerrar: si la API rechaza (402 solo lectura, 429…), la conversación
+  // se queda como estaba y se dice por qué.
+  const changeStatus = async (fn: (id: string) => Promise<unknown>, status: string, fallback: string) => {
+    if (!selected || acting) return;
+    const id = selected.conversationId;
+    setActing(true); setActionError('');
+    try {
+      await fn(id);
+      setSelected((s: any) => s?.conversationId === id ? { ...s, status } : s);
+      loadConversations();
+    } catch (err) {
+      setActionError(serverMessage(err, fallback));
+    } finally {
+      setActing(false);
+    }
   };
 
-  const handleRelease = async () => {
-    await releaseConversation(selected.conversationId);
-    setSelected((s: any) => ({ ...s, status: 'active' }));
-    loadConversations();
-  };
-
-  const handleClose = async () => {
-    await closeConversation(selected.conversationId);
-    setSelected((s: any) => ({ ...s, status: 'closed' }));
-    loadConversations();
-  };
+  const handleTakeover = () => changeStatus(takeoverConversation, 'human', 'No se pudo tomar la conversación.');
+  const handleRelease  = () => changeStatus(releaseConversation,  'active', 'No se pudo devolver la conversación a la IA.');
+  const handleClose    = () => changeStatus(closeConversation,    'closed', 'No se pudo cerrar la conversación.');
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
+    setDeleting(true); setDeleteError('');
     try {
       await api.delete(`/conversations/${deleteTarget.conversationId}`);
       setConversations(prev => prev.filter(c => c.conversationId !== deleteTarget.conversationId));
       if (selected?.conversationId === deleteTarget.conversationId) setSelected(null);
+      setDeleteTarget(null);
     } catch (err) {
-      console.error('Error eliminando:', err);
+      // El modal sigue abierto con el motivo.
+      setDeleteError(serverMessage(err, 'No se pudo eliminar la conversación.'));
     } finally {
       setDeleting(false);
-      setDeleteTarget(null);
     }
   };
 
@@ -381,7 +392,7 @@ export default function Conversations() {
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {(selected.status === 'active' || selected.status === 'pending_human') && (
-                <button onClick={handleTakeover}
+                <button onClick={handleTakeover} disabled={acting}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium text-[#0A0A0F]"
                   style={{ background: 'linear-gradient(135deg, #D4FF00, #A3CC00)' }}> 
                   <UserIcon />
@@ -389,14 +400,14 @@ export default function Conversations() {
                 </button>
               )}
               {selected.status === 'human' && (
-                <button onClick={handleRelease}
+                <button onClick={handleRelease} disabled={acting}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium bg-green-100 text-green-700 hover:bg-green-200 transition">
                   <BotIcon />
                   <span className="hidden sm:inline">Devolver a IA</span>
                 </button>
               )}
               {selected.status !== 'closed' && (
-                <button onClick={handleClose}
+                <button onClick={handleClose} disabled={acting}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-red-100 hover:text-red-600 transition">
                   <CloseIcon />
                   <span className="hidden sm:inline">Cerrar</span>
@@ -464,6 +475,12 @@ export default function Conversations() {
 
           {/* Input */}
           <div className="flex-shrink-0">
+            {actionError && (
+              <div role="alert" className="mx-4 md:mx-6 mb-2 px-3 py-2 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700 flex items-start gap-2">
+                <span className="flex-1">{actionError}</span>
+                <button onClick={() => setActionError('')} aria-label="Cerrar aviso" className="text-red-500 hover:text-red-700">×</button>
+              </div>
+            )}
             {selected.status === 'human' ? (
               <div className="bg-surface border-t border-border-subtle px-4 md:px-6 py-3 md:py-4">
                 <div className="flex items-end gap-2 md:gap-3">
@@ -502,6 +519,7 @@ export default function Conversations() {
                 La IA está manejando esta conversación —{' '}
                 <button
                   onClick={handleTakeover}
+                  disabled={acting}
                   className="font-semibold text-blue-600 hover:underline"
                 >
                   tomar el control
@@ -532,8 +550,11 @@ export default function Conversations() {
             <p className="text-xs text-green-700 bg-green-50 rounded-xl px-3 py-2 mb-5">
               ✓ El cliente y su historial de pedidos no serán afectados.
             </p>
+            {deleteError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2 mb-4">{deleteError}</p>
+            )}
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)}
+              <button onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
                 className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
                 Cancelar
               </button>

@@ -6,6 +6,7 @@ import {
 import type { PriceType, ServiceVariantPayload } from '../services/api';
 import { ImageUploadField } from '../components/ImageUploadField';
 import { plainText } from '../utils/plainText';
+import { serverMessage } from '../utils/serverMessage';
 import { HelpCircle } from 'lucide-react';
 import GuidedTour, { TourStep } from '../components/GuidedTour';
 import FloatingSaveBar from '../components/FloatingSaveBar';
@@ -270,25 +271,41 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
     estimatedMinutes: variant.estimatedMinutes ? String(variant.estimatedMinutes) : '',
   });
   const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState('');
 
   const save = async () => {
     if (!form.name.trim()) return;
     if (form.priceOverride && form.priceModifier) return; // no pueden ir juntos
-    setSaving(true);
-    await onUpdate(variant.variantId, {
-      name:             form.name.trim(),
-      description:      form.description.trim() || undefined,
-      priceOverride:    form.priceOverride ? Number(form.priceOverride) : undefined,
-      priceModifier:    form.priceModifier ? Number(form.priceModifier) : undefined,
-      estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
-    });
-    setSaving(false);
-    setEditing(false);
+    setSaving(true); setError('');
+    try {
+      await onUpdate(variant.variantId, {
+        name:             form.name.trim(),
+        description:      form.description.trim() || undefined,
+        priceOverride:    form.priceOverride ? Number(form.priceOverride) : undefined,
+        priceModifier:    form.priceModifier ? Number(form.priceModifier) : undefined,
+        estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
+      });
+      setEditing(false);
+    } catch (err) {
+      setError(serverMessage(err, 'No se pudo guardar la variante.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    setSaving(true); setError('');
+    try {
+      await onRemove(variant.variantId);
+    } catch (err) {
+      setError(serverMessage(err, 'No se pudo quitar la variante.'));
+      setSaving(false);
+    }
   };
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-surface-elevated transition">
+      <div className="flex flex-wrap items-center justify-between px-3 py-2.5 rounded-xl hover:bg-surface-elevated transition">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-txt-primary truncate">{variant.name}</p>
           {variant.description && (
@@ -309,12 +326,13 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
               className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-blue-600 hover:bg-blue-50 transition">
               <EditIcon />
             </button>
-            <button onClick={() => onRemove(variant.variantId)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-red-500 hover:bg-red-50 transition">
+            <button onClick={remove} disabled={saving} aria-label="Quitar variante"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-txt-tertiary hover:text-red-500 hover:bg-red-50 transition disabled:opacity-50">
               <TrashIcon />
             </button>
           </div>
         </div>
+        {error && <p role="alert" className="basis-full text-xs text-red-600 mt-1">{error}</p>}
       </div>
     );
   }
@@ -349,6 +367,7 @@ function VariantRow({ variant, service, onUpdate, onRemove }: {
       {bothPrices && (
         <p className="text-xs text-red-500">Solo usa precio fijo O porcentaje, no ambos.</p>
       )}
+      {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-1">
         <button onClick={save} disabled={saving || !form.name.trim() || bothPrices}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium text-[#0A0A0F] disabled:opacity-50 transition"
@@ -855,6 +874,7 @@ export default function Services() {
   const [modalService,   setModalService]  = useState<Service | null | 'new'>(null);
   const [deleteTarget,   setDeleteTarget]  = useState<Service | null>(null);
   const [deleting,       setDeleting]      = useState(false);
+  const [deleteError,    setDeleteError]   = useState('');
   const [tourRun,        setTourRun]       = useState(false);
 
   useEffect(() => {
@@ -903,11 +923,17 @@ export default function Services() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
-    await deleteService(deleteTarget.serviceId);
-    setServices(prev => prev.filter(s => s.serviceId !== deleteTarget.serviceId));
-    setDeleteTarget(null);
-    setDeleting(false);
+    setDeleting(true); setDeleteError('');
+    try {
+      await deleteService(deleteTarget.serviceId);
+      setServices(prev => prev.filter(s => s.serviceId !== deleteTarget.serviceId));
+      setDeleteTarget(null);
+    } catch (err) {
+      // El modal sigue abierto con el motivo.
+      setDeleteError(serverMessage(err, 'No se pudo eliminar el servicio.'));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // Categorías únicas para filtro
@@ -1046,8 +1072,11 @@ export default function Services() {
             <p className="text-sm text-txt-secondary mb-5">
               <span className="font-semibold">{deleteTarget.name}</span> será desactivado junto con todas sus variantes.
             </p>
+            {deleteError && (
+              <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-xl px-3 py-2 mb-4">{deleteError}</p>
+            )}
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)}
+              <button onClick={() => { setDeleteTarget(null); setDeleteError(''); }}
                 className="flex-1 py-2 rounded-xl text-sm font-medium bg-surface-overlay text-txt-secondary hover:bg-border-default transition">
                 Cancelar
               </button>

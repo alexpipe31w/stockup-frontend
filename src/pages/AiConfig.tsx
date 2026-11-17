@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getAiConfig, saveAiConfig, getAiPoolStatus, verifyAiKeys, apiMessage } from '../services/api';
 import FloatingSaveBar from '../components/FloatingSaveBar';
+import LoadError from '../components/LoadError';
 
 type AIProvider = 'groq' | 'openai' | 'together' | 'mistral' | 'anthropic' | 'gemini';
 
@@ -475,6 +476,8 @@ export default function AiConfig() {
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
   const [initial, setInitial] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [loadKey,   setLoadKey]   = useState(0);
   const [cartridges, setCartridges] = useState<CartridgeForm[]>([]);
   const [pool, setPool] = useState<PoolSnapshot | null>(null);
   const countdown = useCountdown(pool?.resetAt ?? null);
@@ -512,6 +515,7 @@ export default function AiConfig() {
   }, []);
 
   useEffect(() => {
+    setLoading(true); setLoadError('');
     getAiConfig(storeId)
       .then((res) => {
         if (res.data) {
@@ -533,13 +537,16 @@ export default function AiConfig() {
           setInitial(JSON.stringify({ form: loadedForm, cartridges: loadedCartridges }));
         }
       })
-      .catch(() => {})
+      // Sin carga no hay formulario: guardar los valores por defecto borraría el prompt y las claves.
+      .catch((err) => setLoadError(apiMessage(err, 'No se pudo cargar la configuración de la IA.')))
       .finally(() => setLoading(false));
+  }, [storeId, loadKey]);
 
+  useEffect(() => {
     fetchPool();
     const id = setInterval(fetchPool, 30_000);
     return () => clearInterval(id);
-  }, [storeId, fetchPool]);
+  }, [fetchPool]);
 
   const handleProviderChange = (p: AIProvider) => {
     setForm(f => ({ ...f, aiProvider: p, model: PROVIDERS[p].models[0].value, apiKey: '', keyMask: '', stored: '' }));
@@ -592,6 +599,7 @@ export default function AiConfig() {
       <div className="w-8 h-8 rounded-full border-2 border-lime border-t-transparent animate-spin" />
     </div>
   );
+  if (loadError) return <LoadError message={loadError} onRetry={() => setLoadKey(k => k + 1)} />;
 
   return (
     <form onSubmit={handleSave} className="space-y-5">

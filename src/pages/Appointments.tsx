@@ -10,6 +10,8 @@ import {
   BusinessHoursJson, getCellState, getEarliestOpenHour, getLatestCloseHour,
   isWithinBusinessHours, getHoursRangeLabel,
 } from '../utils/businessHours';
+import { serverMessage } from '../utils/serverMessage';
+import { isoToBogotaInput, bogotaInputToDate, bogotaInputToIso } from '../utils/bogotaTime';
 import {
   Bot, User, MessageSquare, Plug, Sparkles, CheckCircle, Loader,
   PartyPopper, XCircle, Ghost, RefreshCw, FileText, PenLine,
@@ -297,14 +299,16 @@ function DetailPanel({ appt, onUpdate, onClose }: {
   const [editSaved,  setEditSaved]  = useState(false);
   const [paymentForm,     setPaymentForm]     = useState({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
   const [resolvingAction, setResolvingAction] = useState(false);
+  const [actionError,     setActionError]     = useState('');
 
   // Reset tabs and payment form when the appointment changes
   useEffect(() => {
     setActiveDetailTab('detalle');
+    setActionError('');
     setPaymentForm({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
     setEditForm({
-      scheduledAt:     appt.scheduledAt ? appt.scheduledAt.slice(0, 16) : '',
-      endsAt:          appt.endsAt      ? appt.endsAt.slice(0, 16)      : '',
+      scheduledAt:     isoToBogotaInput(appt.scheduledAt),
+      endsAt:          isoToBogotaInput(appt.endsAt),
       durationMinutes: appt.durationMinutes != null ? String(appt.durationMinutes) : '',
       description:     appt.description    ?? '',
       address:         appt.address        ?? '',
@@ -318,23 +322,33 @@ function DetailPanel({ appt, onUpdate, onClose }: {
   const cfg = SC[appt.status];
   const transitions = TRANSITIONS[appt.status] ?? [];
 
+  // Toda escritura pasa por aquí: el botón nunca se queda en "guardando" y se muestra el
+  // motivo del servidor (409 ya cambió, 400 transición no válida, 402 solo lectura, 429).
+  const act = async (fn: () => Promise<void>, fallback: string): Promise<boolean> => {
+    setActionError('');
+    try {
+      await fn();
+      return true;
+    } catch (err) {
+      setActionError(serverMessage(err, fallback));
+      return false;
+    }
+  };
+
   const doStatus = async (s: AppointmentStatus, cancelReason?: string) => {
     if (s === 'CANCELLED' && !cancelReason) { setShowCancel(true); return; }
     setSaving(true);
-    await onUpdate(appt.appointmentId, { status: s, ...(cancelReason ? { cancelReason } : {}) });
+    await act(() => onUpdate(appt.appointmentId, { status: s, ...(cancelReason ? { cancelReason } : {}) }),
+      'No se pudo cambiar el estado de la cita.');
     setSaving(false); setShowCancel(false);
   };
 
   const moveTo = async (when: Date) => {
     setSaving(true);
-    try {
-      await onUpdate(appt.appointmentId, { scheduledAt: when.toISOString() });
-    } catch (err: any) {
-      // el backend rechaza si choca con otra cita del profesional
-      alert(err?.response?.data?.message || 'No se pudo mover la cita (¿choca con otra?).');
-    } finally {
-      setSaving(false);
-    }
+    // el backend rechaza si choca con otra cita del profesional
+    await act(() => onUpdate(appt.appointmentId, { scheduledAt: when.toISOString() }),
+      'No se pudo mover la cita (¿choca con otra?).');
+    setSaving(false);
   };
   const nowRounded5 = () => {
     const d = new Date();
@@ -346,53 +360,51 @@ function DetailPanel({ appt, onUpdate, onClose }: {
 
   const handleConfirmPayment = async () => {
     setSaving(true);
-    try {
-      await onUpdate(appt.appointmentId, {
-        paymentStatus: 'PAID',
-        ...(paymentForm.paymentMethod && { paymentMethod: paymentForm.paymentMethod }),
-        ...(paymentForm.paymentAmount && { paymentAmount: Number(paymentForm.paymentAmount) }),
-        ...(paymentForm.paymentNotes  && { paymentNotes:  paymentForm.paymentNotes }),
-      });
-      setPaymentForm({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
-    } catch (err: any) {
-      console.error('Error confirming payment:', err);
-    } finally {
-      setSaving(false);
-    }
+    const ok = await act(() => onUpdate(appt.appointmentId, {
+      paymentStatus: 'PAID',
+      ...(paymentForm.paymentMethod && { paymentMethod: paymentForm.paymentMethod }),
+      ...(paymentForm.paymentAmount && { paymentAmount: Number(paymentForm.paymentAmount) }),
+      ...(paymentForm.paymentNotes  && { paymentNotes:  paymentForm.paymentNotes }),
+    }), 'No se pudo confirmar el pago.');
+    if (ok) setPaymentForm({ paymentMethod: '', paymentAmount: '', paymentNotes: '' });
+    setSaving(false);
   };
 
   const handleResolveAction = async (resolution: 'approved' | 'rejected') => {
     if (resolvingAction) return;
     setResolvingAction(true);
-    try {
-      await onUpdate(appt.appointmentId, {
-        pendingActionResolution: resolution,
-        ...(resolution === 'rejected' && { rejectionReason: 'Solicitud rechazada por el admin' }),
-      });
-      onClose();
-    } finally {
-      setResolvingAction(false);
-    }
+    const ok = await act(() => onUpdate(appt.appointmentId, {
+      pendingActionResolution: resolution,
+      ...(resolution === 'rejected' && { rejectionReason: 'Solicitud rechazada por el admin' }),
+    }), 'No se pudo resolver la solicitud.');
+    setResolvingAction(false);
+    if (ok) onClose();
   };
 
   const handleEditSave = async () => {
     setEditSaving(true);
     setEditSaved(false);
-    try {
-      const payload: Record<string, any> = {};
-      if (editForm.scheduledAt)     payload.scheduledAt     = new Date(editForm.scheduledAt).toISOString();
-      if (editForm.endsAt)          payload.endsAt          = new Date(editForm.endsAt).toISOString();
-      if (editForm.durationMinutes) payload.durationMinutes = Number(editForm.durationMinutes);
+    // Fecha, fin y duración solo viajan si se tocaron: reenviarlos sin cambios reprograma la
+    // cita (y antes la movía +5 h por leer la hora UTC como si fuera local).
+    const payload: Record<string, any> = {};
+    if (editForm.scheduledAt && editForm.scheduledAt !== isoToBogotaInput(appt.scheduledAt))
+      payload.scheduledAt = bogotaInputToIso(editForm.scheduledAt);
+    if (editForm.endsAt && editForm.endsAt !== isoToBogotaInput(appt.endsAt))
+      payload.endsAt = bogotaInputToIso(editForm.endsAt);
+    if (editForm.durationMinutes && Number(editForm.durationMinutes) !== appt.durationMinutes)
+      payload.durationMinutes = Number(editForm.durationMinutes);
+    const ok = await act(async () => {
       payload.description   = editForm.description   || null;
       payload.address       = editForm.address       || null;
       payload.agreedPrice   = editForm.agreedPrice   ? Number(editForm.agreedPrice) : null;
       payload.notes         = editForm.notes         || null;
       payload.internalNotes = editForm.internalNotes || null;
       await onUpdate(appt.appointmentId, payload);
+    }, 'No se pudieron guardar los cambios.');
+    setEditSaving(false);
+    if (ok) {
       setEditSaved(true);
       setTimeout(() => setEditSaved(false), 3000);
-    } finally {
-      setEditSaving(false);
     }
   };
 
@@ -437,6 +449,14 @@ function DetailPanel({ appt, onUpdate, onClose }: {
             </button>
           ))}
         </div>
+
+        {actionError && (
+          <div role="alert" className="mx-4 mt-3 px-3 py-2 rounded-xl bg-error/10 text-error text-xs flex items-start gap-2">
+            <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+            <span className="flex-1">{actionError}</span>
+            <button onClick={() => setActionError('')} aria-label="Cerrar aviso"><X size={13} /></button>
+          </div>
+        )}
 
         {/* body */}
         {activeDetailTab === 'detalle' && (
@@ -800,10 +820,8 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
   const [newCustomer, setNewCustomer] = useState({ name: '', phone: '' });
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(10, 0, 0, 0);
-  const defaultDT = tomorrow.toISOString().slice(0, 16);
+  // Mañana a las 10:00, hora de Colombia.
+  const defaultDT = `${isoToBogotaInput(new Date(Date.now() + 86_400_000).toISOString()).slice(0, 10)}T10:00`;
 
   const [form, setForm] = useState({
     customerId:      '',
@@ -845,7 +863,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
       return;
     }
     if (businessHours && !force) {
-      if (!isWithinBusinessHours(new Date(form.scheduledAt), businessHours)) {
+      if (!isWithinBusinessHours(bogotaInputToDate(form.scheduledAt), businessHours)) {
         setOutOfHoursWarning(true);
         return;
       }
@@ -864,7 +882,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
         customerId,
         serviceId:       form.serviceId       || undefined,
         staffId:         form.staffId         || undefined,
-        scheduledAt:     new Date(form.scheduledAt).toISOString(),
+        scheduledAt:     bogotaInputToIso(form.scheduledAt),
         durationMinutes: form.durationMinutes  ? Number(form.durationMinutes) : undefined,
         description:     form.description     || undefined,
         address:         form.address         || undefined,
@@ -1101,7 +1119,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
               <p className="text-xs text-txt-secondary">
                 Esta hora está fuera del horario configurado.{' '}
                 {businessHours && (() => {
-                  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', weekday: 'short' }).formatToParts(new Date(form.scheduledAt));
+                  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', weekday: 'short' }).formatToParts(bogotaInputToDate(form.scheduledAt));
                   const dk = (parts.find(p => p.type === 'weekday')?.value ?? 'Mon').toLowerCase() as any;
                   const label = getHoursRangeLabel(businessHours, dk);
                   return <span>Horario del día: <span className="font-medium">{label}</span>.</span>;
@@ -1627,10 +1645,12 @@ export default function Appointments() {
 
   useEffect(() => { load(); }, [load]);
 
+  // La pantalla se queda con lo que guardó el servidor (endsAt recalculado, solicitud
+  // resuelta, pago confirmado), no con lo que se mandó.
   const handleUpdate = async (id: string, data: any) => {
-    await updateAppointment(id, data);
-    setAppointments(p => p.map(a => a.appointmentId === id ? { ...a, ...data } : a));
-    setSelected(p => p?.appointmentId === id ? { ...p, ...data } : p);
+    const { data: saved } = await updateAppointment(id, data);
+    setAppointments(p => p.map(a => a.appointmentId === id ? { ...a, ...saved } : a));
+    setSelected(p => p?.appointmentId === id ? { ...p, ...saved } : p);
   };
 
   const filtered = appointments.filter(a => {
