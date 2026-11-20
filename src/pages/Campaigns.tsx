@@ -76,8 +76,9 @@ function CampaignModal({
       const res = await createCampaign({ name: name.trim(), message: message.trim() });
       onSaved(res.data);
       onClose();
-    } catch {
-      setError('Error al crear la campaña');
+    } catch (err) {
+      // El motivo del servidor (402 plan, 429 límite, 400 validación); antes siempre el genérico (C-10).
+      setError(errorMessage(err, 'Error al crear la campaña'));
     } finally {
       setSaving(false);
     }
@@ -179,6 +180,17 @@ export default function Campaigns() {
   }, [storeId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // C-10: mientras alguna esté "Enviando", refrescar la lista sola (sin spinner) para ver
+  // cuándo termina; antes el estado se quedaba igual hasta recargar la página.
+  const anySending = campaigns.some((c) => c.status === 'sending');
+  useEffect(() => {
+    if (!anySending) return;
+    const interval = setInterval(() => {
+      getCampaigns(storeId).then((res) => setCampaigns(res.data)).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [anySending, storeId]);
 
   const handleSend = async (campaign: Campaign) => {
     setSending(campaign.campaignId);
@@ -343,10 +355,10 @@ export default function Campaigns() {
           <div className="bg-surface rounded-2xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="font-bold text-txt-primary mb-2">Enviar campaña masiva</h3>
             <p className="text-sm text-txt-secondary mb-1">
-              Vas a enviar <span className="font-semibold text-txt-primary">"{confirmSend.name}"</span> a todos tus clientes por WhatsApp.
+              Vas a enviar <span className="font-semibold text-txt-primary">"{confirmSend.name}"</span> por WhatsApp a tus clientes que ya te escribieron y aceptan mensajes (no a los bloqueados).
             </p>
             <p className="text-xs text-txt-tertiary mb-3">
-              Solo a quienes ya te escribieron. Para proteger tu número sale poco a poco: con un tope diario
+              Para proteger tu número sale poco a poco: con un tope diario
               {health ? ` (hoy ${health.campaignDailyCap})` : ''} y en horario permitido (lunes a viernes 7:00–19:00, sábados 8:00–15:00, sin festivos).
             </p>
             <p className="text-xs text-orange-600 bg-orange-50 rounded-xl px-3 py-2 mb-5">

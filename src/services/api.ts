@@ -23,6 +23,19 @@ api.interceptors.response.use(
       // Un 401 de una petición hecha con un token que ya se reemplazó (p. ej. justo después de
       // cambiar la contraseña) no debe borrar la sesión nueva.
       const sentWith = err.config?.headers?.Authorization;
+      // C-12: el superadmin tiene su propia sesión (sa_token). Su 401 cierra solo esa y va a
+      // /superadmin/login; antes pasaba por la lógica de tiendas (borraba la sesión de la tienda
+      // y mandaba a /login, o lo tomaba por "token viejo" y no hacía nada).
+      const isSuperAdminCall = (err.config?.url ?? '').startsWith('/superadmin/');
+      if (isSuperAdminCall) {
+        const currentSa = localStorage.getItem('sa_token');
+        const staleSa = !!sentWith && !!currentSa && sentWith !== `Bearer ${currentSa}`;
+        if (!isAuthPage && !staleSa) {
+          localStorage.removeItem('sa_token');
+          window.location.replace('/superadmin/login');
+        }
+        return Promise.reject(err);
+      }
       const current = localStorage.getItem('token');
       const stale = !!sentWith && !!current && sentWith !== `Bearer ${current}`;
       if (!isAuthPage && !stale) {
@@ -72,12 +85,6 @@ export const getDashboard = (storeId: string) => api.get(`/dashboard/${storeId}`
 export const getConversations = (storeId: string) =>
   api.get(`/conversations/store/${storeId}`);
 
-export const getConversation = (id: string) =>
-  api.get(`/conversations/${id}`);
-
-export const getPendingHuman = (storeId: string) =>
-  api.get(`/conversations/store/${storeId}`);
-
 export const takeoverConversation = (id: string) =>
   api.patch(`/conversations/${id}/takeover`);
 
@@ -86,9 +93,6 @@ export const releaseConversation = (id: string) =>
 
 export const closeConversation = (id: string) =>
   api.patch(`/conversations/${id}/close`);
-
-export const deleteConversation = (id: string) =>
-  api.delete(`/conversations/${id}`);
 
 // ── Messages ──────────────────────────────────────────────────────────────
 export const getMessages = (conversationId: string) =>
@@ -108,9 +112,6 @@ export const getCategories = () =>
 
 export const createCategory = (name: string) =>
   api.post('/products/categories', { name });
-
-export const deleteCategory = (categoryId: string) =>
-  api.delete(`/products/categories/${categoryId}`);
 
 export const updateCategory = (categoryId: string, data: Partial<{ name: string; description: string; sortOrder: number }>) =>
   api.patch(`/products/categories/${categoryId}`, data);
@@ -341,9 +342,6 @@ export interface CustomerSearchResult {
 export const searchCustomers = (storeId: string, q: string, limit = 20) =>
   api.get<CustomerSearchResult[]>(`/customers/store/${storeId}`, { params: { q, limit } });
 
-export const getCustomer = (id: string) =>
-  api.get(`/customers/${id}`);
-
 export const updateCustomer = (id: string, data: { name?: string | null; city?: string | null; cedula?: string | null; acceptsMarketing?: boolean }) =>
   api.patch(`/customers/${id}`, data);
 
@@ -351,12 +349,6 @@ export const createCustomer = (data: { phone: string; name?: string }) =>
   api.post('/customers', data);
 
 // ── Analytics ─────────────────────────────────────────────────────────────
-export const getRevenueTrends = (days = 30) =>
-  api.get(`/analytics/trends?days=${days}`);
-
-export const getConversationInsights = () =>
-  api.post('/analytics/conversation-insights', {});
-
 export const getAnalyticsSummary = (period: string) =>
   api.get('/analytics/summary', { params: { period } });
 
@@ -399,9 +391,6 @@ export const getAppointments = (params?: {
 export const getAppointmentStats = () =>
   api.get('/appointments/stats');
 
-export const getAppointment = (id: string) =>
-  api.get(`/appointments/${id}`);
-
 export const getAppointmentTimeline = (id: string) =>
   api.get(`/appointments/${id}/timeline`);
 
@@ -435,9 +424,6 @@ export const createWalkIn = (data: {
 
 export const updateAppointment = (id: string, data: Record<string, any>) =>
   api.patch(`/appointments/${id}`, data);
-
-export const deleteAppointment = (id: string) =>
-  api.delete(`/appointments/${id}`);
 
 // ── Public (no auth needed) ───────────────────────────────────────────────────
 export const getPublicStore = (slug: string) =>
@@ -489,12 +475,6 @@ export const deleteStaff = (id: string) =>
 // Borrado permanente (hard delete) — elimina el registro de la BD.
 export const deleteStaffPermanent = (id: string) =>
   api.delete(`/staff/${id}/permanent`);
-
-export const getDailyReports = (limit = 30) =>
-  api.get(`/reports/daily?limit=${limit}`);
-
-export const generateReport = () =>
-  api.post('/reports/generate');
 
 // ── WhatsApp ──────────────────────────────────────────────────────────────
 export const connectWhatsApp = (storeId: string) =>

@@ -165,6 +165,8 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // C-9: bloquear una tienda la deja sin panel ni IA; se confirma antes.
+  const [confirmBlock, setConfirmBlock] = useState<{ storeId: string; name: string } | null>(null);
   const [subConfig, setSubConfig] = useState<SubscriptionConfig | null>(null);
   const [subs, setSubs] = useState<SubRecord[]>([]);
   const [editPrice, setEditPrice] = useState('');
@@ -229,9 +231,12 @@ export default function SuperAdmin() {
   }, [tab, loadTab, token]);
 
   const handleToggleStore = async (storeId: string) => {
+    setConfirmBlock(null);
     try {
-      await toggleSuperAdminStore(storeId);
-      setStores(prev => prev.map(s => s.storeId === storeId ? { ...s, isActive: !s.isActive } : s));
+      const res = await toggleSuperAdminStore(storeId);
+      // El estado que devuelve la API, no el contrario del que teníamos en pantalla.
+      const isActive: boolean = res.data.isActive;
+      setStores(prev => prev.map(s => s.storeId === storeId ? { ...s, isActive } : s));
     } catch {
       setError('Error al actualizar tienda');
     }
@@ -496,7 +501,9 @@ export default function SuperAdmin() {
                             <td className="px-4 py-3 text-txt-tertiary text-xs whitespace-nowrap">{fmtDate(store.createdAt)}</td>
                             <td className="px-4 py-3">
                               <button
-                                onClick={() => handleToggleStore(store.storeId)}
+                                onClick={() => store.isActive
+                                  ? setConfirmBlock({ storeId: store.storeId, name: store.name })
+                                  : handleToggleStore(store.storeId)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                                   store.isActive
                                     ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
@@ -754,6 +761,32 @@ export default function SuperAdmin() {
           </>
         )}
       </main>
+
+      {/* Modal confirmar bloqueo de tienda (C-9) */}
+      {confirmBlock && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="confirm-block-title" className="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-sm shadow-2xl">
+            <h3 id="confirm-block-title" className="text-white font-semibold text-lg mb-2">Bloquear {confirmBlock.name}</h3>
+            <p className="text-txt-tertiary text-sm mb-6">
+              Nadie de la tienda podrá usar el panel (las sesiones abiertas también se cortan) hasta que la actives de nuevo.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmBlock(null)}
+                className="flex-1 py-2.5 rounded-xl bg-slate-700 text-txt-disabled hover:bg-slate-600 transition text-sm font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleToggleStore(confirmBlock.storeId)}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white hover:bg-red-600 transition text-sm font-medium"
+              >
+                Bloquear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal confirmar eliminación */}
       {confirmDelete && (

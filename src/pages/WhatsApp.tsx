@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp, getWhatsAppHealth, apiMessage, type WhatsAppHealth } from '../services/api';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -80,10 +80,18 @@ export default function WhatsAppPage() {
     } catch {}
   }, [storeId]);
 
+  // C-8: cada Cancelar/Desvincular/Reconectar sube la época; una respuesta del QR que salió
+  // antes llega tarde y se descarta (antes volvía a pintar el QR ya cancelado).
+  const qrEpoch = useRef(0);
+  const dropQR = () => { qrEpoch.current += 1; setQr(null); };
+
   const fetchQR = useCallback(async () => {
+    const epoch = qrEpoch.current;
     try {
       const res = await getWhatsAppQR(storeId);
-      if (res.data.qr) setQr(res.data.qr);
+      if (epoch !== qrEpoch.current) return;
+      // Sin QR en el servidor = no hay QR que mostrar (antes solo se ponía, nunca se quitaba).
+      setQr(res.data.qr ?? null);
     } catch {}
   }, [storeId]);
 
@@ -130,7 +138,7 @@ export default function WhatsAppPage() {
       const res = await disconnectWhatsApp(storeId, { logout: true });
       setUnlinkHint(res.data?.hint ?? null);
       setConnected(false);
-      setQr(null);
+      dropQR();
       // Esperar que el backend limpie la sesión antes de re-verificar
       await new Promise(r => setTimeout(r, 1500));
       await checkStatus();
@@ -151,7 +159,7 @@ export default function WhatsAppPage() {
     } catch (err) {
       setActionError(apiMessage(err, 'No se pudo cancelar. Intenta de nuevo.'));
     } finally {
-      setQr(null);
+      dropQR();
       setDisconnecting(false);
     }
   };
@@ -163,7 +171,7 @@ export default function WhatsAppPage() {
       // Cierra y vuelve a abrir con la misma vinculación: no hace falta escanear otro QR
       await disconnectWhatsApp(storeId);
       setConnected(false);
-      setQr(null);
+      dropQR();
       await new Promise(r => setTimeout(r, 1500));
       await connectWhatsApp(storeId);
       await fetchQR();
