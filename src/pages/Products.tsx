@@ -559,17 +559,19 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
     if (!form.name.trim()) return setError('El nombre es requerido');
     if (!form.salePrice)   return setError('El precio de venta es requerido');
     setSaving(true); setError('');
+    // C-3: al editar, un campo vaciado viaja como null (la API lo borra); undefined lo dejaba igual.
+    const empty = targetId ? null : undefined;
     try {
       const payload: any = {
         name:             form.name.trim(),
-        sku:              form.sku.trim() || undefined,
-        categoryId:       form.categoryId || undefined,
-        description:      form.description.trim() || undefined,
+        sku:              form.sku.trim() || empty,
+        categoryId:       form.categoryId || empty,
+        description:      form.description.trim() || empty,
         salePrice:        Number(form.salePrice),
         costPrice:        form.costPrice ? Number(form.costPrice) : undefined,
         ...stockFields(),
         hasVariants:      prepared ? false : form.hasVariants,
-        imageUrl:         form.imageUrl.trim() || undefined,
+        imageUrl:         form.imageUrl.trim() || empty,
         hasShipping:      form.hasShipping,
         weight:           form.weight ? Number(form.weight) : undefined,
         shippingStandard: form.shippingStandard ? Number(form.shippingStandard) : undefined,
@@ -709,11 +711,11 @@ function ProductModal({ product, categories, onClose, onSaved, onCategoryCreated
     try {
       res = await updateVariant(variantId, {
         name:       data.name,
-        sku:        data.sku || undefined,
+        sku:        data.sku?.trim() || null,
         salePrice:  data.salePrice ? Number(data.salePrice) : undefined,
         costPrice:  data.costPrice ? Number(data.costPrice) : undefined,
         ...(stockChanged && { stock, stockBefore: seen }),
-        imageUrl:   data.imageUrl || undefined,
+        imageUrl:   data.imageUrl?.trim() || null,
         weight:     data.weight ? Number(data.weight) : undefined,
         attributes: data.attributes,
         sortOrder:  data.sortOrder !== undefined ? Number(data.sortOrder) : undefined,

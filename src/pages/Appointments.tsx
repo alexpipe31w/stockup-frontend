@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getAppointments, getAppointmentStats, APPOINTMENTS_PAGE,
   updateAppointment, getAppointmentTimeline,
-  createAppointment, createCustomer, getCustomers, getServices,
+  createAppointment, createCustomer, getServices,
   getStore, getStaff, createWalkIn,
 } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import type { CustomerSearchResult } from '../services/api';
+import CustomerPicker from '../components/CustomerPicker';
 import {
   BusinessHoursJson, getCellState, getEarliestOpenHour, getLatestCloseHour,
   isWithinBusinessHours, getHoursRangeLabel,
@@ -56,7 +58,6 @@ interface Appointment {
   pendingActionReason?: string | null;
   pendingActionData?:  Record<string, any> | null;
 }
-interface CustomerOption { customerId: string; name: string | null; phone: string; }
 interface ServiceOption  { serviceId: string; name: string; basePrice?: number | null; estimatedMinutes?: number | null; }
 interface Stats {
   total: number; pending: number; confirmed: number; todayCount: number;
@@ -814,7 +815,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   staff: StaffInfo[];
   staffLabel: string;
 }) {
-  const [customers,   setCustomers]   = useState<CustomerOption[]>([]);
+  const [picked,      setPicked]      = useState<CustomerSearchResult | null>(null);
   const [services,    setServices]    = useState<ServiceOption[]>([]);
   const [loadingOpts, setLoadingOpts] = useState(true);
   const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
@@ -840,11 +841,8 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
   const [outOfHoursWarning, setOutOfHoursWarning] = useState(false);
 
   useEffect(() => {
-    Promise.all([getCustomers(storeId), getServices()])
-      .then(([cr, sr]) => {
-        setCustomers(cr.data);
-        setServices(sr.data);
-      })
+    getServices()
+      .then((sr) => setServices(sr.data))
       .catch(() => {})
       .finally(() => setLoadingOpts(false));
   }, [storeId]);
@@ -956,18 +954,9 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
               </div>
 
               {customerMode === 'existing' ? (
-                <select
-                  value={form.customerId}
-                  onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}
-                  className={ic}
-                >
-                  <option value="">Seleccionar cliente...</option>
-                  {customers.map(c => (
-                    <option key={c.customerId} value={c.customerId}>
-                      {c.name ? `${c.name} — ${c.phone}` : c.phone}
-                    </option>
-                  ))}
-                </select>
+                <CustomerPicker storeId={storeId} value={picked}
+                  onChange={c => { setPicked(c); setForm(f => ({ ...f, customerId: c?.customerId ?? '' })); }}
+                  emptyHint={'Cambia a "Nuevo" para crearlo.'} />
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -1165,7 +1154,7 @@ function NewAppointmentModal({ storeId, businessHours, onCreated, onClose, staff
 // ─── Walk-In Modal ─────────────────────────────────────────────────────────────
 
 function WalkInModal({ storeId, onClose, onDone }: { storeId: string; onClose: () => void; onDone: () => void }) {
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [picked, setPicked] = useState<CustomerSearchResult | null>(null);
   const [services,  setServices]  = useState<ServiceOption[]>([]);
   const [staff,     setStaff]     = useState<StaffInfo[]>([]);
   const [loadingOpts, setLoadingOpts] = useState(true);
@@ -1176,8 +1165,8 @@ function WalkInModal({ storeId, onClose, onDone }: { storeId: string; onClose: (
   const [error,  setError]  = useState('');
 
   useEffect(() => {
-    Promise.all([getCustomers(storeId), getServices(), getStaff()])
-      .then(([cr, sr, st]) => { setCustomers(cr.data); setServices(sr.data); setStaff(st.data ?? []); })
+    Promise.all([getServices(), getStaff()])
+      .then(([sr, st]) => { setServices(sr.data); setStaff(st.data ?? []); })
       .catch(() => {})
       .finally(() => setLoadingOpts(false));
   }, [storeId]);
@@ -1241,10 +1230,9 @@ function WalkInModal({ storeId, onClose, onDone }: { storeId: string; onClose: (
             </div>
 
             {customerMode === 'existing' ? (
-              <select className={ic} value={form.customerId} onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))}>
-                <option value="">Selecciona un cliente</option>
-                {customers.map(c => <option key={c.customerId} value={c.customerId}>{c.name ? `${c.name} — ${c.phone}` : c.phone}</option>)}
-              </select>
+              <CustomerPicker storeId={storeId} value={picked}
+                onChange={c => { setPicked(c); setForm(f => ({ ...f, customerId: c?.customerId ?? '' })); }}
+                emptyHint={'Elige "Cliente nuevo" para crearlo.'} />
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <input className={ic} placeholder="Teléfono *" value={newCustomer.phone} onChange={e => setNewCustomer(n => ({ ...n, phone: e.target.value }))} />

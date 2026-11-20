@@ -141,16 +141,16 @@ export const createProduct = (data: {
 
 export const updateProduct = (id: string, data: {
   name?: string;
-  sku?: string;
-  categoryId?: string;
+  sku?: string | null;
+  categoryId?: string | null;
   salePrice?: number;
   costPrice?: number;
   stock?: number;
   // Stock que vio el formulario: la API solo aplica `stock` si sigue siendo este (409 si no).
   stockBefore?: number;
   hasVariants?: boolean;
-  description?: string;
-  imageUrl?: string;
+  description?: string | null;
+  imageUrl?: string | null;
   hasShipping?: boolean;
   weight?: number;
   shippingStandard?: number;
@@ -213,12 +213,12 @@ export const setProductAvailability = (productId: string, available: boolean) =>
 // ── Variantes de producto ─────────────────────────────────────────────────
 export interface VariantPayload {
   name: string;
-  sku?: string;
+  sku?: string | null;
   salePrice?: number;
   costPrice?: number;
   stock?: number;
   attributes?: Record<string, string>;
-  imageUrl?: string;
+  imageUrl?: string | null;
   weight?: number;
   sortOrder?: number;
   isActive?: boolean;
@@ -244,9 +244,9 @@ export type PriceType = 'FIXED' | 'PER_HOUR' | 'PER_DAY' | 'PER_UNIT' | 'VARIABL
 export interface ServiceVariantPayload {
   variantId?: string;
   name: string;
-  description?: string;
-  priceOverride?: number;
-  priceModifier?: number;
+  description?: string | null;
+  priceOverride?: number | null;
+  priceModifier?: number | null;
   estimatedMinutes?: number;
   sortOrder?: number;
   isActive?: boolean;
@@ -274,15 +274,15 @@ export const createService = (data: {
 
 export const updateService = (id: string, data: {
   name?: string;
-  description?: string;
-  category?: string;
-  imageUrl?: string;
+  description?: string | null;
+  category?: string | null;
+  imageUrl?: string | null;
   priceType?: PriceType;
   basePrice?: number;
   minPrice?: number;
   maxPrice?: number;
   costPrice?: number;
-  unitLabel?: string;
+  unitLabel?: string | null;
   hasVariants?: boolean;
   estimatedMinutes?: number;
   customFields?: Record<string, any>;
@@ -334,10 +334,17 @@ export const createManualOrder = (data: {
 export const getCustomers = (storeId: string) =>
   api.get(`/customers/store/${storeId}`);
 
+// Selectores (P-9): búsqueda en el servidor entre todos los clientes de la tienda.
+export interface CustomerSearchResult {
+  customerId: string; name: string | null; phone: string; cedula: string | null; city: string | null;
+}
+export const searchCustomers = (storeId: string, q: string, limit = 20) =>
+  api.get<CustomerSearchResult[]>(`/customers/store/${storeId}`, { params: { q, limit } });
+
 export const getCustomer = (id: string) =>
   api.get(`/customers/${id}`);
 
-export const updateCustomer = (id: string, data: { name?: string; city?: string; cedula?: string; acceptsMarketing?: boolean }) =>
+export const updateCustomer = (id: string, data: { name?: string | null; city?: string | null; cedula?: string | null; acceptsMarketing?: boolean }) =>
   api.patch(`/customers/${id}`, data);
 
 export const createCustomer = (data: { phone: string; name?: string }) =>
