@@ -1,9 +1,6 @@
-const CACHE_NAME = 'stockup-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/static/js/main.chunk.js',
-  '/static/css/main.chunk.css',
-];
+// v2: build con Vite (assets con hash en /assets/). Cambiar el nombre borra la caché de CRA.
+const CACHE_NAME = 'stockup-v2';
+const STATIC_ASSETS = ['/'];
 
 self.addEventListener('install', event => {
   event.waitUntil(

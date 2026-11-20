@@ -70,7 +70,7 @@ export default function HeroSection() {
     <section className="relative min-h-screen flex items-center pt-[72px] pb-16 overflow-hidden">
       {/* Fondo robot con parallax (scroll + mouse) + Ken Burns lento */}
       <div ref={bgRef} className="absolute inset-0 will-change-transform">
-        <div className="hero-robot-bg" style={{ backgroundImage: `url(${process.env.PUBLIC_URL}/images/hero-robot.png)` }} />
+        <div className="hero-robot-bg" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}images/hero-robot.png)` }} />
       </div>
       {/* Overlay horizontal: oscurece la izquierda para que el texto sea legible y deja respirar al robot a la derecha */}
       <div
