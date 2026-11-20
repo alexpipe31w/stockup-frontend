@@ -4,6 +4,7 @@ import {
 } from '../../services/api';
 import type { PromotionDto, PromotionType, PromotionInput } from '../../services/api';
 import { serverMessage } from '../../utils/serverMessage';
+import { bogotaDay, bogotaDayStartIso, bogotaDayEndExclusiveIso, lastIncludedBogotaDay } from '../../utils/bogotaTime';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const TrashIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>);
@@ -78,11 +79,6 @@ function previewText(f: Form, names: { products: string[]; categories: string[] 
   return `${daysCap}, ${when}: ${what} en ${targets.join(', ') || 'productos sin definir'}`;
 }
 
-/** Fecha ISO del servidor -> YYYY-MM-DD en hora de Bogotá. */
-function bogotaDate(iso: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' })
-    .format(new Date(iso));
-}
 
 function Switch({ value, onChange, disabled, label }: { value: boolean; onChange: () => void; disabled?: boolean; label: string }) {
   return (
@@ -150,6 +146,7 @@ export default function PromotionsPanel({ products, categories, disabled, onErro
     if (!form.name.trim()) return setFormError('Ponle un nombre a la promoción');
     if (form.productIds.length === 0 && form.categoryIds.length === 0) return setFormError('Elige al menos una sección o un producto');
     if (!!form.startTime !== !!form.endTime) return setFormError('El horario necesita hora de inicio y de fin, o ninguna');
+    if (form.startDate && form.endDate && form.endDate < form.startDate) return setFormError('"Hasta" no puede ser antes de "Desde"');
     if (form.type === 'buy_n_pay_m') {
       if (!(Number(form.buyN) > Number(form.payM) && Number(form.payM) >= 1)) return setFormError('"Lleva N" debe ser mayor que "paga M"');
     } else if (!(Number(form.value) > 0)) {
@@ -166,8 +163,9 @@ export default function PromotionsPanel({ products, categories, disabled, onErro
     if (form.type === 'buy_n_pay_m') { body.buyN = Number(form.buyN); body.payM = Number(form.payM); }
     else body.value = Number(form.value);
     if (form.startTime && form.endTime) { body.startTime = form.startTime; body.endTime = form.endTime; }
-    if (form.startDate) body.startsAt = `${form.startDate}T00:00:00-05:00`;
-    if (form.endDate) body.endsAt = `${form.endDate}T00:00:00-05:00`;
+    // "Hasta" incluye ese día entero (C-7): se manda la medianoche siguiente, que la API trata como fin exclusivo.
+    if (form.startDate) body.startsAt = bogotaDayStartIso(form.startDate);
+    if (form.endDate) body.endsAt = bogotaDayEndExclusiveIso(form.endDate);
 
     const ok = await run(() => createPromotion(body), 'No se pudo crear la promoción');
     if (ok) setForm(emptyForm());
@@ -202,7 +200,7 @@ export default function PromotionsPanel({ products, categories, disabled, onErro
                   <p className="text-xs text-txt-secondary mt-0.5 break-words">{p.summary}</p>
                   {(p.startsAt || p.endsAt) && (
                     <p className="text-xs text-txt-tertiary mt-0.5">
-                      {p.startsAt ? `Desde ${bogotaDate(p.startsAt)}` : ''}{p.startsAt && p.endsAt ? ' ' : ''}{p.endsAt ? `hasta ${bogotaDate(p.endsAt)}` : ''}
+                      {p.startsAt ? `Desde ${bogotaDay(p.startsAt)}` : ''}{p.startsAt && p.endsAt ? ' ' : ''}{p.endsAt ? `hasta ${lastIncludedBogotaDay(p.endsAt)}` : ''}
                     </p>
                   )}
                 </div>

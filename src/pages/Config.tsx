@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import api, {
+import {
   getMySubscription, createCheckout, getStore, updateStore, getStaff, createStaff, updateStaff, deleteStaff, deleteStaffPermanent, getServices, getProducts,
   generateStockupLinkCode, getStockupConnection, disconnectStockup, StockupConnectionStatus, StockupLinkCode,
   getUsers, deleteUser, createKitchenAccount, changePassword, logoutAll,
+  getBlockedContacts, blockContact, unblockContact,
 } from '../services/api';
 import AiConfigPage from './AiConfig';
 import {
@@ -859,12 +860,18 @@ function ExcluidosSection() {
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  // Errores de la lista (cargar / desbloquear). Antes se tragaban: la lista salía vacía
+  // como si no hubiera excluidos, y un desbloqueo fallido no decía nada (C-11).
+  const [listError, setListError] = useState('');
 
   const load = async () => {
     try {
-      const res = await api.get('/blocked');
+      const res = await getBlockedContacts();
       setContacts(res.data);
-    } catch {} finally {
+      setListError('');
+    } catch (err) {
+      setListError(serverMessage(err, 'No se pudo cargar la lista de excluidos.'));
+    } finally {
       setLoading(false);
     }
   };
@@ -887,7 +894,7 @@ function ExcluidosSection() {
     setSaving(true);
     setError('');
     try {
-      await api.post('/blocked', { phone: form.phone, label: form.label || undefined });
+      await blockContact({ phone: form.phone, label: form.label || undefined });
       setShowModal(false);
       setForm(emptyBlockedForm);
       await load();
@@ -901,10 +908,13 @@ function ExcluidosSection() {
   const handleUnblock = async (id: string) => {
     if (!window.confirm('¿Desbloquear este número?')) return;
     setRemovingId(id);
+    setListError('');
     try {
-      await api.delete(`/blocked/${id}`);
+      await unblockContact(id);
       await load();
-    } catch {} finally {
+    } catch (err) {
+      setListError(serverMessage(err, 'No se pudo desbloquear el número.'));
+    } finally {
       setRemovingId(null);
     }
   };
@@ -946,6 +956,9 @@ function ExcluidosSection() {
         </p>
       </div>
 
+      {listError && (
+        <p role="alert" className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{listError}</p>
+      )}
       {loading ? (
         <Spinner />
       ) : (
