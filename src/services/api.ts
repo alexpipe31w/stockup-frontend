@@ -507,6 +507,40 @@ export const getWhatsAppHealth = (storeId: string) =>
 export const disconnectWhatsApp = (storeId: string, opts: { logout?: boolean } = {}) =>
   api.delete(`/whatsapp/disconnect/${storeId}`, { params: opts.logout ? { logout: 'true' } : undefined });
 
+// ── WhatsApp Cloud API (bloque 8a) ─────────────────────────────────────────
+// Los secretos nunca vuelven de la API: solo una pista del token (…abcd).
+export interface WaCloudAccount {
+  phoneNumberId: string;
+  wabaId: string;
+  displayPhone: string | null;
+  verifiedName: string | null;
+  status: 'unverified' | 'ok' | 'error';
+  lastError: string | null;
+  verifiedAt: string | null;
+  accessTokenHint: string;
+  hasAppSecret: boolean;
+}
+
+export interface SaveWaCloudAccount {
+  phoneNumberId: string;
+  wabaId: string;
+  /** Al editar: omitido = no se cambia. */
+  accessToken?: string;
+  appSecret?: string;
+}
+
+export const getWaCloudAccount = (storeId: string) =>
+  api.get<WaCloudAccount>(`/whatsapp/cloud/${storeId}`);
+
+export const saveWaCloudAccount = (storeId: string, data: SaveWaCloudAccount) =>
+  api.put<WaCloudAccount>(`/whatsapp/cloud/${storeId}`, data);
+
+export const verifyWaCloudAccount = (storeId: string) =>
+  api.post<WaCloudAccount>(`/whatsapp/cloud/${storeId}/verify`);
+
+export const deleteWaCloudAccount = (storeId: string) =>
+  api.delete(`/whatsapp/cloud/${storeId}`);
+
 // ── Store Theme ───────────────────────────────────────────────────────────
 export const getStoreTheme = (storeId: string) =>
   api.get(`/stores/${storeId}/theme`);

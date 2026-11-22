@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { connectWhatsApp, getWhatsAppQR, getWhatsAppStatus, disconnectWhatsApp, getWhatsAppHealth, apiMessage, type WhatsAppHealth } from '../services/api';
 import { QRCodeCanvas } from 'qrcode.react';
+import WhatsAppCloudPanel from '../components/WhatsAppCloudPanel';
 
 const fmtWindow = (iso: string) =>
   new Date(iso).toLocaleString('es-CO', { weekday: 'long', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -48,7 +49,7 @@ function HealthPanel({ health }: { health: WhatsAppHealth }) {
 }
 
 export default function WhatsAppPage() {
-  const { storeId } = useAuth();
+  const { storeId, user } = useAuth();
   const [connected, setConnected] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -324,6 +325,9 @@ export default function WhatsAppPage() {
       </div>
 
       {health && <HealthPanel health={health} />}
+
+      {/* Bloque 8a: solo el admin (la API lo exige igual). */}
+      {user?.role === 'admin' && <WhatsAppCloudPanel storeId={storeId} />}
 
       {/* Confirmar desvincular */}
       {confirmUnlink && (
